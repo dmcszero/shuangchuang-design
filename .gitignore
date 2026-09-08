@@ -1,0 +1,10 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+# 旧版原型孪生目录（仅本地留参考，不入库）
+temp_repo/

@@ -1,0 +1,8 @@
+{
+  "name": "赛事打磨平台 - 2026大赛培育决策平台",
+  "description": "面向高校双创管理者的全生命周期AI中枢，涵盖海量项目导入、2026国赛智能对标初筛、常态化导师调度、辅导督导闭环与金奖指标数据驾驶舱。",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
