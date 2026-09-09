@@ -184,6 +184,15 @@ export interface DiagnosisResult {
   nextSteps: DiagnosisItem[];
 }
 
+// ---- 跨页任务上下文（项目工作台·动态待办 → 全链路指导工作台） ----
+export interface GuidanceTaskContext {
+  taskId: string;
+  title: string;
+  source: 'ai' | 'workorder';
+  sourceLabel: string;
+  chapterId?: string; // 关联 BP 标准章编号（1~12）
+}
+
 // ---- 动态待办 ----
 export interface GuidanceTodoItem {
   id: string;

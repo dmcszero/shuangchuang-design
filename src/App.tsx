@@ -37,6 +37,7 @@ import {
   CoachSession,
   AssociatedFileItem
 } from './types';
+import { GuidanceTaskContext } from './components/guidance/guidanceTypes';
 
 export default function App() {
   // Authentication & Session State
@@ -78,6 +79,9 @@ export default function App() {
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // 跨页任务上下文（0908-16：项目工作台·动态待办 → 全链路指导工作台 跳转闭环）
+  const [guidanceTaskContext, setGuidanceTaskContext] = useState<GuidanceTaskContext | null>(null);
 
   // Global Active Project for Team Member (persists throughout session)
   const [activeTeamProjectId, setActiveTeamProjectId] = useState<string>(() => {
@@ -453,6 +457,21 @@ export default function App() {
     setActiveTab('mentorship');
   };
 
+  // ---- 0908-16 跳转闭环：动态待办 → 全链路指导工作台 ----
+  // 点「去执行」：携带任务上下文切换到工作台
+  const handleExecuteTodo = (ctx: GuidanceTaskContext) => {
+    setGuidanceTaskContext(ctx);
+    setActiveTab('guidance_workbench');
+  };
+
+  // 关闭任务条（不回写）
+  const handleDismissTask = () => setGuidanceTaskContext(null);
+
+  // 完成任务：回写（示例 mock：关闭任务条即可，实际由工作台内状态联动）
+  const handleTaskCompleted = (_taskId: string) => {
+    setGuidanceTaskContext(null);
+  };
+
   // If not logged in, render the 4-portal Login Page
   if (!session) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
@@ -558,6 +577,9 @@ export default function App() {
               selectedProject={currentMemberProject}
               onSelectProject={handleSelectProject}
               session={session}
+              taskContext={guidanceTaskContext}
+              onDismissTask={handleDismissTask}
+              onTaskCompleted={handleTaskCompleted}
             />
           )}
 
@@ -576,6 +598,7 @@ export default function App() {
               workOrders={workOrders}
               onUpdateWorkOrder={handleUpdateWorkOrder}
               onOpenRulesConfig={() => setIsRulesModalOpen(true)}
+              onExecuteTodo={handleExecuteTodo}
             />
           )}
 

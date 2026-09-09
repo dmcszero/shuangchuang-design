@@ -22,6 +22,25 @@ import {
 } from 'lucide-react';
 import { ProjectItem, SupervisionWorkOrder, UserSession } from '../types';
 import { MOCK_PROJECT_TEAMS } from '../data/mockUsersAndTeams';
+import {
+  WORKBENCH_AI_TODOS,
+  AI_GENERATED_FILES,
+  FILE_SOURCE,
+  PENDING_ARCHIVE_ITEMS,
+  FILE_CHANGE_LOG,
+  WorkbenchAiTodo,
+  FileChangeEntry
+} from './workbench/workbenchMockData';
+import { GuidanceTodoItem, GuidanceTaskContext } from './guidance/guidanceTypes';
+import {
+  Bot,
+  FolderTree,
+  ClipboardList,
+  History,
+  UploadCloud as UploadCloudIcon,
+  Inbox,
+  ArrowRight
+} from 'lucide-react';
 
 interface ProjectMemberWorkbenchProps {
   session: UserSession;
@@ -29,6 +48,8 @@ interface ProjectMemberWorkbenchProps {
   workOrders: SupervisionWorkOrder[];
   onUpdateWorkOrder: (order: SupervisionWorkOrder) => void;
   onOpenRulesConfig: () => void;
+  /** 点「去执行」→ 携带任务上下文跳转全链路指导工作台（0908-16 跳转闭环） */
+  onExecuteTodo: (ctx: GuidanceTaskContext) => void;
 }
 
 export default function ProjectMemberWorkbench({
@@ -37,13 +58,50 @@ export default function ProjectMemberWorkbench({
   workOrders,
   onUpdateWorkOrder,
   onOpenRulesConfig,
+  onExecuteTodo,
 }: ProjectMemberWorkbenchProps) {
   // Find project work orders
   const projectOrders = workOrders.filter(o => o.projectId === project.id);
   const currentTeam = MOCK_PROJECT_TEAMS.find(t => t.projectId === project.id) || MOCK_PROJECT_TEAMS[0];
 
-  const [activeSubTab, setActiveSubTab] = useState<'tasks' | 'diagnostic' | 'team' | 'materials'>('tasks');
+  const [activeSubTab, setActiveSubTab] = useState<'todos' | 'tasks' | 'diagnostic' | 'team' | 'folder'>('todos');
   const [selectedOrder, setSelectedOrder] = useState<SupervisionWorkOrder | null>(projectOrders[0] || null);
+
+  // 动态待办状态（AI 诊断来源池；专家工单来源复用 workOrders 的 tasks）
+  const [aiTodos, setAiTodos] = useState<WorkbenchAiTodo[]>(WORKBENCH_AI_TODOS);
+  const [todoFilter, setTodoFilter] = useState<'all' | 'ai' | 'wo'>('all');
+
+  const handleToggleAiTodo = (id: string) => {
+    setAiTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  // 从章节引用映射到 BP 标准章编号（示例映射：用于跳转定位）
+  const chapterIdFromRef = (ref?: string): string | undefined => {
+    if (!ref) return undefined;
+    const m = ref.match(/第(\d+)章/);
+    return m ? m[1] : undefined;
+  };
+
+  // 点「去执行」→ 跳转全链路指导工作台
+  const executeAiTodo = (td: GuidanceTodoItem) => {
+    onExecuteTodo({
+      taskId: td.id,
+      title: td.title,
+      source: 'ai',
+      sourceLabel: 'AI 诊断生成',
+      chapterId: chapterIdFromRef(td.chapterRef)
+    });
+  };
+
+  const executeWorkOrderTask = (orderId: string, orderLabel: string, task: { id: string; title: string }) => {
+    onExecuteTodo({
+      taskId: `${orderId}:${task.id}`,
+      title: task.title,
+      source: 'workorder',
+      sourceLabel: `专家工单 · ${orderLabel}`,
+      chapterId: undefined
+    });
+  };
 
   // Student submission form state
   const [submissionNotes, setSubmissionNotes] = useState('');
@@ -152,6 +210,18 @@ export default function ProjectMemberWorkbench({
       {/* Sub-Navigation Tabs */}
       <div className="flex items-center space-x-2 border-b border-slate-200 pb-1 overflow-x-auto">
         <button
+          onClick={() => setActiveSubTab('todos')}
+          className={`px-4 py-2 text-xs font-semibold rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
+            activeSubTab === 'todos'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <ClipboardList className="h-3.5 w-3.5" />
+          <span>动态待办 ({aiTodos.filter(t => !t.completed).length + projectOrders.reduce((n, o) => n + o.tasks.filter(t => !t.completed).length, 0)})</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('tasks')}
           className={`px-4 py-2 text-xs font-semibold rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
             activeSubTab === 'tasks'
@@ -188,17 +258,181 @@ export default function ProjectMemberWorkbench({
         </button>
 
         <button
-          onClick={() => setActiveSubTab('materials')}
+          onClick={() => setActiveSubTab('folder')}
           className={`px-4 py-2 text-xs font-semibold rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
-            activeSubTab === 'materials'
+            activeSubTab === 'folder'
               ? 'bg-sky-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <FileText className="h-3.5 w-3.5" />
-          <span>申报材料与版本管理</span>
+          <FolderTree className="h-3.5 w-3.5" />
+          <span>项目文件夹（大事记=文件更改记录）</span>
         </button>
       </div>
+
+      {/* Tab Content 0: 动态待办（0908-16：AI 诊断 + 专家工单双来源统一池） */}
+      {activeSubTab === 'todos' && (() => {
+        const aiDone = aiTodos.filter(t => t.completed).length;
+        const woTasks = projectOrders.flatMap(o => o.tasks.map(t => ({ order: o, task: t })));
+        const woDone = woTasks.filter(({ task }) => task.completed).length;
+        const totalTodos = aiTodos.length + woTasks.length;
+        const doneTodos = aiDone + woDone;
+        const progressPercent = Math.round((doneTodos / (totalTodos || 1)) * 100);
+        return (
+          <div className="space-y-4">
+            {/* 顶部统计与进度 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+                <div className="text-2xl font-black font-mono text-indigo-700">{aiTodos.length - aiDone}</div>
+                <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  <Bot className="h-3.5 w-3.5 text-indigo-500" />
+                  AI 评分诊断生成的待办
+                </div>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+                <div className="text-2xl font-black font-mono text-sky-700">{woTasks.length - woDone}</div>
+                <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-sky-500" />
+                  后台专家下发的建议工单
+                </div>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+                <div className="text-2xl font-black font-mono text-emerald-600">{progressPercent}%</div>
+                <div className="text-xs text-slate-500 mt-1">L4 阶段整体推进率</div>
+                <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-2xs text-xs text-amber-900 flex flex-col justify-between">
+                <div className="flex items-center font-bold text-amber-800">
+                  <Target className="h-4 w-4 mr-1.5 text-amber-600" />
+                  执行方式
+                </div>
+                <p className="text-[11px] leading-relaxed mt-1.5">点击待办右侧「去执行」直达全链路指导工作台，携带任务上下文定位关联章节；完成后在工作台一键回写状态。</p>
+              </div>
+            </div>
+
+            {/* 来源筛选 */}
+            <div className="flex items-center gap-2">
+              {([
+                { key: 'all' as const, label: `全部 (${totalTodos})` },
+                { key: 'ai' as const, label: `🤖 AI 诊断生成 (${aiTodos.length})` },
+                { key: 'wo' as const, label: `👨‍🏫 专家工单 (${woTasks.length})` }
+              ]).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setTodoFilter(f.key)}
+                  className={`px-3.5 py-1.5 rounded-full border text-xs font-medium transition ${
+                    todoFilter === f.key
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 双来源待办列表 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+              {/* AI 诊断来源 */}
+              {todoFilter !== 'wo' && (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <div className="px-4 py-2.5 border-b border-slate-100 text-xs font-bold text-slate-800 flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-indigo-500" />
+                    AI 评分诊断生成
+                    <span className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">来源：全维诊断 · 2026 国赛体检</span>
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {aiTodos.map(td => (
+                      <div key={td.id} className={`px-4 py-3 flex items-start gap-2.5 ${td.completed ? 'bg-slate-50/50' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={td.completed}
+                          onChange={() => handleToggleAiTodo(td.id)}
+                          className="mt-0.5 h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold leading-relaxed ${td.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                            {td.title}
+                          </div>
+                          <div className="flex items-center flex-wrap gap-1.5 mt-1.5 text-[10px] text-slate-400">
+                            <span className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">AI 诊断</span>
+                            <span className="font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{td.stage}</span>
+                            {td.chapterRef && <span>{td.chapterRef}</span>}
+                            {td.assignee && <span>责: {td.assignee}</span>}
+                            {td.dueDate && <span>限期 {td.dueDate}</span>}
+                            <span className={td.priority === 'high' ? 'text-rose-600 font-semibold' : ''}>{td.priority === 'high' ? '高优先级' : '普通'}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => executeAiTodo(td)}
+                          disabled={td.completed}
+                          className={`self-center shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            td.completed
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          }`}
+                        >
+                          {td.completed ? '已完结' : (<>去执行 <ArrowRight className="h-3 w-3" /></>)}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 专家工单来源 */}
+              {todoFilter !== 'ai' && (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <div className="px-4 py-2.5 border-b border-slate-100 text-xs font-bold text-slate-800 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-sky-500" />
+                    后台专家下发的建议工单
+                    <span className="text-[10px] font-medium text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">来源：常态化辅导 · 工单下发</span>
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {woTasks.length === 0 && (
+                      <div className="px-4 py-6 text-center text-xs text-slate-400">当前项目暂无专家工单任务</div>
+                    )}
+                    {woTasks.map(({ order, task }) => (
+                      <div key={`${order.id}:${task.id}`} className={`px-4 py-3 flex items-start gap-2.5 ${task.completed ? 'bg-slate-50/50' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => handleToggleTaskDone(order.id, task.id)}
+                          className="mt-0.5 h-4 w-4 rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold leading-relaxed ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                            [{task.category}] {task.title}
+                          </div>
+                          <div className="flex items-center flex-wrap gap-1.5 mt-1.5 text-[10px] text-slate-400">
+                            <span className="font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded">专家工单</span>
+                            <span>工单 {order.id}</span>
+                            <span>{order.mentorName} ({order.mentorTitle})</span>
+                            <span className={task.priority === 'high' ? 'text-rose-600 font-semibold' : ''}>{task.priority === 'high' ? '高优先级' : '普通'} · 限期 {task.dueDays} 天</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => executeWorkOrderTask(order.id, order.mentorName, task)}
+                          disabled={task.completed}
+                          className={`self-center shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            task.completed
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'bg-sky-600 hover:bg-sky-700 text-white'
+                          }`}
+                        >
+                          {task.completed ? '已完结' : (<>去执行 <ArrowRight className="h-3 w-3" /></>)}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tab Content 1: Tasks & Supervision Work Orders */}
       {activeSubTab === 'tasks' && (
@@ -612,84 +846,146 @@ export default function ProjectMemberWorkbench({
         </div>
       )}
 
-      {/* Tab Content 4: Materials */}
-      {activeSubTab === 'materials' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">商业计划书 (BP)</span>
-                <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-medium">PDF格式</span>
+      {/* Tab Content 4: 项目文件夹（0908-16：文件树 + 待归档区 + 大事记=文件更改记录） */}
+      {activeSubTab === 'folder' && (() => {
+        // 合并材料清单（mock 注册表 + 会话生成文件），并附加来源标签
+        const allFiles = [...AI_GENERATED_FILES];
+        const sourceLabel: Record<string, { text: string; cls: string }> = {
+          system: { text: '三件套/系统', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+          upload: { text: '上传', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+          ai: { text: '会话生成', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
+        };
+        const kindIcon: Record<FileChangeEntry['kind'], string> = {
+          edit: '✏️',
+          milestone: '🚩',
+          upload: '📤',
+          archive: '📥'
+        };
+        const kindCls: Record<FileChangeEntry['kind'], string> = {
+          edit: 'bg-indigo-500',
+          milestone: 'bg-amber-500',
+          upload: 'bg-sky-500',
+          archive: 'bg-emerald-500'
+        };
+        return (
+          <div className="space-y-5">
+            {/* 待归档区：会话产物 → 存入项目文件夹 */}
+            <div className="bg-amber-50/70 border border-dashed border-amber-300 rounded-2xl p-4 space-y-3">
+              <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <Inbox className="h-4 w-4 text-amber-600" />
+                待归档区 · 来自会话的生成产物（存入后自动记入文件更改记录）
               </div>
-              <p className="text-xs font-mono text-slate-600 truncate">{project.materials.bpFile}</p>
-              <div className="text-xs text-slate-400">页数：{project.materials.bpPages} 页 · 查重率：{project.compliance.plagiarismRate}%</div>
-              <div className="pt-2 flex items-center space-x-2">
-                <button 
-                  onClick={() => alert(`模拟下载商业计划书：${project.materials.bpFile}`)}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>下载当前版</span>
-                </button>
-                <button 
-                  onClick={() => alert('模拟替换上传新版商业计划书成功！')}
-                  className="py-1.5 px-3 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-medium transition"
-                >
-                  更新上传
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">现场路演PPT</span>
-                <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-medium">PPTX格式</span>
-              </div>
-              <p className="text-xs font-mono text-slate-600 truncate">{project.materials.pptFile}</p>
-              <div className="text-xs text-slate-400">幻灯片页数：{project.materials.pptSlides} 页 (正文12页+附录16页)</div>
-              <div className="pt-2 flex items-center space-x-2">
-                <button 
-                  onClick={() => alert(`模拟下载路演PPT：${project.materials.pptFile}`)}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>下载当前版</span>
-                </button>
-                <button 
-                  onClick={() => alert('模拟替换上传新版路演PPT成功！')}
-                  className="py-1.5 px-3 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-medium transition"
-                >
-                  更新上传
-                </button>
+              <div className="space-y-2">
+                {PENDING_ARCHIVE_ITEMS.map(p => (
+                  <div key={p.id} className="bg-white border border-amber-200 rounded-xl px-3.5 py-2.5 flex items-center gap-3 text-xs">
+                    <span className="font-semibold text-slate-800">🤖 {p.name}</span>
+                    <span className="text-[10px] text-amber-700">生成于会话「{p.fromSession}」 · {p.time} · {p.size}</span>
+                    <button
+                      onClick={() => alert(`已存入项目文件夹并记入文件更改记录（示例 mock）：${p.name}`)}
+                      className="ml-auto shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition"
+                    >
+                      存入项目文件夹
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">一分钟展示视频 (VCR)</span>
-                <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-medium">MP4格式</span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* 左：文件树（来源标签） */}
+              <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <FolderTree className="h-4 w-4 text-sky-600" />
+                  材料注册表 ({allFiles.length})
+                </h3>
+                <div className="space-y-1.5 max-h-[480px] overflow-y-auto pr-1">
+                  {allFiles.map(f => {
+                    const src = FILE_SOURCE[f.id] || 'upload';
+                    const sl = sourceLabel[src];
+                    return (
+                      <div key={f.id} className="p-2.5 rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-slate-50/60 transition text-xs cursor-pointer">
+                        <div className="flex items-start justify-between gap-1.5">
+                          <span className="font-semibold text-slate-800 line-clamp-1">{f.name}</span>
+                          {f.badge && (
+                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded-full whitespace-nowrap">{f.badge}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between gap-1 mt-1 text-[10px] text-slate-400">
+                          <span className={`px-1.5 py-0.2 rounded-full border font-medium ${sl.cls}`}>{sl.text}</span>
+                          <span>{f.category} · {(f.size / 1024).toFixed(0)} KB · {f.ext.toUpperCase()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[10px] text-slate-500 leading-relaxed">
+                  来源口径：<b className="text-slate-700">三件套/系统</b>（平台生成归档）· <b className="text-slate-700">上传</b>（团队手动登记）· <b className="text-slate-700">会话生成</b>（AI 教练产物经确认入库）
+                </div>
               </div>
-              <p className="text-xs font-mono text-slate-600 truncate">{project.materials.vcrFile || 'vcr_demo_intro_1min.mp4'}</p>
-              <div className="text-xs text-slate-400">分辨率：1080P · 时长：58秒 · 字幕已校准</div>
-              <div className="pt-2 flex items-center space-x-2">
-                <button 
-                  onClick={() => alert('模拟在线预览展示视频！')}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span>在线预览</span>
-                </button>
-                <button 
-                  onClick={() => alert('模拟替换上传新版VCR成功！')}
-                  className="py-1.5 px-3 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-medium transition"
-                >
-                  更新上传
-                </button>
+
+              {/* 右：主文档版本线 + 大事记（=文件更改记录） */}
+              <div className="lg:col-span-8 space-y-5">
+                {/* 主文档版本线（与工作台快照体系同源） */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    📄 商业计划书（主文档）
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">当前版 v2.0.0-rc</span>
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">三件套/系统</span>
+                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                    <span className="text-slate-400">版本线（与全链路指导工作台快照同源）：</span>
+                    {['v1.0.0 · 校赛基线', 'v1.2.0 · 省赛网评', 'v1.4.0 · 里程碑 🚩', 'v2.0.0-rc · 当前'].map((v, i, arr) => (
+                      <span
+                        key={v}
+                        className={`px-2 py-0.5 rounded-full border font-mono ${
+                          i === arr.length - 1
+                            ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    完整版本历史 / diff 对比 / 回滚 → 全链路指导工作台顶栏「版本历史」抽屉
+                  </div>
+                </div>
+
+                {/* 大事记 = 文件更改记录（仅文件与版本变更事件，不含业务事件） */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <History className="h-4 w-4 text-sky-600" />
+                    大事记 · 文件更改记录
+                    <span className="text-[10px] font-medium text-slate-500 normal-case tracking-normal">谁 · 何时 · 动作 · 来自哪 · 形成哪版（不含业务事件）</span>
+                  </h3>
+                  <div className="relative pl-6 border-l-2 border-slate-200 space-y-5">
+                    {FILE_CHANGE_LOG.map(fc => (
+                      <div key={fc.id} className="relative">
+                        <div className={`absolute -left-[31px] top-0.5 w-3 h-3 rounded-full border-2 border-white ring-2 ${kindCls[fc.kind]} ${fc.kind === 'edit' ? 'ring-indigo-100' : fc.kind === 'milestone' ? 'ring-amber-100' : fc.kind === 'upload' ? 'ring-sky-100' : 'ring-emerald-100'}`} />
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="font-bold text-slate-800 text-xs">
+                            {kindIcon[fc.kind]} {fc.targetFile} · {fc.action}
+                          </div>
+                          {fc.versionRef && (
+                            <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.2 rounded">→ {fc.versionRef}</span>
+                          )}
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">{fc.detail}</p>
+                        <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
+                          <span>{fc.date}</span>
+                          <span>操作人：{fc.actor}</span>
+                          {fc.fromRef && <span>来自：{fc.fromRef}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

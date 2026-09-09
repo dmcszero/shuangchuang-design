@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ProjectItem, 
   UserSession 
@@ -7,9 +7,7 @@ import {
   STANDARD_12_CHAPTERS, 
   INITIAL_STAGE_ITEMS, 
   SAMPLE_BP_CONTENT, 
-  SAMPLE_FILES, 
   SAMPLE_VERSIONS, 
-  SAMPLE_TODOS, 
   SAMPLE_TRIAGE, 
   SAMPLE_DIAGNOSIS, 
   SAMPLE_ASSESSMENT, 
@@ -17,22 +15,15 @@ import {
   INITIAL_COACH_MESSAGES 
 } from './guidance/guidanceMockData';
 import { 
-  ProjectFileItem, 
   ProjectVersion, 
-  GuidanceTodoItem, 
   CoachSessionItem, 
   CoachMessageItem, 
-  StageProgressItem 
+  StageProgressItem,
+  GuidanceTaskContext 
 } from './guidance/guidanceTypes';
-import { ProjectFileViewer } from './guidance/ProjectFileViewer';
-import { 
-  GuidanceVersionDiffModal, 
-  GuidanceUploadModal, 
-  GuidanceCreateTodoModal 
-} from './guidance/GuidanceModals';
+import { GuidanceVersionDiffModal } from './guidance/GuidanceModals';
 import { 
   FileText, 
-  CheckSquare, 
   GitBranch, 
   History, 
   Bot, 
@@ -46,20 +37,13 @@ import {
   Send, 
   Eye, 
   Edit3, 
-  Plus, 
-  Search, 
-  Layers, 
-  CheckCircle2, 
-  Clock, 
   AlertCircle, 
   Check, 
-  Maximize2, 
-  Sliders, 
   Award, 
-  ShieldCheck, 
   FileCheck, 
-  ExternalLink,
-  ChevronDown
+  X,
+  RotateCcw,
+  Target
 } from 'lucide-react';
 
 interface SceneGuidanceWorkbenchProps {
@@ -67,16 +51,22 @@ interface SceneGuidanceWorkbenchProps {
   selectedProject: ProjectItem | null;
   onSelectProject: (project: ProjectItem) => void;
   session: UserSession;
+  /** 跨页任务上下文（项目工作台·动态待办 → 工作台执行，0908-16 跳转闭环） */
+  taskContext?: GuidanceTaskContext | null;
+  onDismissTask?: () => void;
+  onTaskCompleted?: (taskId: string) => void;
 }
 
-type SideView = 'todo' | 'files' | 'versions' | 'archive';
-type CenterTab = 'bp' | 'diag' | 'score' | 'file';
+type CenterTab = 'bp' | 'diag' | 'score';
 
 export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
   projects,
   selectedProject,
   onSelectProject,
   session,
+  taskContext,
+  onDismissTask,
+  onTaskCompleted,
 }) => {
   // Active Project (fallback to first available or default)
   const currentProject = selectedProject || projects[0] || {
@@ -89,24 +79,21 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
     members: []
   };
 
-  // State
-  const [sideView, setSideView] = useState<SideView>('todo');
+  // State（0908-16：左栏移除后，仅保留中栏三 tab + 右栏 AI 单主体）
   const [centerTab, setCenterTab] = useState<CenterTab>('bp');
   const [bpMode, setBpMode] = useState<'preview' | 'edit'>('preview');
   const [bpContent, setBpContent] = useState<string>(SAMPLE_BP_CONTENT);
   const [activeChapterId, setActiveChapterId] = useState<string>('5');
-  
-  // Files State
-  const [files, setFiles] = useState<ProjectFileItem[]>(SAMPLE_FILES);
-  const [activeFile, setActiveFile] = useState<ProjectFileItem | null>(null);
 
   // Versions State
   const [versions, setVersions] = useState<ProjectVersion[]>(SAMPLE_VERSIONS);
   const [currentVersionId, setCurrentVersionId] = useState<string>('v2.0.0-rc');
 
-  // Todos State
-  const [todos, setTodos] = useState<GuidanceTodoItem[]>(SAMPLE_TODOS);
-  const [stageProgress, setStageProgress] = useState<StageProgressItem[]>(INITIAL_STAGE_ITEMS);
+  // 版本历史抽屉 + 快照只读预览（0908-16：版本快照保留在工作台，顶栏按钮 + 右缘抽屉）
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [viewingVersionId, setViewingVersionId] = useState<string | null>(null);
+
+  const [stageProgress] = useState<StageProgressItem[]>(INITIAL_STAGE_ITEMS);
 
   // AI Coach Chat State
   const [chatCollapsed, setChatCollapsed] = useState<boolean>(false);
@@ -119,8 +106,6 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
 
   // Modals State
   const [diffModalOpen, setDiffModalOpen] = useState(false);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [createTodoModalOpen, setCreateTodoModalOpen] = useState(false);
   const [saveSuccessTip, setSaveSuccessTip] = useState(false);
 
   // Chapter Click in BP
@@ -129,9 +114,38 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
     setCenterTab('bp');
   };
 
-  // Toggle Todo
-  const handleToggleTodo = (id: string) => {
-    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  // 任务上下文联动：章节直达 + AI 预填引导（0908-16 跳转闭环）
+  const prefiledTaskIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!taskContext || prefiledTaskIdRef.current === taskContext.taskId) return;
+    prefiledTaskIdRef.current = taskContext.taskId;
+    if (taskContext.chapterId) {
+      setActiveChapterId(taskContext.chapterId);
+      setCenterTab('bp');
+    }
+    setMessages(prev => [...prev, {
+      id: `task-${taskContext.taskId}`,
+      role: 'assistant' as const,
+      content: `收到，我们正在处理待办【${taskContext.title}】（来源：${taskContext.sourceLabel}）。${taskContext.chapterId ? `已为你定位到第 ${taskContext.chapterId} 章，` : ''}需要我先列出该章节的提分检查清单，还是直接基于当前版本生成修改草稿？`,
+      createdAt: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      suggestions: ['列出该章节提分检查清单', '基于当前版本生成修改草稿', '查看历史版本中的相关论述']
+    }]);
+  }, [taskContext]);
+
+  // 跳转任务关联章节
+  const jumpToTaskChapter = () => {
+    if (taskContext?.chapterId) {
+      setActiveChapterId(taskContext.chapterId);
+      setCenterTab('bp');
+    }
+  };
+
+  // 完成任务并回写项目工作台·动态待办
+  const handleCompleteTask = () => {
+    if (taskContext) {
+      onTaskCompleted?.(taskContext.taskId);
+      alert(`任务【${taskContext.title}】已完成，并已回写项目工作台·动态待办！`);
+    }
   };
 
   // Save Snapshot
@@ -249,25 +263,29 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
     alert(`已成功将 AI 优化的【${diff.chapterName}】专属反制论证增补至商业计划书中！`);
   };
 
-  // AI Auto Generate Todos
-  const handleAiGenerateTodos = () => {
-    const newAiTodo: GuidanceTodoItem = {
-      id: `td-ai-${Date.now()}`,
-      title: '【AI建议】针对国赛网评要求，在第12章补充“高校交叉学科硕士联合培养人数（30人+）”数据支撑',
-      stage: 'L4',
-      completed: false,
-      priority: 'high',
-      assignee: '李林峰',
-      dueDate: '2026-09-09',
-      chapterRef: '第12章 社会价值'
-    };
-    setTodos([newAiTodo, ...todos]);
-    alert('AI 教练已根据国赛金奖评审细则，自动提炼并新增 1 条关键提分待办！');
+  // 版本抽屉开关
+  const toggleDrawer = () => setDrawerOpen(prev => !prev);
+
+  // 选中历史快照 → 中栏只读预览联动
+  const handlePreviewVersion = (ver: ProjectVersion) => {
+    if (ver.versionId === currentVersionId) {
+      setViewingVersionId(null);
+      return;
+    }
+    setViewingVersionId(ver.versionId);
   };
 
-  // Completed todos count
-  const completedTodosCount = useMemo(() => todos.filter(t => t.completed).length, [todos]);
-  const todoProgressPercent = useMemo(() => Math.round((completedTodosCount / (todos.length || 1)) * 100), [completedTodosCount, todos]);
+  // 退出快照预览
+  const exitViewSnapshot = () => setViewingVersionId(null);
+
+  // 回滚到指定版本
+  const handleRollbackTo = (ver: ProjectVersion) => {
+    if (window.confirm(`确认回滚到【${ver.label}】？当前未保存的修改将丢弃（示例 mock）。`)) {
+      setCurrentVersionId(ver.versionId);
+      setViewingVersionId(null);
+      alert(`已回滚至 ${ver.versionId}，可继续编辑并另存新快照。`);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-100 overflow-hidden select-none font-sans text-slate-800">
@@ -299,16 +317,13 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
 
           {/* L1~L6 Stage Stepper in Top Bar */}
           <div className="hidden xl:flex items-center gap-1 pl-4 border-l border-slate-200">
-            {stageProgress.map((st, idx) => {
+            {stageProgress.map((st) => {
               const isCurrent = st.stage === 'L4';
               const isDone = st.status === 'done';
               return (
                 <div 
                   key={st.stage}
-                  onClick={() => {
-                    setCoachIntent(st.stage);
-                    setCenterTab('diag');
-                  }}
+                  onClick={() => setCenterTab('diag')}
                   title={st.hint}
                   className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] cursor-pointer transition-all ${
                     isCurrent
@@ -363,286 +378,79 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
           </button>
 
           <button
-            onClick={() => setChatCollapsed(!chatCollapsed)}
-            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-              !chatCollapsed 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+            onClick={toggleDrawer}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer border ${
+              drawerOpen
+                ? 'bg-indigo-600 border-indigo-600 text-white font-semibold'
+                : 'text-slate-700 bg-white hover:bg-slate-50 border-slate-200 shadow-2xs'
             }`}
-            title={chatCollapsed ? '展开 AI 教练常驻辅导' : '折叠 AI 教练'}
+            title="打开版本历史与快照抽屉"
           >
-            <Bot className="w-4 h-4" />
+            <History className="w-3.5 h-3.5 text-indigo-600" />
+            <span>版本历史</span>
           </button>
         </div>
       </div>
 
-      {/* ================= 2. Three-Column Main Container ================= */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        
-        {/* ================= Left Activity Sidebar (Navigation + Sub-panel) ================= */}
-        <div className="w-72 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
-          {/* Side View Navigation Tabs */}
-          <div className="grid grid-cols-4 border-b border-slate-200 bg-slate-50/80 text-xs">
+      {/* ================= 1.5 任务上下文条（项目工作台跳转带入，0908-16） ================= */}
+      {taskContext && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-1.5 flex items-center gap-2.5 text-xs text-amber-900 flex-shrink-0 z-10">
+          <Target className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+          <span>正在执行任务：</span>
+          <b className="truncate max-w-md">{taskContext.title}</b>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 whitespace-nowrap">
+            {taskContext.sourceLabel}
+          </span>
+          {taskContext.chapterId && (
             <button
-              onClick={() => setSideView('todo')}
-              className={`py-2.5 flex flex-col items-center gap-1 border-b-2 font-medium transition-all cursor-pointer ${
-                sideView === 'todo'
-                  ? 'border-indigo-600 text-indigo-600 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+              onClick={jumpToTaskChapter}
+              className="px-2 py-0.5 rounded-md bg-white border border-amber-300 text-amber-800 text-[11px] hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <CheckSquare className="w-4 h-4" />
-              <span className="text-[11px]">任务待办</span>
+              → 跳转关联章节
             </button>
-            <button
-              onClick={() => setSideView('files')}
-              className={`py-2.5 flex flex-col items-center gap-1 border-b-2 font-medium transition-all cursor-pointer ${
-                sideView === 'files'
-                  ? 'border-indigo-600 text-indigo-600 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span className="text-[11px]">材料资产</span>
-            </button>
-            <button
-              onClick={() => setSideView('versions')}
-              className={`py-2.5 flex flex-col items-center gap-1 border-b-2 font-medium transition-all cursor-pointer ${
-                sideView === 'versions'
-                  ? 'border-indigo-600 text-indigo-600 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <GitBranch className="w-4 h-4" />
-              <span className="text-[11px]">版本快照</span>
-            </button>
-            <button
-              onClick={() => setSideView('archive')}
-              className={`py-2.5 flex flex-col items-center gap-1 border-b-2 font-medium transition-all cursor-pointer ${
-                sideView === 'archive'
-                  ? 'border-indigo-600 text-indigo-600 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <History className="w-4 h-4" />
-              <span className="text-[11px]">大事记</span>
-            </button>
-          </div>
-
-          {/* Side Content Area */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            
-            {/* View 1: Dynamic Todos */}
-            {sideView === 'todo' && (
-              <div className="space-y-3">
-                {/* Progress Summary */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
-                    <span>L4 阶段攻坚推进率</span>
-                    <span className="text-indigo-600 font-mono">{todoProgressPercent}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-                      style={{ width: `${todoProgressPercent}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                    <span>已完成 {completedTodosCount} / {todos.length} 项待办</span>
-                    <button
-                      onClick={handleAiGenerateTodos}
-                      className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      AI 智能生成
-                    </button>
-                  </div>
-                </div>
-
-                {/* Add Todo Button */}
-                <button
-                  onClick={() => setCreateTodoModalOpen(true)}
-                  className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-dashed border-slate-300 hover:border-indigo-400 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>添加阶段优化任务</span>
-                </button>
-
-                {/* Todo List Items */}
-                <div className="space-y-2">
-                  {todos.map(td => (
-                    <div
-                      key={td.id}
-                      className={`p-2.5 rounded-xl border transition-all ${
-                        td.completed 
-                          ? 'bg-slate-50/70 border-slate-200 text-slate-400' 
-                          : 'bg-white border-slate-200/90 shadow-2xs hover:border-indigo-300'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <input
-                          type="checkbox"
-                          checked={td.completed}
-                          onChange={() => handleToggleTodo(td.id)}
-                          className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs leading-relaxed ${td.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}`}>
-                            {td.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
-                            <span className="font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                              {td.stage}
-                            </span>
-                            {td.assignee && <span>责: {td.assignee}</span>}
-                            {td.chapterRef && <span className="truncate">{td.chapterRef}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* View 2: Multi-Modal Files */}
-            {sideView === 'files' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">材料注册表 ({files.length})</span>
-                  <button
-                    onClick={() => setUploadModalOpen(true)}
-                    className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    登记新材料
-                  </button>
-                </div>
-
-                <div className="space-y-1.5">
-                  {files.map(f => {
-                    const isSelected = activeFile?.id === f.id;
-                    return (
-                      <div
-                        key={f.id}
-                        onClick={() => {
-                          setActiveFile(f);
-                          setCenterTab('file');
-                        }}
-                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-indigo-50 border-indigo-300 shadow-2xs'
-                            : 'bg-white border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-1 mb-1">
-                          <span className="font-semibold text-slate-800 line-clamp-1">{f.name}</span>
-                          {f.badge && (
-                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded-full whitespace-nowrap">
-                              {f.badge}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] text-slate-400">
-                          <span>{f.category}</span>
-                          <span>{(f.size / 1024).toFixed(0)} KB · {f.ext.toUpperCase()}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* View 3: Versions & Snapshots */}
-            {sideView === 'versions' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-700">快照与分支历史</span>
-                  <button
-                    onClick={() => setDiffModalOpen(true)}
-                    className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 cursor-pointer"
-                  >
-                    <GitBranch className="w-3.5 h-3.5" />
-                    对比 Diff
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {versions.map(ver => (
-                    <div
-                      key={ver.versionId}
-                      className={`p-3 rounded-xl border text-xs transition-all ${
-                        ver.versionId === currentVersionId
-                          ? 'bg-indigo-50/70 border-indigo-300 shadow-2xs'
-                          : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${
-                            ver.versionType === 'milestone' ? 'bg-amber-500' : 'bg-indigo-500'
-                          }`} />
-                          <span className="font-bold text-slate-800">{ver.label}</span>
-                        </div>
-                        {ver.total && (
-                          <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">
-                            {ver.total}分
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 my-1">
-                        {ver.commitMsg}
-                      </p>
-                      <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <span>{ver.createdAt}</span>
-                        <span>分支: {ver.branchName || 'main'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* View 4: Archive Events Timeline */}
-            {sideView === 'archive' && (
-              <div className="space-y-4 text-xs">
-                <div className="text-xs font-bold text-slate-700">项目全息大事记</div>
-                <div className="relative pl-5 border-l-2 border-slate-200 space-y-4">
-                  <div className="relative">
-                    <div className="absolute -left-[25px] top-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white ring-2 ring-emerald-100" />
-                    <div className="font-bold text-slate-800">2026-09-04 · 获得两家封测上市龙头65万元POC合同款</div>
-                    <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                      长三角灯塔客户完成1200小时无故障试跑，全检节拍压缩至0.18秒，签署采购备忘录。
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[25px] top-0.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white ring-2 ring-indigo-100" />
-                    <div className="font-bold text-slate-800">2026-08-28 · 取得国家机器人与精密仪器检验(CNAS)认证</div>
-                    <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                      国家权威检测机构出具红色公章报告，过杀率0.08%，检出率99.6%。
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[25px] top-0.5 w-3 h-3 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-100" />
-                    <div className="font-bold text-slate-800">2026-08-15 · 荣膺省级创新大赛金奖</div>
-                    <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                      全省高教主赛道研究生创意组总分第一名，直通全国总决赛争夺金奖。
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute -left-[25px] top-0.5 w-3 h-3 rounded-full bg-slate-400 border-2 border-white" />
-                    <div className="font-bold text-slate-800">2026-06-10 · 校级重点孵化立项</div>
-                    <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                      光学工程系师生共创团队完成第一代原理样机装配与高校科技成果排他转让批复。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
+          <button
+            onClick={handleCompleteTask}
+            className="px-2 py-0.5 rounded-md bg-emerald-600 border border-emerald-600 text-white text-[11px] hover:bg-emerald-700 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1"
+          >
+            <Check className="w-3 h-3" />
+            完成并回写待办
+          </button>
+          <button
+            onClick={() => onDismissTask?.()}
+            className="ml-auto p-0.5 rounded text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+            title="关闭任务条"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
+      )}
 
+      {/* ================= 1.6 快照只读预览提示条（选中历史快照联动） ================= */}
+      {viewingVersionId && (
+        <div className="bg-slate-800 text-white px-4 py-1.5 flex items-center gap-2.5 text-xs flex-shrink-0 z-10">
+          <Eye className="w-3.5 h-3.5 text-amber-300" />
+          <span>
+            正在查看快照 <b className="font-mono">{viewingVersionId}</b>（只读预览）
+            {versions.find(v => v.versionId === viewingVersionId)?.total != null && (
+              <span className="ml-1.5 text-emerald-300 font-mono">
+                {versions.find(v => v.versionId === viewingVersionId)?.total} 分
+              </span>
+            )}
+          </span>
+          <button
+            onClick={exitViewSnapshot}
+            className="ml-auto px-2.5 py-0.5 rounded-md bg-white/10 border border-white/20 hover:bg-white/20 text-[11px] transition-colors cursor-pointer flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" />
+            返回当前编辑
+          </button>
+        </div>
+      )}
+
+      {/* ================= 2. Two-Column Main Container（中 + 右，0908-16） ================= */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
+        
         {/* ================= Center Main Column (Tabs & Workspace) ================= */}
         <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
           {/* Center Tabs Bar */}
@@ -683,28 +491,15 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>六维评分详情</span>
               </button>
-
-              {activeFile && (
-                <button
-                  onClick={() => setCenterTab('file')}
-                  className={`h-full px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-                    centerTab === 'file'
-                      ? 'border-indigo-600 text-indigo-600 bg-white'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span className="truncate max-w-[120px]">{activeFile.name}</span>
-                </button>
-              )}
             </div>
 
-            {/* Center Tab Actions */}
+            {/* Center Tab Actions（快照查看态禁用编辑与导出） */}
             {centerTab === 'bp' && (
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setBpMode(m => m === 'preview' ? 'edit' : 'preview')}
-                  className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+                  disabled={!!viewingVersionId}
+                  className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {bpMode === 'preview' ? <Edit3 className="w-3 h-3 text-indigo-600" /> : <Eye className="w-3 h-3 text-indigo-600" />}
                   <span>{bpMode === 'preview' ? '切换源码编辑' : '切换排版预览'}</span>
@@ -743,10 +538,10 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
 
           {/* Center Workspace Content */}
           <div className="flex-1 overflow-y-auto bg-slate-50/50">
-            {/* TAB 1: BP Editor & Preview */}
+            {/* TAB 1: BP Editor & Preview（快照查看态为只读预览） */}
             {centerTab === 'bp' && (
               <div className="h-full flex flex-col p-6 max-w-5xl mx-auto">
-                {bpMode === 'edit' ? (
+                {bpMode === 'edit' && !viewingVersionId ? (
                   <div className="h-full flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                     <div className="p-3 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 flex items-center justify-between">
                       <span className="font-mono">Markdown 源码编辑模式 · 实时字数：{bpContent.length} 字</span>
@@ -755,7 +550,8 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
                     <textarea
                       value={bpContent}
                       onChange={(e) => setBpContent(e.target.value)}
-                      className="flex-1 p-6 font-mono text-xs text-slate-800 focus:outline-none resize-none leading-relaxed bg-white"
+                      readOnly={!!viewingVersionId}
+                      className={`flex-1 p-6 font-mono text-xs text-slate-800 focus:outline-none resize-none leading-relaxed ${viewingVersionId ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : 'bg-white'}`}
                       placeholder="在此直接编辑商业计划书..."
                     />
                   </div>
@@ -1014,16 +810,7 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
               </div>
             )}
 
-            {/* TAB 4: Active File Detail Viewer */}
-            {centerTab === 'file' && (
-              <ProjectFileViewer
-                file={activeFile}
-                allFiles={files}
-                onSelectFile={(f) => setActiveFile(f)}
-                onOpenBpEditor={() => setCenterTab('bp')}
-                onUploadClick={() => setUploadModalOpen(true)}
-              />
-            )}
+            {/* TAB 4: 文件查看器已随材料资产迁出工作台（→ 会话模块右侧独立工作区 + 项目工作台·项目文件夹，0908-16） */}
           </div>
 
           {/* Center Bottom Status Bar */}
@@ -1044,31 +831,13 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
           </div>
         </div>
 
-        {/* ================= Right Column: AI Coach Interactive Panel ================= */}
+        {/* ================= Right Column: AI Coach Interactive Panel（单主体，抽屉打开时被覆盖） ================= */}
         <div 
-          className={`bg-slate-50/90 border-l border-slate-200 flex flex-col transition-all duration-200 flex-shrink-0 ${
-            chatCollapsed ? 'w-12' : 'w-80 lg:w-96'
+          className={`w-80 lg:w-96 bg-slate-50/90 border-l border-slate-200 flex flex-col flex-shrink-0 transition-opacity duration-200 ${
+            drawerOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
-          {chatCollapsed ? (
-            <div className="h-full flex flex-col items-center py-4 space-y-4">
-              <div 
-                onClick={() => setChatCollapsed(false)}
-                className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center cursor-pointer shadow-sm hover:bg-indigo-700"
-                title="展开 AI 教练"
-              >
-                <Bot className="w-4 h-4" />
-              </div>
-              <button
-                onClick={() => setChatCollapsed(false)}
-                className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
-                title="展开"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col">
               {/* Chat Header */}
               <div className="p-3 px-4 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
@@ -1080,37 +849,25 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
                     <p className="text-[10px] text-slate-400">评委级视角 · 全生命周期靶向指导</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setChatCollapsed(true)}
-                    className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                    title="折叠抽屉"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
 
-              {/* Coach Intent Selector */}
-              <div className="p-2.5 px-4 bg-slate-100/70 border-b border-slate-200 flex items-center gap-2 text-xs">
-                <span className="text-[11px] text-slate-500 whitespace-nowrap">指导意图聚焦:</span>
-                <select
-                  value={coachIntent}
-                  onChange={(e) => {
-                    setCoachIntent(e.target.value);
-                    handleSendMessage(`切换指导意图为：${e.target.value}`);
-                  }}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="L1">L1 创意激发 · 选题与第一性原理</option>
-                  <option value="L2">L2 可行性验证 · 客户实测与POC</option>
-                  <option value="L3">L3 材料成型 · 12章架构自洽</option>
-                  <option value="L4">L4 打磨优化 · 巨头反制与增量提分</option>
-                  <option value="L5">L5 路演成型 · 8分钟答辩攻防</option>
-                  <option value="L6">L6 赛前冲刺 · 国赛背靠背终审</option>
-                  <option value="free">✦ 自由探究对话</option>
-                </select>
+              {/* Coach Intent：阶段徽章（0908-16：下拉选择器简化为阶段快捷徽章） */}
+              <div className="px-4 py-2 bg-slate-100/70 border-b border-slate-200 flex items-center gap-1.5 text-[11px] overflow-x-auto flex-shrink-0">
+                <span className="text-slate-500 whitespace-nowrap">意图聚焦:</span>
+                {stageProgress.map(st => (
+                  <button
+                    key={st.stage}
+                    onClick={() => setCenterTab('diag')}
+                    title={st.hint}
+                    className={`px-1.5 py-0.5 rounded whitespace-nowrap cursor-pointer transition-colors font-medium ${
+                      st.stage === 'L4'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                    }`}
+                  >
+                    {st.stage}
+                  </button>
+                ))}
               </div>
 
               {/* Chat Messages Stream */}
@@ -1195,7 +952,125 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
                 </div>
               </div>
             </div>
-          )}
+        </div>
+
+        {/* ================= 版本历史右缘抽屉（0908-16：顶栏按钮触发，覆盖右栏） ================= */}
+        {drawerOpen && (
+          <div
+            className="absolute inset-0 z-30 bg-slate-900/20"
+            onClick={toggleDrawer}
+          />
+        )}
+        <div
+          className={`absolute top-0 right-0 bottom-0 z-40 w-[380px] bg-white border-l border-slate-200 shadow-2xl flex flex-col transform transition-transform duration-200 ${
+            drawerOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {/* Drawer Header */}
+          <div className="p-3.5 px-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <History className="w-4 h-4 text-indigo-600" />
+                版本历史与快照
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">选中快照可在中栏只读预览 · 双版本可对比 diff</p>
+            </div>
+            <button
+              onClick={toggleDrawer}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="关闭抽屉"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Drawer Tools */}
+          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setDiffModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              对比所选两版
+            </button>
+            <button
+              onClick={handleSaveSnapshot}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5 text-indigo-600" />
+              存为快照
+            </button>
+          </div>
+
+          {/* Drawer Body: Version Timeline */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {versions.map(ver => {
+              const isCurrent = ver.versionId === currentVersionId;
+              const isViewing = ver.versionId === viewingVersionId;
+              return (
+                <div
+                  key={ver.versionId}
+                  onClick={() => handlePreviewVersion(ver)}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    isCurrent
+                      ? 'bg-indigo-50/70 border-indigo-300 shadow-2xs'
+                      : isViewing
+                      ? 'bg-amber-50 border-amber-400 shadow-2xs'
+                      : 'bg-white border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        ver.versionType === 'milestone' ? 'bg-amber-500' : 'bg-indigo-500'
+                      }`} />
+                      <span className="font-bold text-slate-800 text-xs truncate">{ver.label}</span>
+                      {isCurrent && (
+                        <span className="text-[9px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">当前编辑中</span>
+                      )}
+                      {isViewing && (
+                        <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">预览中</span>
+                      )}
+                    </div>
+                    {ver.total != null && (
+                      <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">
+                        {ver.total}分
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 my-1">
+                    {ver.commitMsg}
+                  </p>
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1.5 border-t border-slate-100">
+                    <span>{ver.createdAt}</span>
+                    <span>分支: {ver.branchName || 'main'}</span>
+                  </div>
+                  {/* 快照行内操作 */}
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDiffModalOpen(true); }}
+                      className="px-2 py-1 rounded-md text-[10px] font-semibold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <GitBranch className="w-3 h-3" />
+                      与当前对比
+                    </button>
+                    {!isCurrent && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRollbackTo(ver); }}
+                        className="px-2 py-1 rounded-md text-[10px] font-semibold text-rose-700 bg-white border border-rose-200 hover:bg-rose-50 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        回滚到此版
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <p className="text-[10px] text-slate-400 text-center pt-2">
+              ↑ 点击快照行 → 中栏进入只读预览并联动顶部提示条
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1205,24 +1080,6 @@ export const SceneGuidanceWorkbench: React.FC<SceneGuidanceWorkbenchProps> = ({
         onClose={() => setDiffModalOpen(false)}
         versions={versions}
         currentVersionId={currentVersionId}
-      />
-
-      <GuidanceUploadModal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        onUploadSuccess={(newFile) => {
-          setFiles([newFile, ...files]);
-          setActiveFile(newFile);
-          setCenterTab('file');
-        }}
-      />
-
-      <GuidanceCreateTodoModal
-        isOpen={createTodoModalOpen}
-        onClose={() => setCreateTodoModalOpen(false)}
-        onCreateTodo={(newTodo) => {
-          setTodos([newTodo, ...todos]);
-        }}
       />
     </div>
   );
