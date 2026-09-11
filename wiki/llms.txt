@@ -1,0 +1,53 @@
+# 双创赛事智能体 demo（shuangchuang-design-main）系统 Wiki
+
+> 面向 AI Coding 的可验证叙事知识库：以 2026-09-10 代码实测为唯一真源，覆盖 4 角色×13 视图、学生端四大功能模块、管理端工作台、AI 能力装配、业务数据模型与跨模块闭环。每页事实强制 Sources 行号引用。
+>
+> 读法：结构真源在 `structure.json`，页面在 `pages/<page_id>.md`；每页「事实」节每条均带 `Sources: [路径:行号]()`，可回代码逐条核对。
+> 行号口径：UTF-8 解码行数（与编辑器显示一致）。重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标页 + 其 related_pages 即可，不必全读。
+
+## 系统总览与骨架
+
+- [系统总览与四端门户](pages/page-system-overview.md): 「赛事打磨平台」是 2026 中国国际大学生创新大赛的校级培育决策平台，入口是一个四端（项目组成员 / 学校管理端 / 导师端 / Admin 端）统一登录网关，登录态落 localStorage，登录后按角色落到各自的默认首页。 _(importance: high)_
+- [应用骨架与全局布局](pages/page-app-shell.md): `App.tsx` 是整个 demo 的唯一壳层：一个三列结构（左 `Sidebar` / 中主内容区 / 右侧独立工作区）+ 顶栏 `TopHeader`，中间按 13 个 `TabType` 做条件渲染分发，右侧独立工作区只在 `coach` 下挂载并支持拖拽调宽与全屏。 _(importance: high)_
+- [角色×视图导航矩阵](pages/page-roles-navigation.md): 侧栏 `getNavGroups()` 用 `if (session.role === ...)` 硬编码了四套导航组，顶栏 `tabTitleMap` 用一张 `Record<TabType, {title, subtitle}>` 提供 13 个视图的标题与副题——这两处合起来就是「角色 → 可见视图 → 页... _(importance: high)_
+- [遗留与孤儿组件盘点](pages/page-legacy-code.md): `src/` 下有 7 个源文件**未被任何其它文件 import**（对全库 `from '...'` 语句扫描得出），属于早前版本留下的死代码——它们仍参与 TS 编译（`npm run lint` 会扫），但不在运行时链路上，**只记录、不信赖，开发时不要在其上叠加新功能**。 _(importance: low)_
+
+## 学生端功能（team_member）
+
+- [新建对话（金牌AI教练）](pages/page-coach.md): 学生端主模块，也是全库最大的单体组件（**2902 行**，UTF-8 行数口径）：一个会话式 AI 教练，内部同时承载空间/会话管理、专家-技能-连接器装配、多类咨询动作、富卡消息流、ReAct 实时过程渲染，以及 **4.1 ↔ 4.2/4.3 的深度调用与浅度调用协议**——会话历史与深/浅调用都是它的子功... _(importance: high)_
+- [项目工作台（my_project）](pages/page-workbench.md): 学生端首页（`my_project`），一个五子 tab 的聚合工作台：**动态待办（AI 诊断 + 专家工单双来源统一池）/ 专家辅导与督导工单 / AI 对标体检与短板 / 团队架构与合规审查 / 项目文件夹**——它是"任务入口"而非"任务执行地"，点「去执行」才会携载荷跳到全链路指导工作台。 _(importance: high)_
+- [全链路指导工作台（guidance_workbench）](pages/page-guidance.md): BP 打磨主阵地（**1086 行**，沉浸式满屏页）：顶栏放项目标签 + L1~L6 阶段 stepper + 四个快捷动作（保存快照 / 标为里程碑 / 版本对比 / 版本历史），中栏是三 tab（BP 12 章 / 全维诊断 / 六维评分），右栏是 AI 教练单主体；它是**全库唯一能接收跨页任务载荷（`G... _(importance: high)_
+- [模拟评审与答辩训练（defense_training）](pages/page-defense.md): 一个**四屏有限状态机**（selector → prep → session → report）的答辩实训模块：5 种训练模式 × 可配置评委席（单/多评委、3 级风格、轮次、单题时限），结束后产出六维雷达报告与逐轮复盘。 _(importance: high)_
+- [备赛捷径与当前参赛项目（全局部件）](pages/page-sidebar-widgets.md): 侧栏底部有两个**真·全局件**：**备赛捷径区**（2026 官方评审细则的全局入口，学生端与学校管理端共用，管理端另有两个额外入口）与**当前参赛项目切换器**（学生专属，切项目后全端联动）。两者物理上都在 `Sidebar.tsx` 里，但业务归属是"全局能力"，不是导航项。 _(importance: medium)_
+
+## 管理端工作台（school_admin）
+
+- [备赛数据驾驶舱（cockpit）](pages/page-cockpit.md): 学校管理端的默认落地页（`school_admin` 登录后进这里）与决策枢纽：一个 AI 决策横幅 + 五张 KPI 池卡 + 一级指标二级得分率热力 + 5 个迷你看板（赛道分布 / 辅导转化）+ A 级潜力池列表 + 异常停滞与合规预警。**全页数据只读、无写操作，所有下钻都是跳转到别的 tab 或打开项目... _(importance: high)_
+- [智能对标初筛与排名（screening）](pages/page-screening.md): 管理端的 2026 细则对标初筛页：**三个视图模式**（二级指标矩阵 / 综合梯队与金奖对标 / 合规一票否决拦截）× **四维筛选**（赛道 / 梯队 / 合规 / 关键词），点击任一行通过 `ProjectDetailDrawer` 下钻到六 tab 详情。 _(importance: high)_
+- [常态化辅导与调度（mentorship）](pages/page-mentorship.md): 管理端的导师调度台：左侧是「AI 短板定向匹配器 + Top 3 推荐 + 全量导师库」，右侧是「批次梯队任务下发中心」——**匹配算法是前端规则加权（80 基线 + 10/8/7 三项加分），不是模型打分**。 _(importance: medium)_
+- [辅导资产沉淀与督导（supervision）](pages/page-supervision.md): 工单流转闭环页，也是**导师端（`mentor`）的唯一落地页**：辅导录音 → AI 结构化转写 → 生成整改工单 → 学生交付 → 专家复核提分，四步全在一个右侧详情区里呈现；左侧另有校本避坑指南资产库。 _(importance: medium)_
+- [重点项目全流程看板（milestones）](pages/page-milestones.md): 五金阶段管线看板（**L1~L5**，与教练模块的 L1~L4、指导工作台的 L1~L6 都不同）：顶部是 5 张可点击的阶段卡（点击即筛选）、中部是各阶段均分跃迁曲线、下部是按健康度着色的项目卡片看板列，右上角可导出复盘材料。 _(importance: medium)_
+- [用户与团队架构管理](pages/page-org-mgmt.md): 管理端的组织治理双页：`users_management` 是**五角色用户表**（启停 / 重置密码 / 新增用户），`teams_management` 是**团队架构与合规审查**（三合规体检 + 成员明细 + 催办）。 _(importance: medium)_
+
+## 资源智库（校内/平台双版本）
+
+- [导师库与知识库（校内/平台双版本）](pages/page-pools-kb.md): 同一个 `TabType` 按角色渲染**两套完全不同的组件与数据**：`mentors_pool` 与 `knowledge_base` 对 `school_admin` 走校内版（`MentorPoolManagement` / `KnowledgeBaseManagement`），对 `system_adm... _(importance: medium)_
+
+## AI 能力装配
+
+- [AI 能力装配层（专家/技能/连接器）](pages/page-ai-agents.md): 静态装配模型层：**5 位专家智能体 × 8 项教练技能 × 5 个 MCP 连接器**，三类**各自独立配置、不做强制关联**；真正渲染装配 UI 的是 `ChatComposer` 的三个弹出菜单，而选中态的持有者是 `SceneAICoach`。 _(importance: medium)_
+
+## 业务数据与生命周期
+
+- [业务数据模型全景](pages/page-data-model.md): `src/types.ts`（513 行）定义全部业务实体，并在 **239 行处用注释分界**为"管理平台域"与"shuangchuang-AI 域"；此外 guidance / defense / workbench 三个子目录各带自己的类型文件。**最需要注意的不是字段本身，而是同一个业务概念存在多套并存模... _(importance: high)_
+- [L1~L6 生命周期与版本体系](pages/page-lifecycle-versions.md): 本页做两件事：① **把三套并存的阶段口径摊平对照**（教练 L1~L4 / 里程碑 L1~L5 / 指导工作台 L1~L6），如实记录 demo 的口径不一致；② 说明版本体系——**快照 / 里程碑 / 回滚 / diff 全量只在指导工作台做**，项目文件夹的版本线是只读镜像。 _(importance: high)_
+
+## 跨模块联动与闭环
+
+- [跨模块联动与闭环](pages/page-cross-link.md): 全库一共只有 **4 条真实的跨模块联动链**（其余"联动"都是同页内跳转）：① 动态待办「去执行」携载荷跳工作台（**全库唯一带载荷的跨模块链**）② 切当前参赛项目全端联动 ③ 教练产物 → 右侧独立工作区 / 项目文件夹待归档 ④ 工单状态 App 级提升（学生提交 → 导师复核）。本页把四条链的每一跳都标... _(importance: high)_
+
+## 使用约定
+
+- 改代码前：先读目标模块页 + 其 `related_pages`（邻接页用于防联动漏改），页面「规则与边界」节是开发硬约束。
+- 页面「事实」节每条均带行号引用，与代码不一致时**以代码为准并回写页面**。
+- 校验与重建：`python wiki/gen_wiki_tools.py validate` / `index`。

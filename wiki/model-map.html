@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>结构建模图 · 双创赛事智能体 demo Wiki</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --line:#e4e9f0; --soft:#eef2f7;
+  --ink:#0f172a; --ink2:#334155; --muted:#64748b; --muted2:#94a3b8;
+  --brand:#4f46e5; --brand2:#0284c7;
+  --high:#4f46e5; --medium:#0891b2; --low:#94a3b8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.65 "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1660px;margin:0 auto;padding:30px 26px 64px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04);margin-bottom:20px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:16px 22px 12px;border-bottom:1px solid var(--soft);flex-wrap:wrap}
+.card-h h2{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px}
+.card-h .hint{font-size:12px;color:var(--muted2)}
+.card-b{padding:20px 22px}
+
+/* header */
+header.top{margin-bottom:22px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;
+  letter-spacing:.6px;color:var(--brand);background:#eef2ff;border:1px solid #dfe3ff;
+  padding:4px 11px;border-radius:999px;text-transform:uppercase}
+header.top h1{margin:14px 0 6px;font-size:27px;line-height:1.3;letter-spacing:-.4px}
+header.top p.sub{margin:0;color:var(--muted);font-size:13.5px;max-width:1040px}
+.kpis{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+.kpi{flex:1 1 168px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:13px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.kpi .n{font-size:24px;font-weight:750;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11.5px;color:var(--muted);margin-top:3px}
+.kpi.k-brand .n{color:var(--brand)} .kpi.k-brand2 .n{color:var(--brand2)}
+.kpi.k-high .n{color:var(--high)} .kpi.k-mid .n{color:var(--medium)}
+
+/* graph */
+.svgwrap{padding:14px 10px 6px;overflow-x:auto}
+svg#graph{display:block;width:100%;height:auto;min-width:1180px}
+.legend{display:flex;flex-wrap:wrap;gap:20px;padding:6px 22px 18px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--ink2);font-weight:600}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.node{cursor:pointer}
+.node .box{fill:#fff;stroke:#dfe5ee;stroke-width:1.2;transition:fill .12s,stroke .12s}
+.node:hover .box{fill:#f7f9ff;stroke:#c7d2fe}
+.node .lbl{font-size:11px;fill:#1e293b;font-weight:600}
+.node.sel .box{fill:#eef2ff;stroke:#4f46e5;stroke-width:2}
+.node.sel .lbl{fill:#3730a3}
+.node.rel .box{fill:#f0f9ff;stroke:#38bdf8;stroke-width:1.6}
+.edge{fill:none;stroke:#aab8cf;stroke-width:1.3;transition:stroke .12s,stroke-width .12s}
+.edge.on{stroke:#4f46e5;stroke-width:2.2}
+.edge.dim{stroke:#e8eef6;stroke-width:1}
+.secbg{fill:#f7f9fc;stroke:#e9eff7;stroke-width:1;rx:12}
+.sechdr{font-size:11.5px;font-weight:700;fill:#3f4d63}
+.secline{stroke:#dfe7f1;stroke-width:1}
+h3.sec{font-size:11.5px;font-weight:700;color:var(--muted2);letter-spacing:.7px;margin:0}
+
+/* grid */
+.grid2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:1180px){.grid2{grid-template-columns:minmax(0,1fr)}}
+
+/* detail */
+.d-title{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.d-title h2{margin:0;font-size:19px;letter-spacing:-.2px}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.b-high{background:#eef2ff;color:#4338ca;border:1px solid #dfe3ff}
+.b-medium{background:#ecfeff;color:#0e7490;border:1px solid #cffafe}
+.b-low{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+.b-sec{background:#f8fafc;color:#475569;border:1px solid #e8edf4;font-family:ui-monospace,Menlo,monospace;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.oneliner{margin:14px 0 0;padding:12px 15px;background:#f8fafc;border:1px solid var(--soft);
+  border-left:3px solid var(--brand);border-radius:10px;color:var(--ink2);font-size:13.5px}
+.subh{font-size:11.5px;font-weight:700;color:var(--muted2);letter-spacing:.7px;
+  margin:20px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--soft)}
+.chk{display:flex;flex-wrap:wrap;gap:8px}
+.chk span{font-size:12px;padding:4px 10px;border-radius:8px;background:#ecfdf5;
+  color:#047857;border:1px solid #d1fae5;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:12px;padding:5px 11px;border-radius:9px;background:#f8fafc;
+  border:1px solid var(--line);color:var(--ink2);cursor:pointer;transition:all .12s}
+.chip:hover{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+.srclist{max-height:216px;overflow:auto;border:1px solid var(--soft);border-radius:10px;background:#fcfdfe}
+.srclist div{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#475569;
+  padding:5px 12px;border-bottom:1px solid #f1f5f9}
+.srclist div:last-child{border-bottom:0}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.nums div{background:#f8fafc;border:1px solid var(--soft);border-radius:10px;padding:10px 12px}
+.nums .n{font-size:19px;font-weight:750;font-variant-numeric:tabular-nums}
+.nums .l{font-size:11px;color:var(--muted)}
+
+/* stats bars */
+.bar{margin-bottom:11px}
+.bar .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:4px}
+.bar .lbl span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.bar .t{height:7px;background:#f1f5f9;border-radius:999px;overflow:hidden}
+.bar .f{height:100%;border-radius:999px;background:linear-gradient(90deg,#6366f1,#0ea5e9)}
+.bar.mono .lbl span:first-child{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{position:sticky;top:0;background:#fafbfd;text-align:left;font-size:11.5px;font-weight:700;
+  color:var(--muted);letter-spacing:.4px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--soft);vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#f8fafc}
+tbody tr.sel{background:#eef2ff}
+td.id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--muted)}
+td.n{font-variant-numeric:tabular-nums;color:var(--ink2)}
+.tblwrap{overflow:auto;max-height:660px}
+footer{margin-top:26px;color:var(--muted2);font-size:12px;line-height:1.9}
+footer code{background:#eef2f7;padding:1.5px 6px;border-radius:5px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;color:#475569}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">LLM Wiki · 结构建模</div>
+    <h1>双创赛事智能体 demo 系统 Wiki</h1>
+    <p class="sub" id="subtitle"></p>
+    <div class="kpis" id="kpis"></div>
+  </header>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>分区 × 页面 结构图</h2>
+      <span class="hint">点击任一节点下钻该页详情 · 连线方向为 related_pages（邻接导航，用于防联动漏改）</span>
+    </div>
+    <div class="svgwrap"><svg id="graph" role="img" aria-label="结构建模邻接图"></svg></div>
+    <div class="legend">
+      <span class="lg"><b>重要度</b></span>
+      <span class="lg"><i class="dot" style="background:var(--high)"></i>high（进入上下文预算优先）</span>
+      <span class="lg"><i class="dot" style="background:var(--medium)"></i>medium</span>
+      <span class="lg"><i class="dot" style="background:var(--low)"></i>low（按需查阅）</span>
+      <span class="lg"><b>连线</b>&nbsp;A → B 表示「改 A 时需连带核对 B」</span>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-h"><h2>页面详情</h2><span class="hint" id="d-hint">默认显示阅读指引，点击图中节点或下方表格行切换</span></div>
+      <div class="card-b" id="detail"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>结构统计</h2><span class="hint">全部由 structure.json 与页面 frontmatter 实时推导</span></div>
+      <div class="card-b">
+        <h3 class="sec">分区页数分布</h3>
+        <div id="st-sec" style="margin-top:10px"></div>
+        <h3 class="sec" style="margin-top:20px">重要度分布</h3>
+        <div id="st-imp" style="margin-top:10px"></div>
+        <h3 class="sec" style="margin-top:20px">引用条数 Top 8 页面</h3>
+        <div id="st-cit" style="margin-top:10px"></div>
+        <h3 class="sec" style="margin-top:20px">被最多页面共用的源文件 Top 6</h3>
+        <div id="st-src" style="margin-top:10px"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-h"><h2>20 页总表</h2><span class="hint">点击行下钻 · 五节齐备表示该页固定结构完整</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr>
+        <th>#</th><th>页面</th><th>page_id</th><th>分区</th><th>重要度</th>
+        <th>事实条数</th><th>引用条数</th><th>引用源文件</th><th>邻接页</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </section>
+
+  <footer>
+    结构真源 <code>wiki/structure.json</code> · 页面 <code>wiki/pages/&lt;page_id&gt;.md</code> ·
+    索引 <code>wiki/llms.txt</code> · 本图由 <code>python wiki/gen_wiki_tools.py map</code> 生成<br />
+    行号口径为 UTF-8 解码行数（与编辑器显示一致）；页面「事实」节每条均带 <code>Sources: [路径:行号]()</code>，可回代码逐条核对。
+  </footer>
+</div>
+
+<script>
+const DATA = {"title": "双创赛事智能体 demo（shuangchuang-design-main）系统 Wiki", "description": "面向 AI Coding 的可验证叙事知识库：以 2026-09-10 代码实测为唯一真源，覆盖 4 角色×13 视图、学生端四大功能模块、管理端工作台、AI 能力装配、业务数据模型与跨模块闭环。每页事实强制 Sources 行号引用。", "coldStart": "纯代码冷启动（未参考任何既有调研文档/本体文件）", "lineNumberConvention": "行号以 UTF-8 解码口径（PowerShell Get-Content -Encoding UTF8 / Python read_text utf-8）统计，与编辑器显示一致", "sections": [{"id": "sec-system", "title": "系统总览与骨架", "pages": ["page-system-overview", "page-app-shell", "page-roles-navigation", "page-legacy-code"]}, {"id": "sec-student", "title": "学生端功能（team_member）", "pages": ["page-coach", "page-workbench", "page-guidance", "page-defense", "page-sidebar-widgets"]}, {"id": "sec-admin", "title": "管理端工作台（school_admin）", "pages": ["page-cockpit", "page-screening", "page-mentorship", "page-supervision", "page-milestones", "page-org-mgmt"]}, {"id": "sec-platform", "title": "资源智库（校内/平台双版本）", "pages": ["page-pools-kb"]}, {"id": "sec-ai", "title": "AI 能力装配", "pages": ["page-ai-agents"]}, {"id": "sec-data", "title": "业务数据与生命周期", "pages": ["page-data-model", "page-lifecycle-versions"]}, {"id": "sec-flow", "title": "跨模块联动与闭环", "pages": ["page-cross-link"]}], "pages": [{"id": "page-system-overview", "title": "系统总览与四端门户", "description": "产品定位（2026 大赛培育决策平台）、4 角色（team_member/school_admin/mentor/system_admin）登录网关、会话持久化与默认落地页、演示预置账号。", "section": "sec-system", "importance": "high", "oneLiner": "「赛事打磨平台」是 2026 中国国际大学生创新大赛的校级培育决策平台，入口是一个四端（项目组成员 / 学校管理端 / 导师端 / Admin 端）统一登录网关，登录态落 localStorage，登录后按角色落到各自的默认首页。", "sources": ["src/App.tsx", "src/components/LoginPage.tsx", "src/types.ts", "src/data/mockUniversities.ts"], "related_pages": ["page-roles-navigation", "page-app-shell"], "citations": 23, "citedFiles": 6, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 17}, {"id": "page-app-shell", "title": "应用骨架与全局布局", "description": "三列布局（左 Sidebar / 中主区 / 右独立工作区）、13 个 TabType 路由分发、右侧工作区 6:4 拖拽与 Ctrl+B/Ctrl+J/Esc 快捷键、5 个全局弹层（规则/导入/导出/项目抽屉/飞轮）。", "section": "sec-system", "importance": "high", "oneLiner": "`App.tsx` 是整个 demo 的唯一壳层：一个三列结构（左 `Sidebar` / 中主内容区 / 右侧独立工作区）+ 顶栏 `TopHeader`，中间按 13 个 `TabType` 做条件渲染分发，右侧独立工作区只在 `coach` 下挂载并支持拖拽调宽与全屏。", "sources": ["src/App.tsx", "src/main.tsx", "src/components/Sidebar.tsx", "src/components/TopHeader.tsx", "src/components/RightWorkspacePanel.tsx", "src/components/SharedWorkspaceDrawer.tsx", "src/components/OperationFlywheelModal.tsx", "src/components/RulesConfigModal.tsx", "src/components/BatchImportModal.tsx", "src/components/ReportExportModal.tsx", "src/components/ProjectDetailDrawer.tsx"], "related_pages": ["page-roles-navigation", "page-system-overview", "page-cross-link"], "citations": 27, "citedFiles": 6, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 24}, {"id": "page-roles-navigation", "title": "角色×视图导航矩阵", "description": "Sidebar.getNavGroups 四角色导航组全量定义、TabType 13 视图枚举、TopHeader 标题/副题映射、学生端全局项目切换器、会话历史区、备赛捷径区。", "section": "sec-system", "importance": "high", "oneLiner": "侧栏 `getNavGroups()` 用 `if (session.role === ...)` 硬编码了四套导航组，顶栏 `tabTitleMap` 用一张 `Record<TabType, {title, subtitle}>` 提供 13 个视图的标题与副题——这两处合起来就是「角色 → 可见视图 → 页面标题」的完整定义。", "sources": ["src/components/Sidebar.tsx", "src/components/TopHeader.tsx", "src/App.tsx"], "related_pages": ["page-system-overview", "page-sidebar-widgets"], "citations": 26, "citedFiles": 4, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 19}, {"id": "page-legacy-code", "title": "遗留与孤儿组件盘点", "description": "经全库 import 扫描确认未被引用的 7 个文件（Navbar/SceneDashboard/SceneScreening/SidebarSpaceManager/ProjectFileViewer/mockData/mockSpaces）——开发时勿在其上叠加，改造前先确认去留。", "section": "sec-system", "importance": "low", "oneLiner": "`src/` 下有 7 个源文件**未被任何其它文件 import**（对全库 `from '...'` 语句扫描得出），属于早前版本留下的死代码——它们仍参与 TS 编译（`npm run lint` 会扫），但不在运行时链路上，**只记录、不信赖，开发时不要在其上叠加新功能**。", "sources": ["src/App.tsx", "src/components/Navbar.tsx", "src/components/SceneDashboard.tsx", "src/components/SceneScreening.tsx", "src/components/SidebarSpaceManager.tsx", "src/components/guidance/ProjectFileViewer.tsx", "src/data/mockData.ts", "src/data/mockSpaces.ts", "src/data/mockSpacesData.ts"], "related_pages": ["page-app-shell"], "citations": 19, "citedFiles": 12, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 13}, {"id": "page-coach", "title": "新建对话（金牌AI教练）", "description": "学生端主模块（全库最大单体 2902 行，含全部子功能）：空间/会话管理（含侧栏会话历史区联动）、装配区（专家/技能/连接器菜单）、6 类咨询动作、14 种富卡消息流、ReAct 实时过程、关键词意图路由、深/浅调用协议（4.1↔4.2/4.3：深度五步流+浅度三原子+四件套弹层）、行动项与产物联动。", "section": "sec-student", "importance": "high", "oneLiner": "学生端主模块，也是全库最大的单体组件（**2902 行**，UTF-8 行数口径）：一个会话式 AI 教练，内部同时承载空间/会话管理、专家-技能-连接器装配、多类咨询动作、富卡消息流、ReAct 实时过程渲染，以及 **4.1 ↔ 4.2/4.3 的深度调用与浅度调用协议**——会话历史与深/浅调用都是它的子功能，不单独立页。", "sources": ["src/components/SceneAICoach.tsx", "src/components/ChatComposer.tsx", "src/components/SharedWorkspaceDrawer.tsx", "src/components/ReActProcessView.tsx", "src/components/AtomicCallCard.tsx", "src/components/DeepCallConfirmModal.tsx", "src/components/DeepCallConfigCard.tsx", "src/components/DeepCallExecutionModal.tsx", "src/components/DeepCallResultCard.tsx", "src/components/AiMascot.tsx", "src/data/mockCoachData.ts", "src/data/mockCoachAgentsAndSkills.ts", "src/data/mockSessionMessages.ts", "src/data/mockSpaceData.ts", "src/types.ts"], "related_pages": ["page-ai-agents", "page-sidebar-widgets", "page-defense", "page-cross-link"], "citations": 67, "citedFiles": 12, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 49}, {"id": "page-workbench", "title": "项目工作台（my_project）", "description": "学生主页五子 tab（动态待办/工单/全维诊断/团队/项目文件夹）：双源待办（AI 诊断+专家工单）与「去执行」载荷跳转、工单三态与交付提交表单、项目文件夹三来源注册表+版本线+大事记。", "section": "sec-student", "importance": "high", "oneLiner": "学生端首页（`my_project`），一个五子 tab 的聚合工作台：**动态待办（AI 诊断 + 专家工单双来源统一池）/ 专家辅导与督导工单 / AI 对标体检与短板 / 团队架构与合规审查 / 项目文件夹**——它是\"任务入口\"而非\"任务执行地\"，点「去执行」才会携载荷跳到全链路指导工作台。", "sources": ["src/components/ProjectMemberWorkbench.tsx", "src/components/workbench/workbenchMockData.ts", "src/data/mockUsersAndTeams.ts", "src/data/mockMentors.ts", "src/types.ts"], "related_pages": ["page-guidance", "page-supervision", "page-cross-link"], "citations": 40, "citedFiles": 5, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 30}, {"id": "page-guidance", "title": "全链路指导工作台（guidance_workbench）", "description": "BP 打磨主阵地：中栏三 tab（BP 12 章/全维诊断/六维评分）+ 顶栏四快捷（快照/里程碑/对比/历史）+ 任务上下文条（0908-16 闭环）+ 快照只读预览 + 右栏 AI 教练 + 版本历史抽屉与 diff 弹层。", "section": "sec-student", "importance": "high", "oneLiner": "BP 打磨主阵地（**1086 行**，沉浸式满屏页）：顶栏放项目标签 + L1~L6 阶段 stepper + 四个快捷动作（保存快照 / 标为里程碑 / 版本对比 / 版本历史），中栏是三 tab（BP 12 章 / 全维诊断 / 六维评分），右栏是 AI 教练单主体；它是**全库唯一能接收跨页任务载荷（`GuidanceTaskContext`）的页面**。", "sources": ["src/components/SceneGuidanceWorkbench.tsx", "src/components/guidance/guidanceMockData.ts", "src/components/guidance/guidanceTypes.ts", "src/components/guidance/GuidanceModals.tsx", "src/App.tsx"], "related_pages": ["page-workbench", "page-lifecycle-versions", "page-cross-link"], "citations": 53, "citedFiles": 6, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 38}, {"id": "page-defense", "title": "模拟评审与答辩训练（defense_training）", "description": "四屏状态机（selector→prep→session→report）+ 5 训练模式（标准/电梯/高压追问/弱项突击/对抗性）+ 评委席配置（单/多评委·3 级风格·轮次·单题时限）+ 六维雷达报告与逐轮复盘。", "section": "sec-student", "importance": "high", "oneLiner": "一个**四屏有限状态机**（selector → prep → session → report）的答辩实训模块：5 种训练模式 × 可配置评委席（单/多评委、3 级风格、轮次、单题时限），结束后产出六维雷达报告与逐轮复盘。", "sources": ["src/components/SceneDefenseTraining.tsx", "src/components/defense/DefenseSelectorScreen.tsx", "src/components/defense/DefensePrepScreen.tsx", "src/components/defense/DefenseSessionScreen.tsx", "src/components/defense/DefenseReportScreen.tsx", "src/components/defense/DefenseCharts.tsx", "src/components/defense/defenseTypes.ts", "src/components/defense/defenseConstants.ts", "src/types.ts"], "related_pages": ["page-coach", "page-guidance"], "citations": 50, "citedFiles": 10, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 28}, {"id": "page-sidebar-widgets", "title": "备赛捷径与当前参赛项目（全局部件）", "description": "侧栏两个真全局件：备赛捷径（2026 评审细则弹窗的全局入口，学生/管理端共用）与当前参赛项目切换器（学生专属，切项目全端联动：工作台门卡/答辩舱项目卡/教练空间物料）。注：会话历史属教练模块（见 page-coach），不在此页。", "section": "sec-student", "importance": "medium", "oneLiner": "侧栏底部有两个**真·全局件**：**备赛捷径区**（2026 官方评审细则的全局入口，学生端与学校管理端共用，管理端另有两个额外入口）与**当前参赛项目切换器**（学生专属，切项目后全端联动）。两者物理上都在 `Sidebar.tsx` 里，但业务归属是\"全局能力\"，不是导航项。", "sources": ["src/components/Sidebar.tsx", "src/components/TopHeader.tsx", "src/components/RulesConfigModal.tsx", "src/data/rules2026.ts", "src/App.tsx"], "related_pages": ["page-roles-navigation", "page-cross-link", "page-coach"], "citations": 44, "citedFiles": 7, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 26}, {"id": "page-cockpit", "title": "备赛数据驾驶舱（cockpit）", "description": "管理端决策枢纽：AI 决策横幅、五 KPI 池卡（总数/A 级金池/B 级/C·D/闭环率）、四一级指标二级得分率热力、赛道分布与辅导转化、A 级潜力池列表、异常停滞与合规预警。", "section": "sec-admin", "importance": "high", "oneLiner": "学校管理端的默认落地页（`school_admin` 登录后进这里）与决策枢纽：一个 AI 决策横幅 + 五张 KPI 池卡 + 一级指标二级得分率热力 + 5 个迷你看板（赛道分布 / 辅导转化）+ A 级潜力池列表 + 异常停滞与合规预警。**全页数据只读、无写操作，所有下钻都是跳转到别的 tab 或打开项目抽屉。**", "sources": ["src/components/CockpitDashboard.tsx", "src/data/mockProjects.ts", "src/App.tsx"], "related_pages": ["page-screening", "page-milestones", "page-supervision"], "citations": 26, "citedFiles": 5, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 18}, {"id": "page-screening", "title": "智能对标初筛与排名（screening）", "description": "2026 细则初筛：三视图模式（二级指标矩阵/综合对标总表/合规一票否决拦截）、赛道×梯队×合规×关键词四维筛选、项目抽屉下钻（六 tab：评分/雷达/逻辑断层/督导/合规/材料）。", "section": "sec-admin", "importance": "high", "oneLiner": "管理端的 2026 细则对标初筛页：**三个视图模式**（二级指标矩阵 / 综合梯队与金奖对标 / 合规一票否决拦截）× **四维筛选**（赛道 / 梯队 / 合规 / 关键词），点击任一行通过 `ProjectDetailDrawer` 下钻到六 tab 详情。", "sources": ["src/components/ScreeningHub.tsx", "src/components/ProjectDetailDrawer.tsx", "src/data/mockProjects.ts", "src/data/rules2026.ts", "src/types.ts"], "related_pages": ["page-cockpit", "page-data-model", "page-org-mgmt"], "citations": 35, "citedFiles": 5, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 27}, {"id": "page-mentorship", "title": "常态化辅导与调度（mentorship）", "description": "智能短板定向匹配算法（赛道匹配+10/薄弱点匹配+8/学科交叉+7、Top3 推荐）、导师库全览与标签筛选、批次梯队任务下发与进度跟踪、新建任务弹窗。", "section": "sec-admin", "importance": "medium", "oneLiner": "管理端的导师调度台：左侧是「AI 短板定向匹配器 + Top 3 推荐 + 全量导师库」，右侧是「批次梯队任务下发中心」——**匹配算法是前端规则加权（80 基线 + 10/8/7 三项加分），不是模型打分**。", "sources": ["src/components/MentorshipDispatch.tsx", "src/data/mockMentors.ts", "src/types.ts"], "related_pages": ["page-supervision", "page-pools-kb", "page-cockpit"], "citations": 24, "citedFiles": 5, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 20}, {"id": "page-supervision", "title": "辅导资产沉淀与督导（supervision）", "description": "工单流转闭环（待学生处理→已提交→已复核）：录音转写模拟、四步工单详情（诊断意见→任务清单→学生交付版本演进→专家复核+提分 delta）、校本避坑指南资产库。", "section": "sec-admin", "importance": "medium", "oneLiner": "工单流转闭环页，也是**导师端（`mentor`）的唯一落地页**：辅导录音 → AI 结构化转写 → 生成整改工单 → 学生交付 → 专家复核提分，四步全在一个右侧详情区里呈现；左侧另有校本避坑指南资产库。", "sources": ["src/components/SupervisionClosure.tsx", "src/data/mockMentors.ts", "src/types.ts"], "related_pages": ["page-mentorship", "page-workbench", "page-cockpit"], "citations": 29, "citedFiles": 4, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 21}, {"id": "page-milestones", "title": "重点项目全流程看板（milestones）", "description": "L1~L5 五阶段管线看板（阶段卡点击筛选）、各阶段均分跃迁指标、按健康度着色的项目卡片列、复盘材料导出入口。", "section": "sec-admin", "importance": "medium", "oneLiner": "五金阶段管线看板（**L1~L5**，与教练模块的 L1~L4、指导工作台的 L1~L6 都不同）：顶部是 5 张可点击的阶段卡（点击即筛选）、中部是各阶段均分跃迁曲线、下部是按健康度着色的项目卡片看板列，右上角可导出复盘材料。", "sources": ["src/components/MilestoneKanban.tsx", "src/data/mockProjects.ts", "src/components/ReportExportModal.tsx"], "related_pages": ["page-lifecycle-versions", "page-cockpit"], "citations": 18, "citedFiles": 4, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 13}, {"id": "page-org-mgmt", "title": "用户与团队架构管理", "description": "users_management：五角色用户表、启停/重置密码/新增用户弹窗；teams_management：团队卡（跨学科/商业专人/发明人入队三项合规体检）+ 成员明细表 + 催办。", "section": "sec-admin", "importance": "medium", "oneLiner": "管理端的组织治理双页：`users_management` 是**五角色用户表**（启停 / 重置密码 / 新增用户），`teams_management` 是**团队架构与合规审查**（三合规体检 + 成员明细 + 催办）。", "sources": ["src/components/UserManagement.tsx", "src/components/TeamManagement.tsx", "src/data/mockUsersAndTeams.ts", "src/App.tsx"], "related_pages": ["page-screening", "page-roles-navigation"], "citations": 42, "citedFiles": 7, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 25}, {"id": "page-pools-kb", "title": "导师库与知识库（校内/平台双版本）", "description": "同一 TabType 按角色渲染双版本：mentors_pool（MentorPool 卡/表切换+编辑 vs PlatformMentorPool）、knowledge_base（KnowledgeBase list/detail+文件预览 vs Platform 版）；mock 数据各自独立。", "section": "sec-platform", "importance": "medium", "oneLiner": "同一个 `TabType` 按角色渲染**两套完全不同的组件与数据**：`mentors_pool` 与 `knowledge_base` 对 `school_admin` 走校内版（`MentorPoolManagement` / `KnowledgeBaseManagement`），对 `system_admin` 走平台版（`PlatformMentorPoolManagement` / `PlatformKnowledgeBaseManagement`）。", "sources": ["src/components/MentorPoolManagement.tsx", "src/components/PlatformMentorPoolManagement.tsx", "src/components/KnowledgeBaseManagement.tsx", "src/components/PlatformKnowledgeBaseManagement.tsx", "src/data/mockMentors.ts", "src/data/mockPlatformMentors.ts", "src/data/mockKnowledgeBase.ts", "src/data/mockPlatformKnowledgeBase.ts", "src/components/TopHeader.tsx", "src/App.tsx"], "related_pages": ["page-mentorship", "page-roles-navigation"], "citations": 48, "citedFiles": 11, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 27}, {"id": "page-ai-agents", "title": "AI 能力装配层（专家/技能/连接器）", "description": "5 位专家智能体（4.1 政策/4.2 诊断/4.3 答辩/4.4&4.5 情报局/4.6 校内智库）、8 项教练技能、5 个 MCP 连接器的静态装配模型；专家/技能/连接器三类独立配置（不做强制关联）。", "section": "sec-ai", "importance": "medium", "oneLiner": "静态装配模型层：**5 位专家智能体 × 8 项教练技能 × 5 个 MCP 连接器**，三类**各自独立配置、不做强制关联**；真正渲染装配 UI 的是 `ChatComposer` 的三个弹出菜单，而选中态的持有者是 `SceneAICoach`。", "sources": ["src/data/mockCoachAgentsAndSkills.ts", "src/components/ChatComposer.tsx", "src/components/SceneAICoach.tsx", "src/types.ts"], "related_pages": ["page-coach"], "citations": 31, "citedFiles": 4, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 23}, {"id": "page-data-model", "title": "业务数据模型全景", "description": "全部业务实体类型：ProjectItem（六维 tier1Scores/合规/逻辑断层/杀手题/材料）、SupervisionWorkOrder（五类任务/三态/提交/复核）、MentorExpert/CohortBatchTask/NotificationAlert、ProjectSpace/CoachSession/ChatMessage（18 种消息类型/DataFlowLog）、TrackEvaluationRule（4 一级×17 二级指标树+一票否决）。", "section": "sec-data", "importance": "high", "oneLiner": "`src/types.ts`（513 行）定义全部业务实体，并在 **239 行处用注释分界**为\"管理平台域\"与\"shuangchuang-AI 域\"；此外 guidance / defense / workbench 三个子目录各带自己的类型文件。**最需要注意的不是字段本身，而是同一个业务概念存在多套并存模型。**", "sources": ["src/types.ts", "package.json", "src/data/mockProjects.ts", "src/data/rules2026.ts", "src/data/mockMentors.ts", "src/data/mockSpaceData.ts", "src/data/mockUsersAndTeams.ts", "src/data/mockKnowledgeBase.ts", "src/data/mockPlatformMentors.ts", "src/components/guidance/guidanceTypes.ts", "src/components/defense/defenseTypes.ts", "src/components/workbench/workbenchMockData.ts"], "related_pages": ["page-screening", "page-workbench", "page-guidance", "page-coach"], "citations": 39, "citedFiles": 16, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 12}, {"id": "page-lifecycle-versions", "title": "L1~L6 生命周期与版本体系", "description": "生命周期：教练开场只认 L1~L4（mockStages）、指导工作台 stepper 认 L1~L6、里程碑看板认 L1~L5（demo 口径差异如实记录）；版本体系：快照/里程碑/回滚/diff 全量在工作台做，项目文件夹版本线为只读镜像。", "section": "sec-data", "importance": "high", "oneLiner": "本页做两件事：① **把三套并存的阶段口径摊平对照**（教练 L1~L4 / 里程碑 L1~L5 / 指导工作台 L1~L6），如实记录 demo 的口径不一致；② 说明版本体系——**快照 / 里程碑 / 回滚 / diff 全量只在指导工作台做**，项目文件夹的版本线是只读镜像。", "sources": ["src/components/guidance/guidanceMockData.ts", "src/components/guidance/guidanceTypes.ts", "src/components/SceneGuidanceWorkbench.tsx", "src/components/SceneAICoach.tsx", "src/components/MilestoneKanban.tsx", "src/data/mockCoachData.ts", "src/components/workbench/workbenchMockData.ts", "src/components/ProjectMemberWorkbench.tsx", "src/types.ts"], "related_pages": ["page-guidance", "page-milestones", "page-coach", "page-defense"], "citations": 37, "citedFiles": 11, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 26}, {"id": "page-cross-link", "title": "跨模块联动与闭环", "description": "四大联动：①动态待办「去执行」携 GuidanceTaskContext 跳工作台（全库唯一带载荷跨模块链）②切项目全端联动（三处）③教练产物→右侧独立工作区打开/项目文件夹待归档④工单状态 App 级提升（学生提交→督导页复核）。", "section": "sec-data", "importance": "high", "oneLiner": "全库一共只有 **4 条真实的跨模块联动链**（其余\"联动\"都是同页内跳转）：① 动态待办「去执行」携载荷跳工作台（**全库唯一带载荷的跨模块链**）② 切当前参赛项目全端联动 ③ 教练产物 → 右侧独立工作区 / 项目文件夹待归档 ④ 工单状态 App 级提升（学生提交 → 导师复核）。本页把四条链的每一跳都标出行号。", "sources": ["src/App.tsx", "src/components/ProjectMemberWorkbench.tsx", "src/components/SceneGuidanceWorkbench.tsx", "src/components/guidance/guidanceTypes.ts", "src/components/SceneAICoach.tsx", "src/components/Sidebar.tsx", "src/components/SupervisionClosure.tsx", "src/components/workbench/workbenchMockData.ts", "src/data/mockSpaceData.ts"], "related_pages": ["page-workbench", "page-guidance", "page-sidebar-widgets", "page-coach"], "citations": 44, "citedFiles": 10, "sections": {"一句话定位": true, "事实": true, "规则与边界": true, "常见开发任务": true, "与 related_pages 的联动提示": true}, "factItems": 40}], "sectionNames": ["一句话定位", "事实", "规则与边界", "常见开发任务", "与 related_pages 的联动提示"], "impColor": {"high": "#4f46e5", "medium": "#0891b2", "low": "#94a3b8"}, "sourceIndex": {"src/App.tsx": ["page-system-overview", "page-app-shell", "page-roles-navigation", "page-legacy-code", "page-coach", "page-guidance", "page-sidebar-widgets", "page-cockpit", "page-screening", "page-mentorship", "page-supervision", "page-org-mgmt", "page-pools-kb", "page-cross-link"], "src/components/LoginPage.tsx": ["page-system-overview"], "src/components/Sidebar.tsx": ["page-system-overview", "page-app-shell", "page-roles-navigation", "page-sidebar-widgets", "page-org-mgmt", "page-cross-link"], "src/components/TopHeader.tsx": ["page-system-overview", "page-app-shell", "page-roles-navigation", "page-sidebar-widgets", "page-pools-kb", "page-data-model"], "src/data/mockUniversities.ts": ["page-system-overview", "page-data-model"], "src/types.ts": ["page-system-overview", "page-legacy-code", "page-coach", "page-workbench", "page-guidance", "page-sidebar-widgets", "page-cockpit", "page-screening", "page-mentorship", "page-supervision", "page-milestones", "page-org-mgmt", "page-pools-kb", "page-ai-agents", "page-data-model", "page-lifecycle-versions", "page-cross-link"], "src/components/RightWorkspacePanel.tsx": ["page-app-shell"], "src/components/SceneAICoach.tsx": ["page-app-shell", "page-coach", "page-ai-agents", "page-lifecycle-versions", "page-cross-link"], "src/main.tsx": ["page-app-shell", "page-legacy-code"], "src/utils/titleUtils.ts": ["page-roles-navigation"], "src/components/Navbar.tsx": ["page-legacy-code"], "src/components/SceneDashboard.tsx": ["page-legacy-code"], "src/components/SceneGuidanceWorkbench.tsx": ["page-legacy-code", "page-guidance", "page-data-model", "page-lifecycle-versions", "page-cross-link"], "src/components/SceneScreening.tsx": ["page-legacy-code"], "src/components/SidebarSpaceManager.tsx": ["page-legacy-code"], "src/components/guidance/ProjectFileViewer.tsx": ["page-legacy-code"], "src/data/mockData.ts": ["page-legacy-code"], "src/data/mockProjects.ts": ["page-legacy-code", "page-cockpit", "page-milestones", "page-data-model"], "src/data/mockSpaces.ts": ["page-legacy-code"], "src/components/AtomicCallCard.tsx": ["page-coach"], "src/components/ChatComposer.tsx": ["page-coach", "page-ai-agents"], "src/components/DeepCallConfigCard.tsx": ["page-coach"], "src/components/DeepCallConfirmModal.tsx": ["page-coach"], "src/components/DeepCallExecutionModal.tsx": ["page-coach"], "src/components/DeepCallResultCard.tsx": ["page-coach"], "src/components/SharedWorkspaceDrawer.tsx": ["page-coach"], "src/data/mockCoachData.ts": ["page-coach", "page-defense", "page-lifecycle-versions"], "src/data/mockSessionMessages.ts": ["page-coach"], "src/components/ProjectMemberWorkbench.tsx": ["page-workbench", "page-sidebar-widgets", "page-org-mgmt", "page-lifecycle-versions", "page-cross-link"], "src/components/guidance/guidanceTypes.ts": ["page-workbench", "page-guidance", "page-data-model", "page-lifecycle-versions", "page-cross-link"], "src/components/workbench/workbenchMockData.ts": ["page-workbench", "page-data-model", "page-lifecycle-versions", "page-cross-link"], "src/data/mockUsersAndTeams.ts": ["page-workbench", "page-org-mgmt", "page-data-model"], "src/components/guidance/GuidanceModals.tsx": ["page-guidance", "page-lifecycle-versions"], "src/components/guidance/guidanceMockData.ts": ["page-guidance", "page-lifecycle-versions"], "src/components/RadarChart.tsx": ["page-defense"], "src/components/SceneDefenseTraining.tsx": ["page-defense", "page-lifecycle-versions"], "src/components/defense/DefenseCharts.tsx": ["page-defense", "page-data-model"], "src/components/defense/DefensePrepScreen.tsx": ["page-defense"], "src/components/defense/DefenseReportScreen.tsx": ["page-defense"], "src/components/defense/DefenseSelectorScreen.tsx": ["page-defense"], "src/components/defense/DefenseSessionScreen.tsx": ["page-defense"], "src/components/defense/defenseConstants.ts": ["page-defense"], "src/components/defense/defenseTypes.ts": ["page-defense", "page-data-model"], "src/components/RulesConfigModal.tsx": ["page-sidebar-widgets"], "src/data/rules2026.ts": ["page-sidebar-widgets", "page-cockpit", "page-screening"], "src/components/CockpitDashboard.tsx": ["page-cockpit", "page-cross-link"], "src/components/ProjectDetailDrawer.tsx": ["page-screening"], "src/components/ScreeningHub.tsx": ["page-screening"], "src/components/MentorPoolManagement.tsx": ["page-mentorship", "page-pools-kb"], "src/components/MentorshipDispatch.tsx": ["page-mentorship"], "src/data/mockMentors.ts": ["page-mentorship", "page-supervision", "page-pools-kb", "page-data-model"], "src/components/SupervisionClosure.tsx": ["page-supervision", "page-cross-link"], "src/components/MilestoneKanban.tsx": ["page-milestones", "page-lifecycle-versions"], "src/components/ReportExportModal.tsx": ["page-milestones"], "src/components/TeamManagement.tsx": ["page-org-mgmt"], "src/components/UserManagement.tsx": ["page-org-mgmt"], "src/components/KnowledgeBaseManagement.tsx": ["page-pools-kb"], "src/components/PlatformKnowledgeBaseManagement.tsx": ["page-pools-kb", "page-data-model"], "src/components/PlatformMentorPoolManagement.tsx": ["page-pools-kb"], "src/data/mockKnowledgeBase.ts": ["page-pools-kb", "page-data-model"], "src/data/mockPlatformKnowledgeBase.ts": ["page-pools-kb"], "src/data/mockPlatformMentors.ts": ["page-pools-kb", "page-data-model"], "src/data/mockCoachAgentsAndSkills.ts": ["page-ai-agents"], "package.json": ["page-data-model"], "src/data/mockSpaceData.ts": ["page-data-model"]}, "totals": {"citations": 722, "sourceFiles": 65, "pages": 20}};
+const IMP = { high: 'high', medium: 'medium', low: 'low' };
+const byId = {};
+DATA.pages.forEach(function (p) { byId[p.id] = p; });
+
+/* ---------- header ---------- */
+document.getElementById('subtitle').textContent = DATA.description;
+(function () {
+  const imps = { high: 0, medium: 0, low: 0 };
+  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
+  const items = [
+    ['分区', DATA.sections.length, ''],
+    ['页面', DATA.pages.length, 'k-brand'],
+    ['可验证引用', DATA.totals.citations, 'k-brand2'],
+    ['覆盖源文件', DATA.totals.sourceFiles, ''],
+    ['high / medium / low', imps.high + ' / ' + imps.medium + ' / ' + imps.low, 'k-high']
+  ];
+  document.getElementById('kpis').innerHTML = items.map(function (it) {
+    return '<div class="kpi ' + it[2] + '"><div class="n">' + it[1] + '</div><div class="l">' + it[0] + '</div></div>';
+  }).join('');
+})();
+
+/* ---------- graph ---------- */
+const NW = 210, NH = 44, GAPX = 24, GAPY = 17, PADX = 16, TOP = 58, BOT = 28;
+const MAXLBL = 16;
+function shortLabel(s) {
+  let t = String(s).split('（')[0].split('(')[0].trim();
+  if (t.length > MAXLBL) t = t.slice(0, MAXLBL - 1) + '\u2026';
+  return t;
+}
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+
+const cols = DATA.sections.map(function (s) {
+  return { id: s.id, title: s.title, ids: s.pages.filter(function (i) { return byId[i]; }) };
+});
+const maxRows = Math.max.apply(null, cols.map(function (c) { return c.ids.length; }));
+const W = PADX * 2 + cols.length * NW + (cols.length - 1) * GAPX;
+const H = TOP + maxRows * (NH + GAPY) + BOT;
+const POS = {};
+cols.forEach(function (c, i) {
+  c.ids.forEach(function (pid, j) {
+    POS[pid] = { x: PADX + i * (NW + GAPX), y: TOP + j * (NH + GAPY), col: i };
+  });
+});
+
+const svg = document.getElementById('graph');
+svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+const NS = 'http://www.w3.org/2000/svg';
+function el(n, a) {
+  const e = document.createElementNS(NS, n);
+  for (const k in a) e.setAttribute(k, a[k]);
+  return e;
+}
+let defs = el('defs', {});
+defs.innerHTML = '<marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
+  + '<path d="M 0 0 L 10 5 L 0 10 z" fill="#93a4bf"></path></marker>'
+  + '<marker id="arwOn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
+  + '<path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"></path></marker>';
+svg.appendChild(defs);
+
+const gBg = el('g', {}), gEdge = el('g', {}), gNode = el('g', {});
+svg.appendChild(gBg); svg.appendChild(gEdge); svg.appendChild(gNode);
+
+cols.forEach(function (c, i) {
+  const x = PADX + i * (NW + GAPX);
+  gBg.appendChild(el('rect', { class: 'secbg', x: x - 8, y: 12, width: NW + 16, height: H - 28, rx: 12, fill: i % 2 ? '#f6f9fc' : '#fbfcfe' }));
+  gBg.appendChild(el('line', { class: 'secline', x1: x - 8, y1: 45, x2: x + NW + 8, y2: 45 }));
+  const t = el('text', { class: 'sechdr', x: x, y: 34 });
+  t.textContent = shortLabel(c.title);
+  const tt = el('title', {}); tt.textContent = c.title;
+  t.appendChild(tt);
+  gBg.appendChild(t);
+});
+
+const edgeMap = {};
+DATA.pages.forEach(function (p) {
+  (p.related_pages || []).forEach(function (rp) {
+    if (!POS[p.id] || !POS[rp]) return;
+    const a = POS[p.id], b = POS[rp];
+    const sy = a.y + NH / 2, ty = b.y + NH / 2;
+    const fwd = b.x >= a.x;
+    const sx = fwd ? a.x + NW : a.x;
+    const tx = fwd ? b.x : b.x + NW;
+    const dx = Math.max(46, Math.abs(tx - sx) * 0.42);
+    const bow = ((hash(p.id + rp) % 9) - 4) * 3.2;
+    const d = 'M ' + sx + ' ' + sy + ' C ' + (sx + (fwd ? dx : -dx)) + ' ' + (sy + bow)
+      + ', ' + (tx + (fwd ? -dx : dx)) + ' ' + (ty + bow) + ', ' + tx + ' ' + ty;
+    const pth = el('path', { class: 'edge', d: d, 'marker-end': 'url(#arw)' });
+    gEdge.appendChild(pth);
+    (edgeMap[p.id] = edgeMap[p.id] || []).push(pth);
+  });
+});
+
+DATA.pages.forEach(function (p) {
+  const pos = POS[p.id];
+  if (!pos) return;
+  const g = el('g', { class: 'node', 'data-id': p.id });
+  g.appendChild(el('rect', { class: 'box', x: pos.x, y: pos.y, width: NW, height: NH, rx: 10 }));
+  g.appendChild(el('circle', { cx: pos.x + 14, cy: pos.y + NH / 2, r: 4, fill: DATA.impColor[p.importance] }));
+  const t = el('text', { class: 'lbl', x: pos.x + 27, y: pos.y + NH / 2 + 4 });
+  t.textContent = shortLabel(p.title);
+  const tt = el('title', {});
+  tt.textContent = p.title + '\n' + p.id + '\n引用 ' + p.citations + ' 条 · 源文件 ' + p.citedFiles + ' 个';
+  t.appendChild(tt);
+  g.appendChild(t);
+  g.addEventListener('click', function () { select(p.id, true); });
+  gNode.appendChild(g);
+});
+
+/* ---------- detail ---------- */
+const SEC_NAMES = DATA.sectionNames;
+function lineList(arr, empty) {
+  if (!arr || !arr.length) return '<div style="color:#94a3b8;font-size:12px">' + empty + '</div>';
+  return arr.map(function (s) { return '<div>' + esc(s) + '</div>'; }).join('');
+}
+function renderOverview() {
+  const imps = { high: 0, medium: 0, low: 0 };
+  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
+  return ''
+    + '<div class="d-title"><h2>怎么读这张图</h2></div>'
+    + '<div class="oneliner">结构层是 7 个分区 + 20 个页面；每个页面固定五节，其中「事实」节每条都带行号引用，可回到源码逐条核对。'
+    + '连线表示页面之间的邻接关系 —— 改一个模块时，沿连线读完相邻页即可避免漏改。</div>'
+    + '<div class="nums">'
+    + '<div><div class="n">' + DATA.sections.length + '</div><div class="l">分区</div></div>'
+    + '<div><div class="n">' + DATA.pages.length + '</div><div class="l">页面</div></div>'
+    + '<div><div class="n">' + DATA.totals.citations + '</div><div class="l">可验证引用</div></div>'
+    + '</div>'
+    + '<div class="subh">入口顺序</div>'
+    + '<div style="font-size:13px;color:#334155">'
+    + '① 先读 <b>llms.txt</b> 建立全局印象 → ② 按任务挑 1 个目标页 → ③ 顺该页 related_pages 邻接页核对联动 → ④ 需要对上游依据时按 importance 决定是否展开数据页。'
+    + '</div>'
+    + '<div class="subh">分区概览</div>'
+    + '<div class="chips">' + DATA.sections.map(function (s) {
+        return '<span class="chip" style="cursor:default">' + esc(s.title) + ' · ' + s.pages.length + ' 页</span>';
+      }).join('') + '</div>'
+    + '<div class="subh">重要度分布</div>'
+    + '<div style="font-size:13px;color:#334155">high ' + imps.high + ' 页（默认纳入开发上下文）· medium ' + imps.medium + ' 页（按任务加载）· low ' + imps.low + ' 页（仅重构/改名时查）</div>';
+}
+function renderDetail(id) {
+  const p = byId[id];
+  if (!p) return renderOverview();
+  const secTitle = (DATA.sections.filter(function (s) { return s.id === p.section; })[0] || {}).title || p.section;
+  const rel = (p.related_pages || []).map(function (rp) {
+    const t = byId[rp] ? byId[rp].title : rp;
+    return '<span class="chip" data-go="' + rp + '">' + esc(shortLabel(t)) + ' <span style="color:#94a3b8">' + esc(rp) + '</span></span>';
+  }).join('');
+  const chk = SEC_NAMES.map(function (n) {
+    const ok = p.sections[n];
+    return ok ? '<span>' + esc(n) + ' \u2713</span>'
+      : '<span style="background:#fff7ed;color:#c2410c;border-color:#fed7aa">' + esc(n) + ' 缺</span>';
+  }).join('');
+  return ''
+    + '<div class="d-title"><h2>' + esc(p.title) + '</h2>'
+    + '<span class="badge b-' + p.importance + '">' + p.importance + '</span>'
+    + '<span class="badge b-sec">' + esc(p.id) + '</span></div>'
+    + '<div class="meta"><span class="badge b-sec">' + esc(secTitle) + '</span></div>'
+    + '<p class="oneliner">' + esc(p.oneLiner) + '</p>'
+    + '<div class="nums">'
+    + '<div><div class="n">' + p.factItems + '</div><div class="l">编号事实条数</div></div>'
+    + '<div><div class="n">' + p.citations + '</div><div class="l">可验证引用条数</div></div>'
+    + '<div><div class="n">' + p.citedFiles + '</div><div class="l">引用源文件数</div></div>'
+    + '</div>'
+    + '<div class="subh">固定五节</div><div class="chk">' + chk + '</div>'
+    + '<div class="subh">依据的源文件（frontmatter sources）</div>'
+    + '<div class="srclist">' + lineList(p.sources, '无') + '</div>'
+    + '<div class="subh">邻接页面 related_pages（点此跳转）</div><div class="chips">' + (rel || '<span style="color:#94a3b8;font-size:12px">无</span>') + '</div>'
+    + '<div class="subh">页面说明（structure.json）</div>'
+    + '<div style="font-size:13px;color:#334155">' + esc(p.description) + '</div>';
+}
+
+/* ---------- table ---------- */
+document.getElementById('tbody').innerHTML = DATA.pages.map(function (p, i) {
+  const secTitle = (DATA.sections.filter(function (s) { return s.id === p.section; })[0] || {}).title || p.section;
+  return '<tr data-id="' + p.id + '">'
+    + '<td class="n">' + (i + 1) + '</td>'
+    + '<td><b>' + esc(p.title) + '</b></td>'
+    + '<td class="id">' + esc(p.id) + '</td>'
+    + '<td style="color:#475569">' + esc(shortLabel(secTitle)) + '</td>'
+    + '<td><span class="badge b-' + p.importance + '">' + p.importance + '</span></td>'
+    + '<td class="n">' + p.factItems + '</td>'
+    + '<td class="n">' + p.citations + '</td>'
+    + '<td class="n">' + p.citedFiles + '</td>'
+    + '<td class="n">' + (p.related_pages || []).length + '</td>'
+    + '</tr>';
+}).join('');
+
+/* ---------- stats ---------- */
+function bars(host, rows, mono) {
+  const max = Math.max.apply(null, rows.map(function (r) { return r[1]; })) || 1;
+  document.getElementById(host).innerHTML = rows.map(function (r) {
+    return '<div class="bar' + (mono ? ' mono' : '') + '"><div class="lbl"><span>' + esc(r[0]) + '</span><span>' + r[1] + '</span></div>'
+      + '<div class="t"><div class="f" style="width:' + Math.max(3, Math.round(r[1] / max * 100)) + '%"></div></div></div>';
+  }).join('');
+}
+bars('st-sec', cols.map(function (c) { return [shortLabel(c.title), c.ids.length]; }));
+bars('st-imp', (function () {
+  const imps = { high: 0, medium: 0, low: 0 };
+  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
+  return [['high', imps.high], ['medium', imps.medium], ['low', imps.low]];
+})());
+bars('st-cit', DATA.pages.slice().sort(function (a, b) { return b.citations - a.citations; })
+  .slice(0, 8).map(function (p) { return [shortLabel(p.title), p.citations]; }));
+bars('st-src', Object.keys(DATA.sourceIndex).map(function (k) {
+  return [k, DATA.sourceIndex[k].length];
+}).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6), true);
+
+/* ---------- selection ---------- */
+let sel = null;
+function select(id, fromGraph) {
+  sel = id;
+  const p = byId[id];
+  document.getElementById('detail').innerHTML = renderDetail(id);
+  document.getElementById('d-hint').textContent = fromGraph ? '已从结构图下钻' : '已从总表下钻';
+  document.querySelectorAll('#tbody tr').forEach(function (tr) {
+    tr.classList.toggle('sel', tr.getAttribute('data-id') === id);
+  });
+  const relSet = {};
+  (p.related_pages || []).forEach(function (r) { relSet[r] = 1; });
+  DATA.pages.forEach(function (q) {
+    if ((q.related_pages || []).indexOf(id) >= 0) relSet[q.id] = 1;
+  });
+  document.querySelectorAll('.node').forEach(function (g) {
+    const nid = g.getAttribute('data-id');
+    g.classList.toggle('sel', nid === id);
+    g.classList.toggle('rel', nid !== id && !!relSet[nid]);
+  });
+  const onIds = {}; onIds[id] = 1;
+  for (const k in relSet) onIds[k] = 1;
+  for (const k in edgeMap) {
+    const on = !!onIds[k];
+    edgeMap[k].forEach(function (pth) {
+      pth.classList.toggle('on', on);
+      pth.classList.toggle('dim', !on);
+      pth.setAttribute('marker-end', on ? 'url(#arwOn)' : 'url(#arw)');
+    });
+  }
+}
+document.getElementById('tbody').addEventListener('click', function (e) {
+  const tr = e.target.closest('tr');
+  if (tr) select(tr.getAttribute('data-id'), false);
+});
+document.getElementById('detail').addEventListener('click', function (e) {
+  const c = e.target.closest('[data-go]');
+  if (c) select(c.getAttribute('data-go'), true);
+});
+renderOverview();
+document.getElementById('detail').innerHTML = renderOverview();
+</script>
+</body>
+</html>
