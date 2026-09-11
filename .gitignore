@@ -8,3 +8,5 @@ coverage/
 !.env.example
 # 旧版原型孪生目录（仅本地留参考，不入库）
 temp_repo/
+# 交付物构建产物（ontology/tools 重新生成，无需入库）
+ont_generated/
