@@ -1,0 +1,346 @@
+{
+  "id": "sdm-wiki",
+  "title": "双创赛事智能体 demo（shuangchuang-design-main）系统 Wiki",
+  "description": "面向 AI Coding 的可验证叙事知识库：以 2026-09-10 代码实测为唯一真源，覆盖 4 角色×13 视图、学生端四大功能模块、管理端工作台、AI 能力装配、业务数据模型与跨模块闭环。每页事实强制 Sources 行号引用。",
+  "generatedAt": "2026-09-10",
+  "coldStart": "纯代码冷启动（未参考任何既有调研文档/本体文件）",
+  "ownershipPrinciple": "模块归属原则（用户 0910 拍板）：会话历史与深/浅调用均为金牌AI教练（新建对话）的子功能，不单独立页；侧栏部件页仅承载真全局件（备赛捷径/当前参赛项目）。功能归属看业务域，不看入口出现在哪。",
+  "lineNumberConvention": "行号以 UTF-8 解码口径（PowerShell Get-Content -Encoding UTF8 / Python read_text utf-8）统计，与编辑器显示一致",
+  "sections": [
+    {
+      "id": "sec-system",
+      "title": "系统总览与骨架",
+      "pages": ["page-system-overview", "page-app-shell", "page-roles-navigation", "page-legacy-code"]
+    },
+    {
+      "id": "sec-student",
+      "title": "学生端功能（team_member）",
+      "pages": ["page-coach", "page-workbench", "page-guidance", "page-defense", "page-sidebar-widgets"]
+    },
+    {
+      "id": "sec-admin",
+      "title": "管理端工作台（school_admin）",
+      "pages": ["page-cockpit", "page-screening", "page-mentorship", "page-supervision", "page-milestones", "page-org-mgmt"]
+    },
+    {
+      "id": "sec-platform",
+      "title": "资源智库（校内/平台双版本）",
+      "pages": ["page-pools-kb"]
+    },
+    {
+      "id": "sec-ai",
+      "title": "AI 能力装配",
+      "pages": ["page-ai-agents"]
+    },
+    {
+      "id": "sec-data",
+      "title": "业务数据与生命周期",
+      "pages": ["page-data-model", "page-lifecycle-versions"]
+    },
+    {
+      "id": "sec-flow",
+      "title": "跨模块联动与闭环",
+      "pages": ["page-cross-link"]
+    }
+  ],
+  "rootSections": ["sec-system", "sec-student", "sec-admin", "sec-platform", "sec-ai", "sec-data", "sec-flow"],
+  "pages": [
+    {
+      "id": "page-system-overview",
+      "title": "系统总览与四端门户",
+      "description": "产品定位（2026 大赛培育决策平台）、4 角色（team_member/school_admin/mentor/system_admin）登录网关、会话持久化与默认落地页、演示预置账号。",
+      "importance": "high",
+      "relevant_files": [
+        "src/App.tsx",
+        "src/components/LoginPage.tsx",
+        "src/types.ts",
+        "src/data/mockUniversities.ts"
+      ],
+      "related_pages": ["page-roles-navigation", "page-app-shell"]
+    },
+    {
+      "id": "page-app-shell",
+      "title": "应用骨架与全局布局",
+      "description": "三列布局（左 Sidebar / 中主区 / 右独立工作区）、13 个 TabType 路由分发、右侧工作区 6:4 拖拽与 Ctrl+B/Ctrl+J/Esc 快捷键、5 个全局弹层（规则/导入/导出/项目抽屉/飞轮）。",
+      "importance": "high",
+      "relevant_files": [
+        "src/App.tsx",
+        "src/components/TopHeader.tsx",
+        "src/components/RightWorkspacePanel.tsx",
+        "src/components/SharedWorkspaceDrawer.tsx",
+        "src/components/RulesConfigModal.tsx",
+        "src/components/BatchImportModal.tsx",
+        "src/components/ReportExportModal.tsx",
+        "src/components/ProjectDetailDrawer.tsx",
+        "src/components/OperationFlywheelModal.tsx",
+        "src/main.tsx"
+      ],
+      "related_pages": ["page-roles-navigation", "page-system-overview", "page-cross-link"]
+    },
+    {
+      "id": "page-roles-navigation",
+      "title": "角色×视图导航矩阵",
+      "description": "Sidebar.getNavGroups 四角色导航组全量定义、TabType 13 视图枚举、TopHeader 标题/副题映射、学生端全局项目切换器、会话历史区、备赛捷径区。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/Sidebar.tsx",
+        "src/components/TopHeader.tsx",
+        "src/App.tsx"
+      ],
+      "related_pages": ["page-system-overview", "page-sidebar-widgets"]
+    },
+    {
+      "id": "page-legacy-code",
+      "title": "遗留与孤儿组件盘点",
+      "description": "经全库 import 扫描确认未被引用的 7 个文件（Navbar/SceneDashboard/SceneScreening/SidebarSpaceManager/ProjectFileViewer/mockData/mockSpaces）——开发时勿在其上叠加，改造前先确认去留。",
+      "importance": "low",
+      "relevant_files": [
+        "src/components/Navbar.tsx",
+        "src/components/SceneDashboard.tsx",
+        "src/components/SceneScreening.tsx",
+        "src/components/SidebarSpaceManager.tsx",
+        "src/components/guidance/ProjectFileViewer.tsx",
+        "src/data/mockData.ts",
+        "src/data/mockSpaces.ts"
+      ],
+      "related_pages": ["page-app-shell"]
+    },
+    {
+      "id": "page-coach",
+      "title": "新建对话（金牌AI教练）",
+      "description": "学生端主模块（全库最大单体 2902 行，含全部子功能）：空间/会话管理（含侧栏会话历史区联动）、装配区（专家/技能/连接器菜单）、6 类咨询动作、14 种富卡消息流、ReAct 实时过程、关键词意图路由、深/浅调用协议（4.1↔4.2/4.3：深度五步流+浅度三原子+四件套弹层）、行动项与产物联动。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/SceneAICoach.tsx",
+        "src/components/ChatComposer.tsx",
+        "src/components/AiMascot.tsx",
+        "src/components/RadarChart.tsx",
+        "src/components/ReActProcessView.tsx",
+        "src/components/DeepCallConfirmModal.tsx",
+        "src/components/DeepCallConfigCard.tsx",
+        "src/components/DeepCallExecutionModal.tsx",
+        "src/components/DeepCallResultCard.tsx",
+        "src/components/AtomicCallCard.tsx",
+        "src/components/SharedWorkspaceDrawer.tsx",
+        "src/data/mockCoachData.ts",
+        "src/data/mockCoachAgentsAndSkills.ts",
+        "src/data/mockSessionMessages.ts",
+        "src/data/mockSpaceData.ts",
+        "src/types.ts"
+      ],
+      "related_pages": ["page-ai-agents", "page-sidebar-widgets", "page-defense", "page-cross-link"]
+    },
+    {
+      "id": "page-workbench",
+      "title": "项目工作台（my_project）",
+      "description": "学生主页五子 tab（动态待办/工单/全维诊断/团队/项目文件夹）：双源待办（AI 诊断+专家工单）与「去执行」载荷跳转、工单三态与交付提交表单、项目文件夹三来源注册表+版本线+大事记。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/ProjectMemberWorkbench.tsx",
+        "src/components/workbench/workbenchMockData.ts",
+        "src/types.ts",
+        "src/data/mockMentors.ts"
+      ],
+      "related_pages": ["page-guidance", "page-supervision", "page-cross-link"]
+    },
+    {
+      "id": "page-guidance",
+      "title": "全链路指导工作台（guidance_workbench）",
+      "description": "BP 打磨主阵地：中栏三 tab（BP 12 章/全维诊断/六维评分）+ 顶栏四快捷（快照/里程碑/对比/历史）+ 任务上下文条（0908-16 闭环）+ 快照只读预览 + 右栏 AI 教练 + 版本历史抽屉与 diff 弹层。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/SceneGuidanceWorkbench.tsx",
+        "src/components/guidance/guidanceMockData.ts",
+        "src/components/guidance/guidanceTypes.ts",
+        "src/components/guidance/GuidanceModals.tsx",
+        "src/App.tsx"
+      ],
+      "related_pages": ["page-workbench", "page-lifecycle-versions", "page-cross-link"]
+    },
+    {
+      "id": "page-defense",
+      "title": "模拟评审与答辩训练（defense_training）",
+      "description": "四屏状态机（selector→prep→session→report）+ 5 训练模式（标准/电梯/高压追问/弱项突击/对抗性）+ 评委席配置（单/多评委·3 级风格·轮次·单题时限）+ 六维雷达报告与逐轮复盘。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/SceneDefenseTraining.tsx",
+        "src/components/defense/DefenseSelectorScreen.tsx",
+        "src/components/defense/DefensePrepScreen.tsx",
+        "src/components/defense/DefenseSessionScreen.tsx",
+        "src/components/defense/DefenseReportScreen.tsx",
+        "src/components/defense/DefenseCharts.tsx",
+        "src/components/defense/defenseTypes.ts",
+        "src/components/defense/defenseConstants.ts"
+      ],
+      "related_pages": ["page-coach", "page-guidance"]
+    },
+    {
+      "id": "page-sidebar-widgets",
+      "title": "备赛捷径与当前参赛项目（全局部件）",
+      "description": "侧栏两个真全局件：备赛捷径（2026 评审细则弹窗的全局入口，学生/管理端共用）与当前参赛项目切换器（学生专属，切项目全端联动：工作台门卡/答辩舱项目卡/教练空间物料）。注：会话历史属教练模块（见 page-coach），不在此页。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/Sidebar.tsx",
+        "src/components/TopHeader.tsx",
+        "src/components/RulesConfigModal.tsx",
+        "src/data/rules2026.ts",
+        "src/App.tsx"
+      ],
+      "related_pages": ["page-roles-navigation", "page-cross-link", "page-coach"]
+    },
+    {
+      "id": "page-cockpit",
+      "title": "备赛数据驾驶舱（cockpit）",
+      "description": "管理端决策枢纽：AI 决策横幅、五 KPI 池卡（总数/A 级金池/B 级/C·D/闭环率）、四一级指标二级得分率热力、赛道分布与辅导转化、A 级潜力池列表、异常停滞与合规预警。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/CockpitDashboard.tsx",
+        "src/data/mockProjects.ts",
+        "src/App.tsx"
+      ],
+      "related_pages": ["page-screening", "page-milestones", "page-supervision"]
+    },
+    {
+      "id": "page-screening",
+      "title": "智能对标初筛与排名（screening）",
+      "description": "2026 细则初筛：三视图模式（二级指标矩阵/综合对标总表/合规一票否决拦截）、赛道×梯队×合规×关键词四维筛选、项目抽屉下钻（六 tab：评分/雷达/逻辑断层/督导/合规/材料）。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/ScreeningHub.tsx",
+        "src/components/ProjectDetailDrawer.tsx",
+        "src/data/mockProjects.ts",
+        "src/data/rules2026.ts",
+        "src/types.ts"
+      ],
+      "related_pages": ["page-cockpit", "page-data-model", "page-org-mgmt"]
+    },
+    {
+      "id": "page-mentorship",
+      "title": "常态化辅导与调度（mentorship）",
+      "description": "智能短板定向匹配算法（赛道匹配+10/薄弱点匹配+8/学科交叉+7、Top3 推荐）、导师库全览与标签筛选、批次梯队任务下发与进度跟踪、新建任务弹窗。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/MentorshipDispatch.tsx",
+        "src/data/mockMentors.ts",
+        "src/types.ts"
+      ],
+      "related_pages": ["page-supervision", "page-pools-kb", "page-cockpit"]
+    },
+    {
+      "id": "page-supervision",
+      "title": "辅导资产沉淀与督导（supervision）",
+      "description": "工单流转闭环（待学生处理→已提交→已复核）：录音转写模拟、四步工单详情（诊断意见→任务清单→学生交付版本演进→专家复核+提分 delta）、校本避坑指南资产库。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/SupervisionClosure.tsx",
+        "src/data/mockMentors.ts",
+        "src/types.ts"
+      ],
+      "related_pages": ["page-mentorship", "page-workbench", "page-cockpit"]
+    },
+    {
+      "id": "page-milestones",
+      "title": "重点项目全流程看板（milestones）",
+      "description": "L1~L5 五阶段管线看板（阶段卡点击筛选）、各阶段均分跃迁指标、按健康度着色的项目卡片列、复盘材料导出入口。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/MilestoneKanban.tsx",
+        "src/data/mockProjects.ts",
+        "src/components/ReportExportModal.tsx"
+      ],
+      "related_pages": ["page-lifecycle-versions", "page-cockpit"]
+    },
+    {
+      "id": "page-org-mgmt",
+      "title": "用户与团队架构管理",
+      "description": "users_management：五角色用户表、启停/重置密码/新增用户弹窗；teams_management：团队卡（跨学科/商业专人/发明人入队三项合规体检）+ 成员明细表 + 催办。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/UserManagement.tsx",
+        "src/components/TeamManagement.tsx",
+        "src/data/mockUsersAndTeams.ts"
+      ],
+      "related_pages": ["page-screening", "page-roles-navigation"]
+    },
+    {
+      "id": "page-pools-kb",
+      "title": "导师库与知识库（校内/平台双版本）",
+      "description": "同一 TabType 按角色渲染双版本：mentors_pool（MentorPool 卡/表切换+编辑 vs PlatformMentorPool）、knowledge_base（KnowledgeBase list/detail+文件预览 vs Platform 版）；mock 数据各自独立。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/MentorPoolManagement.tsx",
+        "src/components/PlatformMentorPoolManagement.tsx",
+        "src/components/KnowledgeBaseManagement.tsx",
+        "src/components/PlatformKnowledgeBaseManagement.tsx",
+        "src/data/mockMentors.ts",
+        "src/data/mockPlatformMentors.ts",
+        "src/data/mockKnowledgeBase.ts",
+        "src/data/mockPlatformKnowledgeBase.ts",
+        "src/App.tsx"
+      ],
+      "related_pages": ["page-mentorship", "page-roles-navigation"]
+    },
+    {
+      "id": "page-ai-agents",
+      "title": "AI 能力装配层（专家/技能/连接器）",
+      "description": "5 位专家智能体（4.1 政策/4.2 诊断/4.3 答辩/4.4&4.5 情报局/4.6 校内智库）、8 项教练技能、5 个 MCP 连接器的静态装配模型；专家/技能/连接器三类独立配置（不做强制关联）。",
+      "importance": "medium",
+      "relevant_files": [
+        "src/components/SceneAICoach.tsx",
+        "src/data/mockCoachAgentsAndSkills.ts",
+        "src/types.ts",
+        "src/components/ChatComposer.tsx"
+      ],
+      "related_pages": ["page-coach"]
+    },
+    {
+      "id": "page-data-model",
+      "title": "业务数据模型全景",
+      "description": "全部业务实体类型：ProjectItem（六维 tier1Scores/合规/逻辑断层/杀手题/材料）、SupervisionWorkOrder（五类任务/三态/提交/复核）、MentorExpert/CohortBatchTask/NotificationAlert、ProjectSpace/CoachSession/ChatMessage（18 种消息类型/DataFlowLog）、TrackEvaluationRule（4 一级×17 二级指标树+一票否决）。",
+      "importance": "high",
+      "relevant_files": [
+        "src/types.ts",
+        "src/data/mockProjects.ts",
+        "src/data/rules2026.ts",
+        "src/data/mockMentors.ts",
+        "src/data/mockSpaceData.ts",
+        "src/components/guidance/guidanceTypes.ts",
+        "src/components/defense/defenseTypes.ts",
+        "src/components/workbench/workbenchMockData.ts"
+      ],
+      "related_pages": ["page-screening", "page-workbench", "page-guidance", "page-coach"]
+    },
+    {
+      "id": "page-lifecycle-versions",
+      "title": "L1~L6 生命周期与版本体系",
+      "description": "生命周期：教练开场只认 L1~L4（mockStages）、指导工作台 stepper 认 L1~L6、里程碑看板认 L1~L5（demo 口径差异如实记录）；版本体系：快照/里程碑/回滚/diff 全量在工作台做，项目文件夹版本线为只读镜像。",
+      "importance": "high",
+      "relevant_files": [
+        "src/components/guidance/guidanceMockData.ts",
+        "src/components/SceneGuidanceWorkbench.tsx",
+        "src/components/MilestoneKanban.tsx",
+        "src/components/SceneAICoach.tsx",
+        "src/data/mockCoachData.ts",
+        "src/components/workbench/workbenchMockData.ts"
+      ],
+      "related_pages": ["page-guidance", "page-milestones", "page-coach", "page-defense"]
+    },
+    {
+      "id": "page-cross-link",
+      "title": "跨模块联动与闭环",
+      "description": "四大联动：①动态待办「去执行」携 GuidanceTaskContext 跳工作台（全库唯一带载荷跨模块链）②切项目全端联动（三处）③教练产物→右侧独立工作区打开/项目文件夹待归档④工单状态 App 级提升（学生提交→督导页复核）。",
+      "importance": "high",
+      "relevant_files": [
+        "src/App.tsx",
+        "src/components/ProjectMemberWorkbench.tsx",
+        "src/components/SceneGuidanceWorkbench.tsx",
+        "src/components/guidance/guidanceTypes.ts",
+        "src/components/SceneAICoach.tsx",
+        "src/components/Sidebar.tsx",
+        "src/components/SupervisionClosure.tsx",
+        "src/data/mockSpaceData.ts"
+      ],
+      "related_pages": ["page-workbench", "page-guidance", "page-sidebar-widgets", "page-coach"]
+    }
+  ]
+}
