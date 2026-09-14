@@ -3,6 +3,7 @@
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
 > 口径：只收 `category = 产品决策` 的条目（issues[] 与带该标记的边），按 severity 排序（high → medium → low）；技术实现 / 数据口径类问题不混入本清单，见 `wiki/gaps.md`。
 > 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。
+> 可读性（v0.9）：逐条详情先给**通俗版**（一句话 / 现象 / 影响 / 需要谁做什么，取自 `edges.json` 的 `plain` 字段），再附一字未改的「背景（原始记录）」供工程侧核对。
 >
 > 统计：共 14 条（上司拍板 7 · 工程自决 2 · 待产品定义 5）。
 
@@ -31,14 +32,18 @@
 
 - 来源：`e-workbench-diag-questions-2-defense`（边）｜位置：评委尖锐提问攻防演练（`nd-workbench-diag-questions`）→ 模拟答辩训练（`page-defense`）
 - owner：**上司拍板**｜severity：**high**
-- **背景**：当前无实现。产品口径已确定「评委提问不走动态待办体系」，但去向未定，本边为候选路径之一。
+- **背景（原始记录）**：当前无实现。产品口径已确定「评委提问不走动态待办体系」，但去向未定，本边为候选路径之一。
 - **建议 / 期望**：评委提问不走动态待办，那走哪？**建议（待拍板）：接「模拟答辩训练」的问答对抗阶段，把它当题库用。** 三条理由：①该区块源码标题本身就写着「评委尖锐提问攻防演练」（src/components/ProjectMemberWorkbench.tsx:751），业务定位本就是演练而非任务；②提问没有终态——待办可勾掉，提问要反复练，与答辩训练的重复演练语义一致；③page-defense 已有问答对抗阶段，天然是它的下游。备选路径：单题「去练」直达 AI 教练并预填该问题（更轻，但缺少针对单题的演练结构）。接洽前必须先解的前置：killerQuestions 是 string[]（src/types.ts:124），载不动题目 id / 应对要点 / 佐证材料 / 时长；且 defenseConstants 的题库与本区块各自 mock，无共享。
 
 ### 2. 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套）
 
 - 来源：`issue-product-coach-session-unification`（issue）｜位置：右栏 AI 备赛伴学教练（`nd-guidance-coach`）
 - owner：**上司拍板**｜severity：**high**
-- **背景**：「AI助手」三名并存（2026-09-14 用户要求明确，见《0914-15-LLM-Wiki框架合流变更方案》§3.3）：①page-coach（SceneAICoach.tsx，2965 行）+ new_chat 通用会话 = 框架 1.1「AI助手」本体（ReAct 过程可视化、会话历史、新建对话）；②page-guidance 右栏「AI 备赛伴学教练」= 内嵌简版辅助栏（关键词 if-else 假回复 SceneGuidanceWorkbench.tsx:206-238、无会话管理、三个死状态），与 page-coach 零共享（不同 state/mock/消息类型）；③「材料打磨工作台」= page-guidance 改名后的页面名。统一前，guidance 右栏按「内嵌辅助栏」定位下钻，不与 1.1 混同。
+- **一句话（通俗版）**：「AI 助手」有三种形态并存：完整版主页面、材料打磨工作台右栏的简版、以及改名后的页面，需定是否统一。
+- **现象**：主页面有会话历史、新建对话；工作台右栏那个「AI 备赛伴学教练」只是关键词匹配的假回复，没有会话管理，也不与主页面共享任何数据。
+- **影响**：同一产品里两套 AI 对话体验，用户会问为什么这里的 AI 笨一些；后续开发也可能重复投入。
+- **需要谁做什么**：上司拍板：明确右栏是「内嵌辅助栏」还是与主页面统一——这个决定同时卡住「右栏 4 个死状态」的处置。
+- **背景（原始记录）**：「AI助手」三名并存（2026-09-14 用户要求明确，见《0914-15-LLM-Wiki框架合流变更方案》§3.3）：①page-coach（SceneAICoach.tsx，2965 行）+ new_chat 通用会话 = 框架 1.1「AI助手」本体（ReAct 过程可视化、会话历史、新建对话）；②page-guidance 右栏「AI 备赛伴学教练」= 内嵌简版辅助栏（关键词 if-else 假回复 SceneGuidanceWorkbench.tsx:206-238、无会话管理、三个死状态），与 page-coach 零共享（不同 state/mock/消息类型）；③「材料打磨工作台」= page-guidance 改名后的页面名。统一前，guidance 右栏按「内嵌辅助栏」定位下钻，不与 1.1 混同。
 - **建议 / 期望**：两套会话实现是否统一？若统一，保留哪一套（完整版 page-coach 还是内嵌简版）？统一前 guidance 右栏维持「内嵌辅助栏」定位。
 - **卡点**：待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。
 
@@ -46,7 +51,11 @@
 
 - 来源：`issue-users-accounts-isolated`（issue）｜位置：用户管理（`page-users`）
 - owner：**待产品定义**｜severity：**high**
-- **背景**：本页 `users` 是组件本地 state（初值 `MOCK_USERS`），**没有任何上行 prop**（唯一可选 prop `onOpenProject` 在全页无调用点）；「新增注册用户」只把对象插进本地数组，「切换状态」只翻转本地 `status`，两者都不影响登录体系。而 `page-login` 的账号来源是 `DEMO_PRESET_ACCOUNTS`（前端四端自选身份 + 一键免密），二者无任何关联：本页新增的账号登不进系统，登录页能进的账号也不在本页台账里。页尾却声明「按校级统一身份认证系统 (CAS/OAuth2) 权限策略实时同步」，新增弹窗也承诺「自动下发短信及激活邮件、短信两步验证、强制改密」。
+- **一句话（通俗版）**：用户账号体系是孤岛：这里新增的账号登不进系统，停用也不影响任何权限。
+- **现象**：新增用户只写进本页的临时列表，登录页用的是另一套预置账号，两者毫无关联；页尾却写着「按校级统一身份认证系统实时同步」，新增弹窗还承诺发短信和邮件激活。
+- **影响**：用户与权限管理这一模块实际不生效，是「看起来能用」的假模块。
+- **需要谁做什么**：待产品定义：与登录页认证口径同源——先定「demo 用假鉴权还是接统一认证」，再让账号成为鉴权的数据源（或把相关承诺从文案中去掉）。
+- **背景（原始记录）**：本页 `users` 是组件本地 state（初值 `MOCK_USERS`），**没有任何上行 prop**（唯一可选 prop `onOpenProject` 在全页无调用点）；「新增注册用户」只把对象插进本地数组，「切换状态」只翻转本地 `status`，两者都不影响登录体系。而 `page-login` 的账号来源是 `DEMO_PRESET_ACCOUNTS`（前端四端自选身份 + 一键免密），二者无任何关联：本页新增的账号登不进系统，登录页能进的账号也不在本页台账里。页尾却声明「按校级统一身份认证系统 (CAS/OAuth2) 权限策略实时同步」，新增弹窗也承诺「自动下发短信及激活邮件、短信两步验证、强制改密」。
 - **建议 / 期望**：统一账号体系：本页维护的账号应成为登录/鉴权的数据源（或从统一身份认证同步而来），停用即时生效；「CAS/OAuth2 实时同步」「短信/邮件激活」要么实现、要么从文案中移除。
 - **卡点**：涉及整体鉴权方案（与 issue-login-sso-placeholder 同源），需产品先定「demo 用假鉴权还是接统一认证」；工程侧还需在 App 层建立用户状态与登录流程的联动。
 
@@ -54,7 +63,11 @@
 
 - 来源：`issue-assets-vs-coach-deliverables`（issue）｜位置：素材与资产管理（`page-assets`）
 - owner：**上司拍板**｜severity：**medium**
-- **背景**：AI 助手右栏的产物区是常量 ALL_PROJECT_DELIVERABLES（8 项，RightWorkspacePanel.tsx:40-124）+ 硬编码预览；资产管理系统有文件树 + 版本时间线 + Diff（AssetManagementSystem.tsx），但两者零共享：①AI 生成的产物不会进入资产库（深度调用「采纳并同步至工作空间」只追加一条提示消息）；②路演幻灯片在资产页用 ROADSHOW_SLIDES_DATA（mockAssetManagementData.ts:118-135），在答辩页用 MOCK_ROADSHOW_SLIDES（defenseConstants.ts），两份数据互不相干；③page-workbench 的项目文件夹又宣称「与全链路指导工作台快照同源」，构成第三套版本口径。
+- **一句话（通俗版）**：项目「产物/资产」有两套体系：AI 助手右栏的产物清单与资产管理系统的文件库互不相通。
+- **现象**：AI 生成的产物不会进资产库；路演幻灯片在资产页与答辩页各有一份互不相干的数据；工作台的项目文件夹还宣称与另一个页面「同源」，构成第三套版本口径。
+- **影响**：同一个项目看不到一份可信的「当前材料清单」，版本管理被三套口径撕碎。
+- **需要谁做什么**：上司拍板：资产库是独立模块还是各模块内嵌？定了以后由工程统一数据层，各页只做展示。
+- **背景（原始记录）**：AI 助手右栏的产物区是常量 ALL_PROJECT_DELIVERABLES（8 项，RightWorkspacePanel.tsx:40-124）+ 硬编码预览；资产管理系统有文件树 + 版本时间线 + Diff（AssetManagementSystem.tsx），但两者零共享：①AI 生成的产物不会进入资产库（深度调用「采纳并同步至工作空间」只追加一条提示消息）；②路演幻灯片在资产页用 ROADSHOW_SLIDES_DATA（mockAssetManagementData.ts:118-135），在答辩页用 MOCK_ROADSHOW_SLIDES（defenseConstants.ts），两份数据互不相干；③page-workbench 的项目文件夹又宣称「与全链路指导工作台快照同源」，构成第三套版本口径。
 - **建议 / 期望**：一个项目只有一套「资产/产物」真源：AI 产物、答辩材料、BP 版本都归档进同一处并按版本管理；各页只做展示投影。
 - **卡点**：属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。
 
@@ -62,7 +75,11 @@
 
 - 来源：`issue-guidance-dead-coach-state`（issue）｜位置：右栏 AI 备赛伴学教练（`nd-guidance-coach`）
 - owner：**上司拍板**｜severity：**medium**
-- **背景**：chatCollapsed/setChatCollapsed（:99，无折叠按钮）、coachIntent/setCoachIntent（:100，setter 全文件仅出现在声明行，导致 AI 兜底文案「基于【L4】阶段指引」恒为 L4）、sessions/setSessions（:101，无会话列表，INITIAL_COACH_SESSIONS 导入即废弃）、activeSessionId/setActiveSessionId（:102，无消费）。四者合计对应「会话管理」「面板折叠」「阶段聚焦」三个未落地能力。
+- **一句话（通俗版）**：材料打磨工作台右栏的 AI 教练，有 4 项能力只声明了没做出来（会话列表、面板折叠、阶段聚焦等）。
+- **现象**：右栏不能收起、没有会话列表可切换；文案里写的「基于【L4】阶段指引」永远是 L4，不随当前阶段变化。
+- **影响**：右栏能力与完整版 AI 助手差得远，用户会问为什么这里没有会话。
+- **需要谁做什么**：上司拍板：先定右栏与 AI 助手主页面（page-coach）的分工——补齐这些能力，还是干脆砍掉死状态。
+- **背景（原始记录）**：chatCollapsed/setChatCollapsed（:99，无折叠按钮）、coachIntent/setCoachIntent（:100，setter 全文件仅出现在声明行，导致 AI 兜底文案「基于【L4】阶段指引」恒为 L4）、sessions/setSessions（:101，无会话列表，INITIAL_COACH_SESSIONS 导入即废弃）、activeSessionId/setActiveSessionId（:102，无消费）。四者合计对应「会话管理」「面板折叠」「阶段聚焦」三个未落地能力。
 - **建议 / 期望**：会话列表可切换（sessions 驱动）、面板可折叠（chatCollapsed 驱动）、阶段徽章可切换并影响 AI 回复口径（coachIntent 真正可写）。
 - **卡点**：三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。
 
@@ -70,14 +87,22 @@
 
 - 来源：`issue-guidance-stage-taxonomy-mismatch`（issue）｜位置：材料打磨工作台（`page-guidance`）
 - owner：**上司拍板**｜severity：**medium**
-- **背景**：本页 stepper（INITIAL_STAGE_ITEMS）为 L1~L6（创意激发/可行性验证/材料成型/打磨优化/路演成型/赛前冲刺），page-coach 侧为 L1~L4，page-milestones（里程碑看板）为 L1~L5。三套口径都叫「Lx 阶段」，且本页 stepper 的点击还不消费 stage 值，导致「阶段」在系统内既无统一定义也无实际跳转能力。
+- **一句话（通俗版）**：系统里「Lx 阶段」有三套说法：本页 L1~L6、AI 助手 L1~L4、里程碑看板 L1~L5。
+- **现象**：三个页面都叫「Lx 阶段」但段数与名称都不一样；本页顶部阶段条点了也没反应（不跳转、不筛选）。
+- **影响**：「阶段」既没有统一定义也没有实际作用，用户在三个页面之间会彻底迷糊。
+- **需要谁做什么**：上司拍板：定一个唯一的阶段口径（到底 L4、L5 还是 L6），再统一三处数据与阶段条的行为。
+- **背景（原始记录）**：本页 stepper（INITIAL_STAGE_ITEMS）为 L1~L6（创意激发/可行性验证/材料成型/打磨优化/路演成型/赛前冲刺），page-coach 侧为 L1~L4，page-milestones（里程碑看板）为 L1~L5。三套口径都叫「Lx 阶段」，且本页 stepper 的点击还不消费 stage 值，导致「阶段」在系统内既无统一定义也无实际跳转能力。
 - **卡点**：需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。
 
 ### 7. 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见
 
 - 来源：`issue-kb-two-ends-not-synced`（issue）｜位置：知识库管理（`page-knowledge-base`）
 - owner：**上司拍板**｜severity：**medium**
-- **背景**：`page-knowledge-base` 在 admin 端渲染 `PlatformKnowledgeBaseManagement`（自持 `MOCK_PLATFORM_KNOWLEDGE_BASES`：5 库 / 16 文件 / 4,090 切片 / 31,480 命中），在校管端渲染 `KnowledgeBaseManagement`（自持 `MOCK_KNOWLEDGE_BASES`：5 库 / 17 文件 / 3,332 要点 / 11,382 命中）；两个组件**都不接收任何 props**，App 仅按 `session?.role === 'system_admin'` 分流渲染。两端使用**完全相同的五类分类枚举**（school_policy / competition_rules / gold_cases / expert_experience / opc_incubation），视觉与交互同构，却没有任何数据流动：平台端副文称「作为底层标准供给全平台」，实际平台库不会出现在校端列表、校端也无从查看平台库。
+- **一句话（通俗版）**：知识库一个页面两种身份（平台端/校端），两端分类完全同名却互不可见。
+- **现象**：平台端写着「作为底层标准供给全平台」，但平台库不会出现在校端列表里，校端也无从查看平台库；两个组件都不接收外部数据，各用一份示例数据。
+- **影响**：「平台标准下发到学校」这条链路是空的，多校部署下的知识共享无法成立。
+- **需要谁做什么**：上司拍板：明确两端关系（平台库是全校共享超集，还是靠发布/订阅桥接）——与导师池那条是同一类问题，可一并决策。
+- **背景（原始记录）**：`page-knowledge-base` 在 admin 端渲染 `PlatformKnowledgeBaseManagement`（自持 `MOCK_PLATFORM_KNOWLEDGE_BASES`：5 库 / 16 文件 / 4,090 切片 / 31,480 命中），在校管端渲染 `KnowledgeBaseManagement`（自持 `MOCK_KNOWLEDGE_BASES`：5 库 / 17 文件 / 3,332 要点 / 11,382 命中）；两个组件**都不接收任何 props**，App 仅按 `session?.role === 'system_admin'` 分流渲染。两端使用**完全相同的五类分类枚举**（school_policy / competition_rules / gold_cases / expert_experience / opc_incubation），视觉与交互同构，却没有任何数据流动：平台端副文称「作为底层标准供给全平台」，实际平台库不会出现在校端列表、校端也无从查看平台库。
 - **建议 / 期望**：明确两端关系并建链路：平台库对校端可见（订阅/引用/只读下发），校端检索可同时命中平台标准与本校私有库；或明确两者独立运营、把「供给全平台」的表述改掉。
 - **卡点**：属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。
 
@@ -85,7 +110,11 @@
 
 - 来源：`issue-login-sso-placeholder`（issue）｜位置：登录分流（`page-login`）
 - owner：**待产品定义**｜severity：**medium**
-- **背景**：页面底部署名「支持统一身份认证 (CAS / OAuth2.0 / 统一学工号)」（LoginPage.tsx:274-278），但代码中没有任何 SSO 跳转/回调/token 处理：①身份由左栏四张卡前端单选；②「一键免密登入」预置账号卡直接构造 session 调 onLoginSuccess，绕过全部校验（LoginPage.tsx:513-532）；③表单只校验账号非空与学生/校管端高校非空，**密码字段无任何校验**，默认值 123456 明文写在源码（LoginPage.tsx:36-38、72-81）。session 存 localStorage，刷新即免登录。
+- **一句话（通俗版）**：登录页是演示用的假门：写着支持统一身份认证，实际是前端自选身份 + 免密卡 + 密码不校验。
+- **现象**：底部写着「支持统一身份认证 (CAS / OAuth2.0 / 统一学工号)」，却没有任何认证跳转；点「一键免密登入」直接进系统；密码框填什么都能过（默认值写在代码里）。
+- **影响**：演示时被追问安全性会答不上来，产品化前必须替换。
+- **需要谁做什么**：待产品定义：明确接哪套统一认证（校内 CAS / OAuth2.0 / 学工号），四端身份由认证结果决定还是继续让用户自选。
+- **背景（原始记录）**：页面底部署名「支持统一身份认证 (CAS / OAuth2.0 / 统一学工号)」（LoginPage.tsx:274-278），但代码中没有任何 SSO 跳转/回调/token 处理：①身份由左栏四张卡前端单选；②「一键免密登入」预置账号卡直接构造 session 调 onLoginSuccess，绕过全部校验（LoginPage.tsx:513-532）；③表单只校验账号非空与学生/校管端高校非空，**密码字段无任何校验**，默认值 123456 明文写在源码（LoginPage.tsx:36-38、72-81）。session 存 localStorage，刷新即免登录。
 - **建议 / 期望**：产品化需明确：接哪套统一身份认证（校内 CAS / OAuth2.0 / 学工号）、四端身份是否由认证结果而非用户自选决定、预置免密卡在非演示环境是否保留。
 - **卡点**：需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。
 
@@ -93,7 +122,11 @@
 
 - 来源：`issue-mentors-pool-two-ends-not-synced`（issue）｜位置：导师池管理（`page-mentors-pool`）
 - owner：**上司拍板**｜severity：**medium**
-- **背景**：`page-mentors-pool` 在 admin 端渲染 `PlatformMentorPoolManagement`（自持 `MOCK_PLATFORM_MENTORS`，**无任何 props、改动不出组件**），在校管端渲染 `MentorPoolManagement`（吃 App 的 `mentors` 并 `onUpdateMentors` 写回）。两套数据、两套枚举（`certificationLevel` vs `roleCategory`）、两套可用性语义（`dispatchStatus` vs `availability`）、两个独立导出实现。后果：①平台端「跨校调度工单」（MODAL 3）有出口无落点——没有任何页面接收；②平台特聘专家不会出现在校端的调度页候选里；③校端也看不到平台库。
+- **一句话（通俗版）**：导师池一个页面两种身份（平台端/校端），但两边数据完全不互通。
+- **现象**：平台端的「跨校调度工单」发出去没有任何页面接收；平台特聘专家不会出现在校端的调度候选里；校端也看不到平台库。
+- **影响**：平台与学校的导师资源无法真正协同，「跨校调度」只是文案，属产品级架构缺口。
+- **需要谁做什么**：上司拍板：明确两端关系（平台库是校端库的超集，还是两套池靠调度桥接），定了以后由工程统一数据层。
+- **背景（原始记录）**：`page-mentors-pool` 在 admin 端渲染 `PlatformMentorPoolManagement`（自持 `MOCK_PLATFORM_MENTORS`，**无任何 props、改动不出组件**），在校管端渲染 `MentorPoolManagement`（吃 App 的 `mentors` 并 `onUpdateMentors` 写回）。两套数据、两套枚举（`certificationLevel` vs `roleCategory`）、两套可用性语义（`dispatchStatus` vs `availability`）、两个独立导出实现。后果：①平台端「跨校调度工单」（MODAL 3）有出口无落点——没有任何页面接收；②平台特聘专家不会出现在校端的调度页候选里；③校端也看不到平台库。
 - **建议 / 期望**：明确两端关系（平台库是校端库的超集？还是分属两套池、靠「下派/调度」桥接？），并建立对应链路：若为超集则共享数据源；若靠调度桥接，则需在校端或调度页建立「调度工单接收与展示」。
 - **卡点**：属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。
 
@@ -101,7 +134,11 @@
 
 - 来源：`issue-product-single-project-binding`（issue）｜位置：项目工作台（`page-workbench`）
 - owner：**工程自决**｜severity：**medium**
-- **背景**：用户大框架（2026-09-14）「1. 学生角色」注：每个学生仅会绑定一个项目，demo 中展示仅因为方便查看，后续学生端只会看到自己的项目无法切换。当前 demo 登录时会 setActiveTeamProjectId 并允许切换查看不同项目（App.tsx:323-328），工作台/驾驶舱多处以 activeTeamProjectId 驱动。
+- **一句话（通俗版）**：产品规则：每个学生只绑定一个项目，学生端不该有项目切换；当前 demo 可切换仅为演示。
+- **现象**：学生登录后能在侧栏/工作台切换查看不同项目。
+- **影响**：与产品口径不符，演示时会让客户以为支持多项目管理。
+- **需要谁做什么**：工程自决（规则已由用户拍板）：产品化时关闭学生端的多项目切换入口，所有学生端页面只呈现自己那个项目的数据。
+- **背景（原始记录）**：用户大框架（2026-09-14）「1. 学生角色」注：每个学生仅会绑定一个项目，demo 中展示仅因为方便查看，后续学生端只会看到自己的项目无法切换。当前 demo 登录时会 setActiveTeamProjectId 并允许切换查看不同项目（App.tsx:323-328），工作台/驾驶舱多处以 activeTeamProjectId 驱动。
 - **建议 / 期望**：学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。
 - **卡点**：规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。
 
@@ -109,7 +146,11 @@
 
 - 来源：`issue-coach-spaces-dead`（issue）｜位置：会话历史与新建对话（`nd-coach-sessions`）
 - owner：**待产品定义**｜severity：**low**
-- **背景**：App 持有 spaces / activeSpaceId 与 handleSelectSpace / handleCreateSpace / handleSyncWorkspace 全套 handler（App.tsx:73-76、348-407、485-495），并透传给 Sidebar 与 ChatComposer；但两处组件都声明了 props 却**从未在组件体内使用**（Sidebar.tsx:76-80 仅有声明；ChatComposer.tsx:36-39 连解构都没做），故 activeSpaceId 恒为 'none'、currentActiveSpace 恒为 null，建空间/切空间/云同步三条链路全部不可达（并连带 issue-coach-project-context-unbound）。
+- **一句话（通俗版）**：「备赛空间」整套能力没有入口，是死结构（建空间、切空间、云同步都点不到）。
+- **现象**：界面上找不到「备赛空间」的选择器或新建入口。
+- **影响**：半套概念留在代码里，读代码的人会误判能力已就绪；它与「每个学生只有一个项目」的口径直接冲突。
+- **需要谁做什么**：待产品定义：备赛空间是多项目管理能力，与「一人一项目」只能留一个——要么补入口，要么整块移除。
+- **背景（原始记录）**：App 持有 spaces / activeSpaceId 与 handleSelectSpace / handleCreateSpace / handleSyncWorkspace 全套 handler（App.tsx:73-76、348-407、485-495），并透传给 Sidebar 与 ChatComposer；但两处组件都声明了 props 却**从未在组件体内使用**（Sidebar.tsx:76-80 仅有声明；ChatComposer.tsx:36-39 连解构都没做），故 activeSpaceId 恒为 'none'、currentActiveSpace 恒为 null，建空间/切空间/云同步三条链路全部不可达（并连带 issue-coach-project-context-unbound）。
 - **建议 / 期望**：要么给「备赛空间」补上入口（侧栏空间选择器 + 新建空间向导 + 云同步状态），要么按「每个学生只有一个项目」的产品口径整块移除，避免半套概念留在代码里。
 - **卡点**：需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。
 
@@ -117,20 +158,32 @@
 
 - 来源：`issue-diag-region-no-empty-state`（issue）｜位置：逻辑断点与硬伤（`nd-workbench-diag-gaps`）
 - owner：**待产品定义**｜severity：**low**
-- **背景**：实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。
+- **一句话（通俗版）**：体检区三块内容在没数据时只剩一个标题，既没提示也没有下一步入口。
+- **现象**：打开数据里没有逻辑断点的项目时，只看到「逻辑断点与硬伤分析 (0)」的标题，下面一片空白；评委提问、一级指标得分两块同样。
+- **影响**：用户分不清是「没数据」还是「页面坏了」，也不会想到要发起体检。
+- **需要谁做什么**：待产品定义：确认空态文案（如「暂无数据 / 尚未体检」），以及空态下是否放「发起 AI 体检」按钮。
+- **背景（原始记录）**：实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。
 - **卡点**：需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。
 
 ### 13. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
 
 - 来源：`issue-guidance-unused-modals`（issue）｜位置：版本快照差异比对弹层（`nd-guidance-diff-modal`）
 - owner：**待产品定义**｜severity：**low**
-- **背景**：GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。
+- **一句话（通俗版）**：工作台里有两个弹层（材料上传、内建待办）从未被任何页面调用，约 298 行死代码。
+- **现象**：界面上找不到「材料上传」和「新建待办」的入口，但代码里这两个弹层已经写好了。
+- **影响**：读代码的人会误以为这两项能力已经就绪，实际点不到也没入口。
+- **需要谁做什么**：待产品定义：确认「工作台内建待办 / 材料上传」是否还在路线图上——在就补入口，不在就删掉以免误读。
+- **背景（原始记录）**：GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。
 - **卡点**：需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。
 
 ### 14. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
 
 - 来源：`issue-product-framework-incremental-growth`（issue）｜位置：shuangchuang-ai-wiki（`shuangchuang-ai-wiki`）
 - owner：**工程自决**｜severity：**low**
-- **背景**：用户大框架总注：后续还会继续基于当前版本进行功能开发，即功能模块树还会继续生长，但当前先按现状设计。对 wiki 的含义：section/page/persona/placeholder 均须支持增量登记，不允许推翻式重构；新增功能若 demo 未实现，走 placeholders[] 占位（只登记、不建 page/node），与 2026-09-14 框架合流原则一致。
+- **一句话（通俗版）**：产品规则：功能模块树会持续生长，结构知识库必须支持「增量登记」而不是推翻重来。
+- **现象**：本条是对知识库自身的约定，界面无对应现象；风险是后续以「重构」方式更新结构。
+- **影响**：若按重大重构方式更新，前面几批的下钻成果会作废。
+- **需要谁做什么**：工程自决：新模块按「已实现→登记页面并排期下钻；未实现→登记为占位」处理，规范变更只追加记录。
+- **背景（原始记录）**：用户大框架总注：后续还会继续基于当前版本进行功能开发，即功能模块树还会继续生长，但当前先按现状设计。对 wiki 的含义：section/page/persona/placeholder 均须支持增量登记，不允许推翻式重构；新增功能若 demo 未实现，走 placeholders[] 占位（只登记、不建 page/node），与 2026-09-14 框架合流原则一致。
 - **建议 / 期望**：新增模块时：demo 已实现 → 增量登记 page（+personas/frameworkRef）并排期下钻；demo 未实现 → 登记 placeholders[]。schema 变更走 §10 变更记录，批次规划随之追加。
 - **卡点**：无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。

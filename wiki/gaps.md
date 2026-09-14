@@ -29,48 +29,48 @@
 
 ## issues（节点内缺口，未落成边）
 
-| id | 位置 | 状态 | severity | 问题 | 卡点 |
-|---|---|---|---|---|---|
-| `issue-coach-project-context-unbound` | AI 备赛教练 | undefined | high | AI 助手与右栏产物的项目上下文恒为兜底字面量（activeSpace 恒 null） | 需先把项目上下文从 activeSpace 迁到 currentMemberProject（或二者合并），并把散落的兜底字面量统一为项目字段；另需产品确认「备赛空间」概念是否保留（见 issue-coach-spaces-dead）。 |
-| `issue-cockpit-static-metrics` | 数据驾驶舱 | undefined | high | 驾驶舱演示数字与真实数据自相矛盾（同屏内「A 级 5 项」与「15 个金奖种子」并存） | 需要①引入真实聚合逻辑（数据已在 `projects` 与 `tier1Scores` 中）；②确定「工单相关指标」（闭环率/下发数/二次 Check）的数据来源——本页当前拿不到 `workOrders`，需 App 传入；③决定演示态是否保留大数字。 |
-| `issue-defense-report-not-connected` | 答辩复盘报告 | undefined | high | 复盘报告与本次训练数据不连通（交卷只切视图，分数走历史/兜底常量） | 需把 DefensiveSession 的消息/用时/评分提升到 SceneDefenseTraining 层（或引入共享 store），并把 RECENT_DEFENSE_HISTORY 改为可变数据。 |
-| `issue-guidance-snapshot-preview-no-content` | 快照只读预览提示条 | intended | high | 「快照只读预览」不显示快照内容，看到的仍是当前正文 | ①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。 |
-| `issue-kb-not-connected-to-coach` | 知识库管理 | undefined | high | 知识库与 AI 助手零连接：RAG 底座、检索命中、Grounding Citations 均为文案承诺 | 需后端检索链路（向量库 + 文档解析 + 引用回传）与 App 层知识库状态共享；技术选型方向已在《0819-技术选型方案》中给出（MySQL+Redis+Qdrant+BGE-M3），待确认后落地。 |
-| `issue-product-coach-session-unification` | 右栏 AI 备赛伴学教练 | undefined | high | 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套） | 待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。 |
-| `issue-screening-fixed-columns-by-index` | 二级指标全景表 | undefined | high | 二级指标全景表列数固定 17 且按数组下标取数，各赛道指标结构不同必然错位 | 需要一份「赛道 → 一级/二级指标定义」的数据源（`rules2026.ts` 是候选真源，需核对是否含二级项与分值），以及把 `tier2Scores` 从纯数组改为带 id 的结构（或建指标 id ↔ 下标的映射表）。 |
-| `issue-users-accounts-isolated` | 用户管理 | undefined | high | 用户账号体系是孤岛：新增账号无法登录、停用不影响任何权限，且与登录页预置账号互不相通 | 涉及整体鉴权方案（与 issue-login-sso-placeholder 同源），需产品先定「demo 用假鉴权还是接统一认证」；工程侧还需在 App 层建立用户状态与登录流程的联动。 |
-| `issue-assets-vs-coach-deliverables` | 素材与资产管理 | undefined | medium | 「产物 / 资产」两套体系未统一：AI 产出无归档路径，路演幻灯片两处各 mock | 属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。 |
-| `issue-coach-atomic-card-key-mismatch` | 浅度原子能力调用卡 | undefined | medium | 4.2 浅度原子卡正文永远不渲染（读取的数据键全仓无生产者） | 二选一：①按卡片的键名结构补全生产端数据（推荐——卡片侧字段更完整，是设计意图形态）；②简化卡片为 flaws/advice 结构（会丢字段）。需先确认哪个是设计真源。 |
-| `issue-coach-campus-university-out-of-sync` | AI 备赛教练 | undefined | medium | 登录选定的高校不流向 AI 助手校内智库（coach 自持一套选校，且引用文号硬编码厦大） | 口径与实现都要动：①确定「校内智库以谁为准」（登录校 vs 手动切换）；②把 selectedUniversity 的初值接到 session；③mock 里的机构名与文号需要按校改写。 |
-| `issue-coach-file-mention-not-used` | 消息输入区与能力配置 | undefined | medium | @ 引用项目文件与本地文件上传均不参与推理（无消费方） | 需接入文件解析 + 上下文注入链路（当前 demo 无后端、无文件服务）；实现前该能力属「文案先行」。 |
-| `issue-cockpit-screening-nav-no-context` | 数据驾驶舱 | undefined | medium | 跨页跳转全都不带上下文（驾驶舱/初筛页的「查看更多 / 排期 / 批量调度」到落地页后需重新找） | 需把 `onNavigateTab` 从「只传 tab 名」扩为「tab + 载荷」（或在 App 层维护一份跨页上下文 state），并让各落地页消费；改动面覆盖 App + 4 个页面，建议与批 3 的导航改造一并做。 |
-| `issue-diag-questions-suggestion-hardcoded` | 评委尖锐提问攻防演练 | intended | medium | 评委提问的「建议应对策略」是硬编码单条文案，不随题目变化 | killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。 |
-| `issue-guidance-dead-coach-state` | 右栏 AI 备赛伴学教练 | intended | medium | 右栏 AI 教练有 4 个 state 声明后从未被消费 | 三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。 |
-| `issue-guidance-diff-modal-hardcoded` | 版本快照差异比对弹层 | intended | medium | 版本 diff 弹层正文为写死示例，不随所选版本变化 | 依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。 |
-| `issue-guidance-stage-taxonomy-mismatch` | 材料打磨工作台 | undefined | medium | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5） | 需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。 |
-| `issue-kb-preview-hardcoded-chunks` | 文件解析要点预览 | undefined | medium | 文件预览弹窗的「核心知识要点」是写死示例（任何文件都显示同样两条，含写死匹配度） | 需 `KnowledgeBaseFile` 增补 `chunks[]` / `excerpts[]` 字段并由解析服务填充（与 issue-kb-not-connected-to-coach 同一条链路）。 |
-| `issue-kb-two-ends-not-synced` | 知识库管理 | undefined | medium | 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见 | 属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。 |
-| `issue-login-sso-placeholder` | 登录分流 | undefined | medium | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验 | 需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。 |
-| `issue-mentors-pool-two-ends-not-synced` | 导师池管理 | undefined | medium | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库） | 属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。 |
-| `issue-mentorship-mock-fanout` | 导师智能调度 | undefined | medium | 任务下发规模 15/28/82 写死并被用作进度条分母，与真实项目数（8）不符 | 需要 App 层在创建时把 `projects` 的梯队统计传下来（或把创建逻辑上移到 App），并决定赛道维度是否纳入任务模型。 |
-| `issue-milestones-filter-no-effect` | L1~L5 阶段流指示卡 | undefined | medium | 里程碑看板阶段卡「点了没反应」：筛选只影响一个数字，看板列不筛选 | 无外部阻塞，属实现缺陷修复；需先定交互（过滤 vs 高亮）——建议高亮（保持管线全景可见）。 |
-| `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
-| `issue-teams-fake-metrics` | 团队资质指标卡 | undefined | medium | 团队资质指标卡全为假数据：总数凭空 +77，三个比率写死且与真实字段可算值不符 | 无外部阻塞，属实现补齐（字段齐备）；需先与产品确认「全校团队总数」的口径来源（本页数据只有 5 支 mock，真实规模需接后端）。 |
-| `issue-users-fake-metrics` | 账号规模指标卡 | undefined | medium | 用户管理指标卡四张全部写死/假派生（users.length + 333、48 位、26 个学院、268 人） | 无外部阻塞；需与产品确认「学院数」的口径（账号所在单位 vs 学校院系总数）。 |
-| `issue-workbench-pending-archive` | 项目文件夹 | intended | medium | 待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记 | FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。 |
-| `issue-assets-addfile-folder-mismatch` | 新增资产归档弹窗 | undefined | low | 新增资产弹窗的目录口径不一致（初值「核心申报」不在下拉选项中） | 无外部阻塞，属实现补齐。 |
-| `issue-coach-shared-workspace-drawer-dead` | AI 备赛教练 | undefined | low | SharedWorkspaceDrawer 是不可达弹层（isWorkspaceOpen 只会被置 false） | 需决定右栏（RightWorkspacePanel）与旧抽屉是否合并——两者提供的能力高度重叠（产物清单 / 待办 / 文件提及）。 |
-| `issue-coach-spaces-dead` | 会话历史与新建对话 | undefined | low | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构 | 需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。 |
-| `issue-defense-prep-question-count` | 赛前解构与靶向题库 | undefined | low | 赛前解构「已生成 12 题」与实际渲染 4 条不符 | 无外部阻塞，属实现补齐；若要真实生成则依赖 page-defense 的题库数据源重构。 |
-| `issue-diag-region-no-empty-state` | 逻辑断点与硬伤 | undefined | low | 体检区三块均无空态处理，数据为空时只剩标题 | 需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。 |
-| `issue-guidance-unused-modals` | 版本快照差异比对弹层 | undefined | low | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行） | 需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。 |
-| `issue-milestones-static-trend` | 阶段均分跃迁卡 | undefined | low | 阶段均分跃迁四数字全写死，且当前数据结构无法支撑真实计算 | 阶段段数需产品先拍板（L1~L4/L5/L6 之争）；真实计算则依赖历史分数数据源的建立。 |
-| `issue-product-framework-incremental-growth` | shuangchuang-ai-wiki | intended | low | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展 | 无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。 |
-| `issue-screening-default-track-filter` | 智能初筛中心 | undefined | low | 初筛页默认按「高教主赛道-创意组」筛选，首屏只显示部分项目且与驾驶舱数字对不上 | 属产品口径决策（管理端首屏默认看全校还是看主赛道）；定后再改初值或补跳转载荷（与 issue-cockpit-screening-nav-no-context 联动）。 |
-| `issue-supervision-static-metrics` | 督导指标横幅 | undefined | low | 督导指标横幅「AI 复核提分均值 +7.0 分」写死，而真实提分数据可算 | 无外部阻塞，属实现补齐（数据已在 `workOrders` 上）。 |
-| `issue-teams-dead-state` | 搜索与团队筛选 | undefined | low | 团队管理页两处死代码：trackFilter 声明后从未被读取、ipReady 派生后从未被使用 | 无外部阻塞；建议与 issue-teams-fake-metrics 一并处理（同一文件的清理批次）。 |
-| `issue-users-auto-email` | 新增用户弹窗 | undefined | low | 新增用户邮箱自动生成会把中文姓名拼进域名（如「张三@university.edu.cn」） | 无外部阻塞，属实现修补；若引入拼音方案需新增依赖。 |
-| `issue-workbench-material-registry-gap` | 项目文件夹 | undefined | low | 材料注册表的来源映射键集与渲染集不闭合 | 需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。 |
+| id | 位置 | 状态 | severity | 问题 | 一句话（通俗版） | 卡点 |
+|---|---|---|---|---|---|---|
+| `issue-coach-project-context-unbound` | AI 备赛教练 | undefined | high | AI 助手与右栏产物的项目上下文恒为兜底字面量（activeSpace 恒 null） | AI 助手讲的项目永远是同一个「智耘农业」，与学生实际登录的项目无关。 | 需先把项目上下文从 activeSpace 迁到 currentMemberProject（或二者合并），并把散落的兜底字面量统一为项目字段；另需产品确认「备赛空间」概念是否保留（见 issue-coach-spaces-dead）。 |
+| `issue-cockpit-static-metrics` | 数据驾驶舱 | undefined | high | 驾驶舱演示数字与真实数据自相矛盾（同屏内「A 级 5 项」与「15 个金奖种子」并存） | 数据驾驶舱的数字大部分是写死的，同一屏里还自相矛盾（KPI 卡说 A 级 5 项，横幅说 15 个 A 级种子）。 | 需要①引入真实聚合逻辑（数据已在 `projects` 与 `tier1Scores` 中）；②确定「工单相关指标」（闭环率/下发数/二次 Check）的数据来源——本页当前拿不到 `workOrders`，需 App 传入；③决定演示态是否保留大数字。 |
+| `issue-defense-report-not-connected` | 答辩复盘报告 | undefined | high | 复盘报告与本次训练数据不连通（交卷只切视图，分数走历史/兜底常量） | 答辩复盘报告与刚才这次训练的数据不连通——交卷后分数用的是历史分或固定 84 分。 | 需把 DefensiveSession 的消息/用时/评分提升到 SceneDefenseTraining 层（或引入共享 store），并把 RECENT_DEFENSE_HISTORY 改为可变数据。 |
+| `issue-guidance-snapshot-preview-no-content` | 快照只读预览提示条 | intended | high | 「快照只读预览」不显示快照内容，看到的仍是当前正文 | 查看历史快照时，看到的仍是当前正文，「只读预览」名不副实。 | ①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。 |
+| `issue-kb-not-connected-to-coach` | 知识库管理 | undefined | high | 知识库与 AI 助手零连接：RAG 底座、检索命中、Grounding Citations 均为文案承诺 | 知识库与 AI 助手零连接：所谓「RAG 底座、命中引用」目前都只是文案。 | 需后端检索链路（向量库 + 文档解析 + 引用回传）与 App 层知识库状态共享；技术选型方向已在《0819-技术选型方案》中给出（MySQL+Redis+Qdrant+BGE-M3），待确认后落地。 |
+| `issue-product-coach-session-unification` | 右栏 AI 备赛伴学教练 | undefined | high | 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套） | 「AI 助手」有三种形态并存：完整版主页面、材料打磨工作台右栏的简版、以及改名后的页面，需定是否统一。 | 待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。 |
+| `issue-screening-fixed-columns-by-index` | 二级指标全景表 | undefined | high | 二级指标全景表列数固定 17 且按数组下标取数，各赛道指标结构不同必然错位 | 初筛的二级指标全景表列数固定 17 列、按下标取值，赛道不同必然错位。 | 需要一份「赛道 → 一级/二级指标定义」的数据源（`rules2026.ts` 是候选真源，需核对是否含二级项与分值），以及把 `tier2Scores` 从纯数组改为带 id 的结构（或建指标 id ↔ 下标的映射表）。 |
+| `issue-users-accounts-isolated` | 用户管理 | undefined | high | 用户账号体系是孤岛：新增账号无法登录、停用不影响任何权限，且与登录页预置账号互不相通 | 用户账号体系是孤岛：这里新增的账号登不进系统，停用也不影响任何权限。 | 涉及整体鉴权方案（与 issue-login-sso-placeholder 同源），需产品先定「demo 用假鉴权还是接统一认证」；工程侧还需在 App 层建立用户状态与登录流程的联动。 |
+| `issue-assets-vs-coach-deliverables` | 素材与资产管理 | undefined | medium | 「产物 / 资产」两套体系未统一：AI 产出无归档路径，路演幻灯片两处各 mock | 项目「产物/资产」有两套体系：AI 助手右栏的产物清单与资产管理系统的文件库互不相通。 | 属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。 |
+| `issue-coach-atomic-card-key-mismatch` | 浅度原子能力调用卡 | undefined | medium | 4.2 浅度原子卡正文永远不渲染（读取的数据键全仓无生产者） | 4.2 阶段的两张速诊卡正文永远空白，只剩标题和按钮。 | 二选一：①按卡片的键名结构补全生产端数据（推荐——卡片侧字段更完整，是设计意图形态）；②简化卡片为 flaws/advice 结构（会丢字段）。需先确认哪个是设计真源。 |
+| `issue-coach-campus-university-out-of-sync` | AI 备赛教练 | undefined | medium | 登录选定的高校不流向 AI 助手校内智库（coach 自持一套选校，且引用文号硬编码厦大） | 登录时选的学校不会传到 AI 助手的校内智库，引用文号还写死为厦门大学。 | 口径与实现都要动：①确定「校内智库以谁为准」（登录校 vs 手动切换）；②把 selectedUniversity 的初值接到 session；③mock 里的机构名与文号需要按校改写。 |
+| `issue-coach-file-mention-not-used` | 消息输入区与能力配置 | undefined | medium | @ 引用项目文件与本地文件上传均不参与推理（无消费方） | 输入框承诺「@ 引用项目文件提问」，但引用的文件和上传的附件都不参与回答。 | 需接入文件解析 + 上下文注入链路（当前 demo 无后端、无文件服务）；实现前该能力属「文案先行」。 |
+| `issue-cockpit-screening-nav-no-context` | 数据驾驶舱 | undefined | medium | 跨页跳转全都不带上下文（驾驶舱/初筛页的「查看更多 / 排期 / 批量调度」到落地页后需重新找） | 跨页跳转不带上下文：从驾驶舱点「A 级金奖池」进初筛页，落地后看到的是默认筛选结果。 | 需把 `onNavigateTab` 从「只传 tab 名」扩为「tab + 载荷」（或在 App 层维护一份跨页上下文 state），并让各落地页消费；改动面覆盖 App + 4 个页面，建议与批 3 的导航改造一并做。 |
+| `issue-diag-questions-suggestion-hardcoded` | 评委尖锐提问攻防演练 | intended | medium | 评委提问的「建议应对策略」是硬编码单条文案，不随题目变化 | 评委提问下方那句「建议应对策略」是固定文案，换题目也不变。 | killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。 |
+| `issue-guidance-dead-coach-state` | 右栏 AI 备赛伴学教练 | intended | medium | 右栏 AI 教练有 4 个 state 声明后从未被消费 | 材料打磨工作台右栏的 AI 教练，有 4 项能力只声明了没做出来（会话列表、面板折叠、阶段聚焦等）。 | 三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。 |
+| `issue-guidance-diff-modal-hardcoded` | 版本快照差异比对弹层 | intended | medium | 版本 diff 弹层正文为写死示例，不随所选版本变化 | 版本对比弹窗里的差异内容是写死的示例，切换版本不会变。 | 依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。 |
+| `issue-guidance-stage-taxonomy-mismatch` | 材料打磨工作台 | undefined | medium | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5） | 系统里「Lx 阶段」有三套说法：本页 L1~L6、AI 助手 L1~L4、里程碑看板 L1~L5。 | 需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。 |
+| `issue-kb-preview-hardcoded-chunks` | 文件解析要点预览 | undefined | medium | 文件预览弹窗的「核心知识要点」是写死示例（任何文件都显示同样两条，含写死匹配度） | 文件预览弹窗里的「核心知识要点」是写死的示例，任何文件打开都显示同样两条。 | 需 `KnowledgeBaseFile` 增补 `chunks[]` / `excerpts[]` 字段并由解析服务填充（与 issue-kb-not-connected-to-coach 同一条链路）。 |
+| `issue-kb-two-ends-not-synced` | 知识库管理 | undefined | medium | 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见 | 知识库一个页面两种身份（平台端/校端），两端分类完全同名却互不可见。 | 属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。 |
+| `issue-login-sso-placeholder` | 登录分流 | undefined | medium | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验 | 登录页是演示用的假门：写着支持统一身份认证，实际是前端自选身份 + 免密卡 + 密码不校验。 | 需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。 |
+| `issue-mentors-pool-two-ends-not-synced` | 导师池管理 | undefined | medium | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库） | 导师池一个页面两种身份（平台端/校端），但两边数据完全不互通。 | 属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。 |
+| `issue-mentorship-mock-fanout` | 导师智能调度 | undefined | medium | 任务下发规模 15/28/82 写死并被用作进度条分母，与真实项目数（8）不符 | 任务下发规模的 15/28/82 是写死的，还被当成了进度条的分母。 | 需要 App 层在创建时把 `projects` 的梯队统计传下来（或把创建逻辑上移到 App），并决定赛道维度是否纳入任务模型。 |
+| `issue-milestones-filter-no-effect` | L1~L5 阶段流指示卡 | undefined | medium | 里程碑看板阶段卡「点了没反应」：筛选只影响一个数字，看板列不筛选 | 里程碑看板的阶段卡点了没反应——筛选只改了一个数字，看板列不动。 | 无外部阻塞，属实现缺陷修复；需先定交互（过滤 vs 高亮）——建议高亮（保持管线全景可见）。 |
+| `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 产品规则：每个学生只绑定一个项目，学生端不该有项目切换；当前 demo 可切换仅为演示。 | 规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
+| `issue-teams-fake-metrics` | 团队资质指标卡 | undefined | medium | 团队资质指标卡全为假数据：总数凭空 +77，三个比率写死且与真实字段可算值不符 | 团队资质指标卡全是假数据：总数凭空 +77，三个比例写死，而真实字段其实可以直接算。 | 无外部阻塞，属实现补齐（字段齐备）；需先与产品确认「全校团队总数」的口径来源（本页数据只有 5 支 mock，真实规模需接后端）。 |
+| `issue-users-fake-metrics` | 账号规模指标卡 | undefined | medium | 用户管理指标卡四张全部写死/假派生（users.length + 333、48 位、26 个学院、268 人） | 用户管理四张指标卡全部写死或假派生（总数 +333、48 位导师、26 个学院、268 人）。 | 无外部阻塞；需与产品确认「学院数」的口径（账号所在单位 vs 学校院系总数）。 |
+| `issue-workbench-pending-archive` | 项目文件夹 | intended | medium | 待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记 | 「存入项目文件夹」按钮目前只弹一个提示框，并没有真的把产物存进去。 | FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。 |
+| `issue-assets-addfile-folder-mismatch` | 新增资产归档弹窗 | undefined | low | 新增资产弹窗的目录口径不一致（初值「核心申报」不在下拉选项中） | 新增资产弹窗的默认目录名不在下拉选项里，直接提交会多出一套目录。 | 无外部阻塞，属实现补齐。 |
+| `issue-coach-shared-workspace-drawer-dead` | AI 备赛教练 | undefined | low | SharedWorkspaceDrawer 是不可达弹层（isWorkspaceOpen 只会被置 false） | 一个旧版「共享工作台」抽屉永远不会打开，没有任何入口能触达它。 | 需决定右栏（RightWorkspacePanel）与旧抽屉是否合并——两者提供的能力高度重叠（产物清单 / 待办 / 文件提及）。 |
+| `issue-coach-spaces-dead` | 会话历史与新建对话 | undefined | low | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构 | 「备赛空间」整套能力没有入口，是死结构（建空间、切空间、云同步都点不到）。 | 需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。 |
+| `issue-defense-prep-question-count` | 赛前解构与靶向题库 | undefined | low | 赛前解构「已生成 12 题」与实际渲染 4 条不符 | 赛前解构写着「已生成 12 题」，实际只显示 4 条，且题目写死为另一个项目。 | 无外部阻塞，属实现补齐；若要真实生成则依赖 page-defense 的题库数据源重构。 |
+| `issue-diag-region-no-empty-state` | 逻辑断点与硬伤 | undefined | low | 体检区三块均无空态处理，数据为空时只剩标题 | 体检区三块内容在没数据时只剩一个标题，既没提示也没有下一步入口。 | 需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。 |
+| `issue-guidance-unused-modals` | 版本快照差异比对弹层 | undefined | low | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行） | 工作台里有两个弹层（材料上传、内建待办）从未被任何页面调用，约 298 行死代码。 | 需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。 |
+| `issue-milestones-static-trend` | 阶段均分跃迁卡 | undefined | low | 阶段均分跃迁四数字全写死，且当前数据结构无法支撑真实计算 | 阶段均分跃迁的四个分数全是写死的，且当前数据结构根本算不出来。 | 阶段段数需产品先拍板（L1~L4/L5/L6 之争）；真实计算则依赖历史分数数据源的建立。 |
+| `issue-product-framework-incremental-growth` | shuangchuang-ai-wiki | intended | low | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展 | 产品规则：功能模块树会持续生长，结构知识库必须支持「增量登记」而不是推翻重来。 | 无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。 |
+| `issue-screening-default-track-filter` | 智能初筛中心 | undefined | low | 初筛页默认按「高教主赛道-创意组」筛选，首屏只显示部分项目且与驾驶舱数字对不上 | 初筛页默认只看「高教主赛道-创意组」，首屏项目数与驾驶舱对不上。 | 属产品口径决策（管理端首屏默认看全校还是看主赛道）；定后再改初值或补跳转载荷（与 issue-cockpit-screening-nav-no-context 联动）。 |
+| `issue-supervision-static-metrics` | 督导指标横幅 | undefined | low | 督导指标横幅「AI 复核提分均值 +7.0 分」写死，而真实提分数据可算 | 督导横幅「AI 复核提分均值 +7.0 分」是写死的，而真实提分数据其实算得出来。 | 无外部阻塞，属实现补齐（数据已在 `workOrders` 上）。 |
+| `issue-teams-dead-state` | 搜索与团队筛选 | undefined | low | 团队管理页两处死代码：trackFilter 声明后从未被读取、ipReady 派生后从未被使用 | 团队管理页有两处死代码：声明了但从未使用的「赛道筛选」和一个算了不用的比例。 | 无外部阻塞；建议与 issue-teams-fake-metrics 一并处理（同一文件的清理批次）。 |
+| `issue-users-auto-email` | 新增用户弹窗 | undefined | low | 新增用户邮箱自动生成会把中文姓名拼进域名（如「张三@university.edu.cn」） | 新增用户时自动生成的邮箱会把中文姓名拼进域名，产出非法地址。 | 无外部阻塞，属实现修补；若引入拼音方案需新增依赖。 |
+| `issue-workbench-material-registry-gap` | 项目文件夹 | undefined | low | 材料注册表的来源映射键集与渲染集不闭合 | 材料清单支持 9 种来源标签，实际界面只用到 2 种，另外 7 种没有落点。 | 需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。 |
 
 ## 逐条详情
 

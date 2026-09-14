@@ -145,12 +145,18 @@ def build_data() -> dict[str, Any]:
     node_by_id = {n["id"]: n for n in nodes}
     page_by_id = {p["id"]: p for p in structure.get("pages", [])}
     modal_by_id = {m["id"]: m for m in structure.get("modals", [])}
+    shell_by_id = {s["id"]: s for s in structure.get("shellComponents", [])}
 
-    # 解析所有边端点为一个"图节点"
     graph_nodes: dict[str, dict[str, Any]] = {}
 
-    def touch(nid: str) -> None:
-        if nid in graph_nodes:
+    def reg(nid: str) -> None:
+        """登记一个图节点。
+
+        v0.9 起**全集登记**：页面 / 节点 / 弹层 / 壳层 全部进图（不再只登记边端点）。
+        原因：只画边端点会让「无任何连线的模块」在图上消失（旧版 95 个节点有 23 个不可见），
+        并使 issues[].where 指向画布上不存在的卡片（旧版 40 条 issue 有 15 条点了没反应）。
+        """
+        if not nid or nid in graph_nodes:
             return
         if nid in node_by_id:
             n = node_by_id[nid]
@@ -170,6 +176,7 @@ def build_data() -> dict[str, Any]:
                 "factCount": None, "ruleCount": None,
                 "file": p.get("component", ""), "sources": [],
                 "note": p.get("description", ""),
+                "personas": p.get("personas", []),
             }
         elif nid in modal_by_id:
             m = modal_by_id[nid]
@@ -179,6 +186,17 @@ def build_data() -> dict[str, Any]:
                 "tier": "modal", "page": "",
                 "factCount": None, "ruleCount": None,
                 "file": m.get("component", ""), "sources": [],
+                "note": m.get("note", ""),
+            }
+        elif nid in shell_by_id:
+            s = shell_by_id[nid]
+            graph_nodes[nid] = {
+                "id": nid, "label": s.get("title", nid), "sub": nid,
+                "kind": "shell", "importance": "medium",
+                "tier": "shell", "page": "",
+                "factCount": None, "ruleCount": None,
+                "file": s.get("component", ""), "sources": [],
+                "note": s.get("note", ""),
             }
         else:
             graph_nodes[nid] = {
@@ -187,9 +205,17 @@ def build_data() -> dict[str, Any]:
                 "factCount": None, "ruleCount": None, "file": "", "sources": [],
             }
 
-    for e in edge_doc.get("edges", []):
-        touch(e.get("from", ""))
-        touch(e.get("to", ""))
+    for pid in page_by_id:
+        reg(pid)
+    for mid in modal_by_id:
+        reg(mid)
+    for sid in shell_by_id:
+        reg(sid)
+    for n in nodes:
+        reg(n["id"])
+    for e in edge_doc.get("edges", []):          # 兜底：边端点里未登记的 id
+        reg(e.get("from", ""))
+        reg(e.get("to", ""))
 
     # 列分配：**每个已下钻的页面各占一列**（按 sections 声明的顺序），其余图节点（跨页目标 / 弹层 / 壳层）归入末列。
     # 这样每新增一个下钻页面就自动多一列，不需要改这份生成器。
@@ -231,12 +257,20 @@ def build_data() -> dict[str, Any]:
         }
     )
 
+    linked_ids: set[str] = set()
+    for e in edge_doc.get("edges", []):
+        linked_ids.add(e.get("from", ""))
+        linked_ids.add(e.get("to", ""))
+
     for nid, g in graph_nodes.items():
         g["col"] = column_of(nid)
+        g["orphan"] = nid not in linked_ids       # v0.9：无任何连线的模块（灰显展示）
+        g["gapCount"] = 0                         # 与之相关的未实现边 + 挂在其上的 issues
+        g["issueCount"] = 0
 
     # 列内排序：节点按 kind 归组，保证语义相邻
     kind_rank = {"nav": 0, "bar": 1, "tab": 2, "list": 3, "panel": 4, "table": 5,
-                 "form": 6, "drawer": 7, "modal": 8, "page": 9, "unknown": 10}
+                 "form": 6, "drawer": 7, "modal": 8, "shell": 9, "page": 10, "unknown": 11}
     by_col: dict[str, list[str]] = {c["id"]: [] for c in col_defs}
     for nid in graph_nodes:
         cid = graph_nodes[nid]["col"]
@@ -286,6 +320,110 @@ def build_data() -> dict[str, Any]:
             "sources": e.get("sources") or [],
             "offset": offset,
         })
+        if e.get("status") != "implemented":
+            for end in (e.get("from", ""), e.get("to", "")):
+                if end in graph_nodes:
+                    graph_nodes[end]["gapCount"] += 1
+
+    for it in edge_doc.get("issues", []):
+        w = it.get("where", "")
+        if w in graph_nodes:
+            graph_nodes[w]["issueCount"] += 1
+            graph_nodes[w]["gapCount"] += 1
+
+    # ---- 总览层（页面级视图，v0.9 新增）----
+    # 目的：一张图同时承担「看全」和「看细」会两头落空（节点级全景 16 列 / 7000px 宽）。
+    # 总览层把节点级关系折叠成「页面 ↔ 页面」的聚合关系（含条数与缺口数），一屏可看完。
+    def owning_page(eid: str) -> str:
+        g = graph_nodes.get(eid)
+        if not g:
+            return ""
+        if g["tier"] in ("page", "modal", "shell"):
+            return eid
+        if g["tier"] == "node":
+            return g["page"]
+        return ""                       # unknown：不参与页面级关系
+
+    agg: dict[tuple[str, str], dict[str, Any]] = {}
+    intra_count: dict[str, int] = {}
+    for e in edge_doc.get("edges", []):
+        pf, pt = owning_page(e.get("from", "")), owning_page(e.get("to", ""))
+        if not pf or not pt:
+            continue
+        if pf == pt:
+            intra_count[pf] = intra_count.get(pf, 0) + 1
+            continue
+        d = agg.setdefault((pf, pt), {"id": "ov-%s--%s" % (pf, pt), "from": pf, "to": pt,
+                                      "count": 0, "gap": 0, "edgeIds": []})
+        d["count"] += 1
+        d["edgeIds"].append(e.get("id", ""))
+        if e.get("status") != "implemented":
+            d["gap"] += 1
+    ov_edges = sorted(agg.values(), key=lambda d: (d["from"], d["to"]))
+
+    ov_nodes: list[dict[str, Any]] = []
+    for pid in page_order:
+        p = page_by_id.get(pid)
+        if not p:
+            continue
+        my_nodes = [n["id"] for n in nodes if n.get("page") == pid]
+        ov_nodes.append({
+            "id": pid, "label": p["title"], "sub": pid, "tier": "page", "kind": "page",
+            "section": p.get("section", ""), "personas": p.get("personas", []),
+            "importance": p.get("importance", "medium"),
+            "nodeCount": len(my_nodes),
+            "orphanNodes": len([x for x in my_nodes if graph_nodes.get(x, {}).get("orphan")]),
+            "drilled": p.get("docStatus") == "drilled",
+            "edgeCount": 0, "gapCount": 0, "issueCount": 0,
+            "intraCount": intra_count.get(pid, 0),
+            "description": p.get("description", ""), "file": p.get("component", ""),
+        })
+    ov_page_count = len(ov_nodes)
+    for eid in list(modal_by_id) + list(shell_by_id):
+        g = graph_nodes.get(eid)
+        if not g:
+            continue
+        ov_nodes.append({
+            "id": eid, "label": g["label"], "sub": eid, "tier": g["tier"], "kind": g["kind"],
+            "section": "", "personas": [], "importance": g.get("importance", "medium"),
+            "nodeCount": None, "orphanNodes": 0, "drilled": True,
+            "edgeCount": 0, "gapCount": 0, "issueCount": 0,
+            "intraCount": intra_count.get(eid, 0),
+            "description": g.get("note", ""), "file": g.get("file", ""),
+        })
+    ov_by_id = {n["id"]: n for n in ov_nodes}
+    for d in ov_edges:
+        for end in (d["from"], d["to"]):
+            if end in ov_by_id:
+                ov_by_id[end]["edgeCount"] += 1
+    for it in edge_doc.get("issues", []):
+        pid = owning_page(it.get("where", ""))
+        if pid in ov_by_id:
+            ov_by_id[pid]["issueCount"] += 1
+    for d in ov_edges:
+        for end in (d["from"], d["to"]):
+            if d["gap"] and end in ov_by_id:
+                ov_by_id[end]["gapCount"] += d["gap"]
+
+    ov_columns: list[dict[str, Any]] = []
+    for s in structure.get("sections", []):
+        ids = [p for p in s.get("pages", []) if p in ov_by_id]
+        if not ids:
+            continue
+        ov_columns.append({"id": "ovcol-" + s.get("id", "x"), "title": s.get("title", ""),
+                           "subtitle": s.get("userView", "")[:34], "nodeIds": ids})
+    _placed = {i for c in ov_columns for i in c["nodeIds"]}
+    _rest = [n["id"] for n in ov_nodes if n["id"] not in _placed]
+    if _rest:
+        ov_columns.append({"id": "ovcol-external", "title": "外部模块",
+                           "subtitle": "壳层与弹层（不属于任何页面）", "nodeIds": _rest})
+
+    # ---- 术语表（glossary.json，只用于「原始版」详情的术语对照，不修改任何原文）----
+    glossary_path = os.path.join(WIKI_DIR, "glossary.json")
+    glossary: list[dict[str, Any]] = []
+    if os.path.exists(glossary_path):
+        with open(glossary_path, encoding="utf-8") as fh:
+            glossary = json.load(fh).get("terms", [])
 
     return {
         "meta": {
@@ -307,6 +445,8 @@ def build_data() -> dict[str, Any]:
             "undefined": len([e for e in edges if e["status"] == "undefined"]),
             "issues": len(edge_doc.get("issues", [])),
             "orphans": len(structure.get("orphanComponents", [])),
+            "graphNodes": len(graph_nodes),
+            "disconnected": len([g for g in graph_nodes.values() if g.get("orphan")]),
         },
         "sections": structure.get("sections", []),
         "pages": structure.get("pages", []),
@@ -317,8 +457,12 @@ def build_data() -> dict[str, Any]:
             "columns": col_defs,
             "nodes": list(graph_nodes.values()),
             "byCol": {c["id"]: by_col[c["id"]] for c in col_defs},
+            "disconnected": len([g for g in graph_nodes.values() if g.get("orphan")]),
         },
         "edges": edges,
+        "overview": {"columns": ov_columns, "nodes": ov_nodes, "edges": ov_edges},
+        "glossary": glossary,
+        "personaMeta": {p["id"]: p.get("title", p["id"]) for p in structure.get("personas", [])},
         "typeMeta": TYPE_META,
         "statusMeta": STATUS_META,
         "importanceColor": IMPORTANCE_COLOR,
@@ -439,6 +583,87 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-radius:9px 9px 0 0;background:#f8fafc;color:var(--ink-2);cursor:pointer}
   .tab.on{background:var(--panel);color:var(--ink);font-weight:600;border-color:var(--accent);
     box-shadow:inset 0 2.5px 0 var(--accent)}
+
+  /* ---------- v0.9：视图切换 / 过滤 / 折叠 / 聚焦 / 术语 ---------- */
+  .toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:9px 24px;
+    background:var(--panel);border-bottom:1px solid var(--line)}
+  .tb{display:flex;align-items:center;gap:5px}
+  .tb-lb{font-size:11px;color:var(--ink-3);margin-right:1px}
+  .btn{font-size:11.5px;padding:3px 10px;border:1px solid var(--line);border-radius:7px;
+    background:#fff;color:var(--ink-2);cursor:pointer;line-height:1.7;white-space:nowrap}
+  .btn:hover{border-color:#bfd4f5;background:#fafcff}
+  .btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btn.ghost{border-style:dashed}
+  .seg{display:flex}
+  .seg .btn{border-radius:0;margin-left:-1px}
+  .seg .btn:first-child{border-radius:7px 0 0 7px;margin-left:0}
+  .seg .btn:last-child{border-radius:0 7px 7px 0}
+  .tb-hint{font-size:11px;color:var(--ink-3);margin-left:auto}
+
+  .col-hd.clickable{cursor:pointer;user-select:none}
+  .col-hd.clickable:hover .t{color:var(--accent)}
+  .col-hd .foldmark{font-size:10px;color:var(--ink-3);margin-right:4px}
+  .col.folded{width:40px;flex:0 0 40px;margin-right:-140px}
+  .col.folded .col-body{display:none}
+  .col.folded .col-hd{border-bottom-color:var(--accent);padding-bottom:6px}
+  .col.folded .col-hd .t{writing-mode:vertical-rl;font-size:12px;letter-spacing:1px;margin-top:4px}
+  .col.folded .col-hd .s{display:none}
+  .col.folded .col-hd .cnt{display:none}
+
+  .card.orphan{border-style:dashed;background:#fbfcfd}
+  .card.orphan .nm{color:var(--ink-2);font-weight:500}
+  .card .origdot{display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:#cbd5e1;margin-right:5px;vertical-align:middle}
+  .card .pers{font-size:9.5px;color:var(--ink-3);background:#f1f5f9;border-radius:4px;padding:0 4px}
+  .card .kpi{font-size:10px;color:var(--ink-3)}
+  .card .kpi b{color:var(--warn)}
+
+  .focus{margin:0 24px 22px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden}
+  .focus-hd{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:10px;flex-wrap:wrap}
+  .focus-hd .ft{font-weight:600;font-size:13px}
+  .focus-hd .fk{font-size:11px;color:var(--ink-3)}
+  .focus-hd .acts{margin-left:auto;display:flex;gap:6px}
+  .focus-bd{padding:14px;display:grid;grid-template-columns:1fr minmax(240px,300px) 1fr;gap:14px}
+  .fcol-h{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.5px;margin-bottom:8px}
+  .fcard{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;
+    cursor:pointer;background:#fff}
+  .fcard:hover{border-color:#bfd4f5;background:#fafcff}
+  .fcard .n{font-size:12px;font-weight:600}
+  .fcard .m{font-size:10.5px;color:var(--ink-3);margin-top:3px;
+    font-family:'SFMono-Regular',Consolas,monospace}
+  .fcard .t2{font-size:11px;color:var(--ink-2);margin-top:4px}
+  .fmid{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .fmid .nm{font-size:14px;font-weight:600}
+  .fmid .sub{font-size:11px;color:var(--ink-3);margin-top:3px;
+    font-family:'SFMono-Regular',Consolas,monospace;word-break:break-all}
+  .chipset{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .chip.c2{background:#fff;cursor:pointer}
+  .chip.c2:hover{border-color:#bfd4f5;color:var(--accent)}
+  .chip.c2.orph{border-style:dashed;color:var(--ink-3)}
+  .flegend{font-size:11px;color:var(--ink-3);margin-top:10px;padding-top:8px;
+    border-top:1px dashed var(--line)}
+
+  .iitem.clickable{cursor:pointer;border-radius:8px}
+  .iitem.clickable:hover{background:#fafcff}
+  .iitem .loc{font-size:10px;color:var(--accent);margin-top:3px;display:none}
+  .iitem.clickable:hover .loc{display:block}
+  .iitem.noanchor .loc{display:block;color:var(--ink-3)}
+
+  .tabs2{display:flex;gap:5px;margin-bottom:10px}
+  .tabs2 .btn{font-size:11px}
+  .plain-box{background:#f4fbf6;border:1px solid #d7ecdf;border-radius:9px;padding:10px 12px}
+  .plain-box .pf{font-size:11px;font-weight:600;color:var(--ok);letter-spacing:.5px;margin-bottom:5px}
+  .plain-box .pv{font-size:12px;color:var(--ink);margin-bottom:8px}
+  .plain-box .pv:last-child{margin-bottom:0}
+  .plain-box .pv b{color:var(--ink-2);font-weight:600}
+  .fallback{font-size:11px;color:var(--ink-3);margin-bottom:8px}
+  .termtab{width:100%;border-collapse:collapse;font-size:11px}
+  .termtab td{padding:3px 6px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  .termtab td:first-child{font-family:'SFMono-Regular',Consolas,monospace;color:#7c3aed;
+    white-space:nowrap}
+  .termtab tr:last-child td{border-bottom:0}
 </style>
 </head>
 <body>
@@ -450,6 +675,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="stats" id="stats"></div>
   <div class="legend" id="legend"></div>
 </header>
+
+<div class="toolbar" id="toolbar"></div>
 
 <div class="wrap">
   <div class="canvas-wrap">
@@ -469,6 +696,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   </aside>
 </div>
 
+<div class="focus" id="focus" style="display:none">
+  <div class="focus-hd" id="focusHd"></div>
+  <div class="focus-bd" id="focusBody"></div>
+</div>
+
 <div class="footer">
   <div class="tabs" id="tabs"></div>
   <div id="tabBody"></div>
@@ -483,8 +715,27 @@ const nodeById = {};
 DATA.graph.nodes.forEach(n => nodeById[n.id] = n);
 const edgeById = {};
 DATA.edges.forEach(e => edgeById[e.id] = e);
+const ovById = {};
+DATA.overview.nodes.forEach(n => ovById[n.id] = n);
+const ovEdgeById = {};
+DATA.overview.edges.forEach(e => ovEdgeById[e.id] = e);
+const pagePersonas = {};
+DATA.pages.forEach(p => pagePersonas[p.id] = p.personas || []);
+const TERMS = (DATA.glossary || []).slice().sort((a, b) => b.term.length - a.term.length);
+const ISSUES = DATA.issues || [];
+const issueById = {};
+ISSUES.forEach(i => issueById[i.id] = i);
 
-let selKind = null, selId = null;
+/* 视图状态（v0.9）：overview = 页面级总览（默认，一屏看完）；full = 节点级全景（原 16 列视图） */
+const ST = {
+  view: 'overview',
+  persona: 'all',
+  edgeMode: 'all',
+  collapsed: {},
+  selKind: null, selId: null,
+  focusId: null,
+  plainMode: 'plain'
+};
 
 /* ---------- header ---------- */
 (function renderHeader(){
@@ -495,6 +746,8 @@ let selKind = null, selId = null;
     ['页面/视图', s.pages, ''],
     ['已下钻', s.drilled, ''],
     ['节点', s.nodes, ''],
+    ['图上模块', s.graphNodes, ''],
+    ['未连线', s.disconnected, s.disconnected ? 'hot' : ''],
     ['边', s.edges, ''],
     ['已实现', s.implemented, 'good'],
     ['未实现', s.intended, 'hot'],
@@ -516,41 +769,159 @@ let selKind = null, selId = null;
     + '<span class="lg" style="color:#94a3b8;margin-left:8px">左侧竖条=重要度</span>' + impLg;
 })();
 
+/* ---------- toolbar（视图 / 端 / 连线 / 折叠）---------- */
+function renderToolbar(){
+  const seg = (id, cur, items) => `<div class="seg" data-seg="${id}">` + items.map(([v, lab]) =>
+    `<div class="btn ${cur===v?'on':''}" data-v="${esc(v)}">${esc(lab)}</div>`).join('') + '</div>';
+  const personas = [['all','全部']].concat(Object.entries(DATA.personaMeta).map(([k,v]) => [k, v]));
+  $('toolbar').innerHTML =
+    `<div class="tb"><span class="tb-lb">视图</span>` +
+      seg('view', ST.view, [['overview','① 总览（页面级）'],['full','② 全景（节点级）']]) + `</div>` +
+    `<div class="tb"><span class="tb-lb">端</span>` + seg('persona', ST.persona, personas) + `</div>` +
+    `<div class="tb"><span class="tb-lb">连线</span>` +
+      seg('edge', ST.edgeMode, [['all','全部'],['gap','只看缺口'],['cross','只看跨列']]) + `</div>` +
+    `<div class="tb"><div class="btn ghost" id="foldAll">折叠全部列</div><div class="btn ghost" id="unfoldAll">展开全部列</div></div>` +
+    `<div class="tb-hint" id="tbHint"></div>`;
+  $('toolbar').querySelectorAll('[data-seg]').forEach(el => {
+    el.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-v]');
+      if(!b) return;
+      const which = el.dataset.seg;
+      if(which === 'view') ST.view = b.dataset.v;
+      if(which === 'persona') ST.persona = b.dataset.v;
+      if(which === 'edge') ST.edgeMode = b.dataset.v;
+      renderToolbar(); renderCanvas();
+    });
+  });
+  $('foldAll').addEventListener('click', () => {
+    currentCols().forEach(c => ST.collapsed[c.id] = true);
+    renderCanvas();
+  });
+  $('unfoldAll').addEventListener('click', () => { ST.collapsed = {}; renderCanvas(); });
+}
+
+/* ---------- 可见性（端过滤 / 连线过滤）---------- */
+function currentCols(){
+  return ST.view === 'overview' ? DATA.overview.columns : DATA.graph.columns;
+}
+function colPageId(colId){
+  return colId.indexOf('col-page-') === 0 ? colId.slice(4) : '';
+}
+function colVisible(col){
+  if(ST.persona === 'all') return true;
+  if(ST.view === 'overview'){
+    const ids = col.nodeIds || [];
+    return ids.some(id => ((ovById[id]||{}).personas || []).includes(ST.persona));
+  }
+  const pid = colPageId(col.id);
+  if(!pid) return true;                        // 外部模块列不按端过滤
+  return (pagePersonas[pid] || []).includes(ST.persona);
+}
+function colVisibleMap(){
+  const m = {};
+  currentCols().forEach(c => { if(colVisible(c)) m[c.id] = true; });
+  return m;
+}
+function ovColOf(id){
+  for(const c of DATA.overview.columns){ if((c.nodeIds||[]).indexOf(id) >= 0) return c.id; }
+  return '';
+}
+/* 端点所在列被折叠时不画线（否则会画到隐形卡片的位置） */
+function colFoldedOf(id){
+  if(ST.view === 'overview') return !!ST.collapsed[ovColOf(id)];
+  const n = nodeById[id];
+  return !!(n && ST.collapsed[n.col]);
+}
+function edgeVisible(e, vis){
+  if(ST.edgeMode === 'gap' && e.status === 'implemented' && !e.count) return false;
+  if(ST.view === 'overview'){
+    if(ST.edgeMode === 'gap' && !e.gap) return false;
+    return !!(vis[ovColOf(e.from)] && vis[ovColOf(e.to)]);
+  }
+  const a = nodeById[e.from], b = nodeById[e.to];
+  if(ST.edgeMode === 'cross' && a && b && a.col === b.col) return false;
+  if(a && b && !(vis[a.col] && vis[b.col])) return false;
+  return true;
+}
+
 /* ---------- canvas ---------- */
 function gapEdgesOf(nid){
   return DATA.edges.filter(e => (e.from===nid || e.to===nid) && e.status!=='implemented');
 }
+function cardMetaHtml(n){
+  const meta = [];
+  if(n.tier==='node'){
+    if(n.factCount) meta.push(`事实 ${n.factCount}`);
+    if(n.ruleCount) meta.push(`规则 ${n.ruleCount}`);
+    if(n.sources && n.sources.length) meta.push(`引用 ${n.sources.length}`);
+  } else {
+    meta.push(n.tier === 'page' ? '页面级' : (n.tier === 'modal' ? '弹层' : (n.tier === 'shell' ? '壳层' : '')));
+  }
+  return meta.filter(Boolean).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
+}
 
-(function renderCanvas(){
+let VIEW = { edges: [] };
+
+function renderCanvas(){
   const canvas = $('canvas');
-  DATA.graph.columns.forEach(col => {
-    const ids = DATA.graph.byCol[col.id] || [];
-    if(!ids.length) return;
+  canvas.innerHTML = '<svg class="edges" id="edges"></svg>';
+  VIEW = { edges: [] };
+  const vis = {};
+  currentCols().forEach(c => { if(colVisible(c)) vis[c.id] = true; });
+  const cols = currentCols().filter(c => vis[c.id]);
+
+  cols.forEach(col => {
+    const folded = !!ST.collapsed[col.id];
+    const ids = ST.view === 'overview' ? (col.nodeIds || []) : (DATA.graph.byCol[col.id] || []);
     const el = document.createElement('div');
-    el.className = 'col';
-    el.innerHTML = `<div class="col-hd"><div class="t">${esc(col.title)}</div><div class="s">${esc(col.subtitle)}</div></div>`
+    el.className = 'col' + (folded ? ' folded' : '');
+    el.dataset.col = col.id;
+    el.innerHTML = `<div class="col-hd clickable" title="点击折叠 / 展开该列">`
+      + `<div class="t"><span class="foldmark">${folded?'▸':'▾'}</span>${esc(col.title)}</div>`
+      + `<div class="s">${esc(col.subtitle||'')}</div></div>`
       + '<div class="col-body">' + ids.map(id => {
-        const n = nodeById[id];
-        const imp = DATA.importanceColor[n.importance] || '#cbd5e1';
-        const gap = gapEdgesOf(id).length;
-        const meta = [];
-        if(n.tier==='node'){
-          if(n.factCount) meta.push(`事实 ${n.factCount}`);
-          if(n.ruleCount) meta.push(`规则 ${n.ruleCount}`);
-          if(n.sources && n.sources.length) meta.push(`引用 ${n.sources.length}`);
-        } else {
-          meta.push(n.tier === 'page' ? '页面级' : (n.tier === 'modal' ? '弹层' : ''));
-        }
-        return `<div class="card${gap?' hasgap':''}" data-id="${esc(id)}" data-kind="node">
-          <span class="bar" style="background:${imp}"></span>
-          <div class="r1"><span class="nm">${esc(n.label)}</span><span class="kd">${esc(n.kind)}</span></div>
-          <div class="r2">${esc(n.sub)}</div>
-          <div class="r3">${meta.filter(Boolean).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
-          <span class="gapdot" style="background:${gap?'#d97706':'transparent'}" title="${gap} 条未实现连线"></span>
-        </div>`;
-      }).join('') + '</div>';
+          const n = ST.view === 'overview' ? ovById[id] : nodeById[id];
+          if(!n) return '';
+          const imp = DATA.importanceColor[n.importance] || '#cbd5e1';
+          const gap = (n.gapCount||0) + (n.issueCount||0);
+          if(ST.view === 'overview'){
+            const pers = (n.personas||[]).map(p => `<span class="pers">${esc(DATA.personaMeta[p]||p)}</span>`).join(' ');
+            return `<div class="card${gap?' hasgap':''}${n.tier!=='page'?' orphan':''}" data-id="${esc(id)}" data-kind="node">
+              <span class="bar" style="background:${imp}"></span>
+              <div class="r1"><span class="nm">${esc(n.label)}</span><span class="kd">${n.tier==='page' ? (n.nodeCount + ' 模块') : esc(n.tier)}</span></div>
+              <div class="r2">${esc(n.sub)}</div>
+              <div class="r3">${pers}<span class="kpi">连线 ${n.edgeCount||0}${n.intraCount?(' · 页内 '+n.intraCount):''}${gap?(' · <b>缺口 '+gap+'</b>'):''}${n.orphanNodes?(' · 未连线 '+n.orphanNodes):''}</span></div>
+              <span class="gapdot" style="background:${gap?'#d97706':'transparent'}" title="${gap} 项缺口"></span>
+            </div>`;
+          }
+          return `<div class="card${gap?' hasgap':''}${n.orphan?' orphan':''}" data-id="${esc(id)}" data-kind="node">
+            <span class="bar" style="background:${imp}"></span>
+            <div class="r1"><span class="nm">${n.orphan?'<span class="origdot" title="未参与任何连线"></span>':''}${esc(n.label)}</span><span class="kd">${esc(n.kind)}</span></div>
+            <div class="r2">${esc(n.sub)}</div>
+            <div class="r3">${cardMetaHtml(n)}${gap?`<span class="chip kpi"><b>缺口 ${gap}</b></span>`:''}</div>
+            <span class="gapdot" style="background:${gap?'#d97706':'transparent'}" title="${gap} 项缺口"></span>
+          </div>`;
+        }).join('') + '</div>';
+    el.querySelector('.col-hd').addEventListener('click', () => {
+      ST.collapsed[col.id] = !ST.collapsed[col.id];
+      renderCanvas();
+    });
     canvas.appendChild(el);
   });
+
+  if(ST.view === 'overview'){
+    VIEW.edges = DATA.overview.edges.filter(e => edgeVisible(e, vis) && !colFoldedOf(e.from) && !colFoldedOf(e.to)).map(e => ({
+      id: e.id, from: e.from, to: e.to, offset: 0, gap: e.gap, count: e.count, edgeIds: e.edgeIds,
+      color: e.gap ? '#d97706' : '#2563eb',
+      dash: e.gap ? '7 5' : '0',
+      opacity: e.gap ? 1 : .8,
+      /* 复用节点级连线的渲染分支：status 空/实决定点，typeLabel 显示聚合条数 */
+      status: e.gap ? 'intended' : 'implemented',
+      typeLabel: e.count > 1 ? ('×' + e.count) : ''
+    }));
+  } else {
+    VIEW.edges = DATA.edges.filter(e => edgeVisible(e, vis) && !colFoldedOf(e.from) && !colFoldedOf(e.to)).map(e => Object.assign({}, e));
+  }
 
   canvas.addEventListener('click', ev => {
     const card = ev.target.closest('.card');
@@ -563,7 +934,17 @@ function gapEdgesOf(nid){
   canvas.addEventListener('mouseout', ev => {
     if(ev.target.closest('.card')) hover(null);
   });
-})();
+
+  drawEdges();
+  const hint = $('tbHint');
+  if(hint){
+    const tot = ST.view === 'overview' ? DATA.overview.edges.length : DATA.edges.length;
+    hint.textContent = `显示 ${cols.length} 列 · 连线 ${VIEW.edges.length}/${tot}` +
+      (ST.view === 'overview'
+        ? '｜总览：节点级关系已折叠为页面↔页面（点卡片看下方聚焦视图）'
+        : '｜全景：点卡片在下方聚焦视图里看它的全部出入关系');
+  }
+}
 
 /* ---------- edges ---------- */
 function anchorsOf(id){
@@ -585,11 +966,11 @@ function drawEdges(){
   svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.style.width = W + 'px'; svg.style.height = H + 'px';
 
-  const defs = ['#6366f1','#2563eb','#ea580c','#0891b2','#a855f7','#0d9488','#64748b']
+  const defs = ['#6366f1','#2563eb','#ea580c','#0891b2','#a855f7','#0d9488','#64748b','#d97706']
     .map(c => `<marker id="m${c.slice(1)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>`).join('');
 
   let paths = '';
-  DATA.edges.forEach(e => {
+  VIEW.edges.forEach(e => {
     const a = anchorsOf(e.from), b = anchorsOf(e.to);
     if(!a || !b) return;
     const sameCol = Math.abs(a.cx - b.cx) < 30;
@@ -608,7 +989,7 @@ function drawEdges(){
       const dx = Math.max(46, (ax - bx) * 0.42);
       d = `M ${ax} ${ay} C ${ax-dx} ${ay}, ${bx+dx} ${by}, ${bx} ${by}`;
     }
-    const opacity = e.status === 'implemented' ? .82 : 1;
+    const opacity = (e.opacity !== undefined) ? e.opacity : (e.status === 'implemented' ? .82 : 1);
     paths += `<g class="eg" data-id="${esc(e.id)}">
       <path d="${d}" fill="none" stroke="${e.color}" stroke-width="1.7"
         stroke-dasharray="${e.dash}" opacity="${opacity}" marker-end="url(#m${e.color.slice(1)})"/>
@@ -625,7 +1006,11 @@ function drawEdges(){
 
   svg.innerHTML = `<defs>${defs}</defs>${paths}`;
   svg.querySelectorAll('.eg').forEach(g => {
-    g.addEventListener('click', ev => { ev.stopPropagation(); select('edge', g.dataset.id); });
+    g.addEventListener('click', ev => {
+      ev.stopPropagation();
+      if(ST.view === 'overview') selectOvEdge(g.dataset.id);
+      else select('edge', g.dataset.id);
+    });
     g.addEventListener('mouseover', () => hoverEdge(g.dataset.id, true));
     g.addEventListener('mouseout', () => hoverEdge(g.dataset.id, false));
   });
@@ -634,7 +1019,7 @@ function drawEdges(){
 function hover(id){
   document.querySelectorAll('.card').forEach(c => {
     if(!id){ c.classList.remove('dim'); return; }
-    const related = DATA.edges.some(e => (e.from===id && e.to===c.dataset.id) || (e.to===id && e.from===c.dataset.id));
+    const related = VIEW.edges.some(e => (e.from===id && e.to===c.dataset.id) || (e.to===id && e.from===c.dataset.id));
     c.classList.toggle('dim', !related && c.dataset.id !== id);
   });
 }
@@ -650,16 +1035,129 @@ function kv(rows){ return `<div class="kv">${rows.map(([k,v]) => `<div class="k"
 function block(title, body){ return `<div class="sec-title">${esc(title)}</div>${body}`; }
 
 function select(kind, id){
-  selKind = kind; selId = id;
+  ST.selKind = kind; ST.selId = id;
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', kind==='node' && c.dataset.id===id));
   document.querySelectorAll('.eitem').forEach(c => c.classList.toggle('sel', kind==='edge' && c.dataset.id===id));
-  $('detailHint').textContent = kind === 'node' ? '节点' : '连线';
-  $('detail').innerHTML = kind === 'node' ? nodeDetail(id) : edgeDetail(id);
+  $('detailHint').textContent = kind === 'node' ? '模块' : (kind === 'issue' ? '问题' : '连线');
+  $('detail').innerHTML = kind === 'node'
+    ? nodeDetail(id)
+    : (kind === 'issue' ? issueDetail(id) : edgeDetail(id));
+  if(kind === 'node') focusOn(id);
+}
+
+/* 聚焦视图：把「选中项 + 它的全部出入关系」单独铺成一个新视图（v0.9）。
+   目的：原来的悬停高亮鼠标一移开就没了，看不到「它到底连了谁、怎么连」。 */
+function focusOn(id){
+  ST.focusId = id;
+  renderFocus();
+}
+function renderFocus(){
+  const box = $('focus');
+  const id = ST.focusId;
+  const useOv = !!(id && ST.view === 'overview' && ovById[id]);
+  const n = id ? (useOv ? ovById[id] : (nodeById[id] || ovById[id])) : null;
+  if(!n){ box.style.display = 'none'; return; }
+  box.style.display = '';
+  const isPage = n.tier === 'page';
+  const pool = useOv ? DATA.overview.edges : DATA.edges;
+  const ins = pool.filter(e => e.to === id);
+  const outs = pool.filter(e => e.from === id);
+  const myPage = isPage ? id : (n.page || '');
+  const siblings = DATA.graph.nodes.filter(x => x.page === myPage && x.id !== id);
+
+  const edgeCard = (e, dir) => {
+    const otherId = dir === 'out' ? e.to : e.from;
+    const other = nodeById[otherId] || ovById[otherId] || { label: otherId };
+    const gap = isPage ? e.gap : (e.status !== 'implemented');
+    const col = isPage ? (e.gap ? '#d97706' : '#2563eb') : e.color;
+    const lbl = isPage
+      ? (e.count > 1 ? (e.count + ' 条连线') : '1 条连线')
+      : (e.typeLabel + ' · ' + e.statusLabel);
+    return `<div class="fcard" data-focus="${esc(otherId)}">
+      <div class="n">${dir==='out'?'→ ':'← '}${esc(other.label)}</div>
+      <div class="m" style="color:${col}">${esc(lbl)}</div>
+      ${(!isPage && e.trigger) ? `<div class="t2">${esc(e.trigger).slice(0,120)}</div>` : ''}
+      ${(!isPage && e.note) ? `<div class="t2">${esc(e.note).slice(0,120)}</div>` : ''}
+      ${(isPage && e.gap) ? `<div class="t2" style="color:#d97706">其中 ${e.gap} 条未实现 / 待确认</div>` : ''}
+    </div>`;
+  };
+
+  const chip = (x) => `<span class="chip c2${x.orphan?' orph':''}" data-focus="${esc(x.id)}" title="${x.orphan?'未参与任何连线':''}">${esc(x.label)}</span>`;
+
+  let mid = `<div class="nm">${esc(n.label)}</div><div class="sub">${esc(n.sub)}</div>`;
+  if(isPage){
+    mid += `<div class="flegend">本页共 ${n.nodeCount || 0} 个模块${n.orphanNodes?`（其中 ${n.orphanNodes} 个未参与任何连线）`:''}<br>`
+      + `连线：跨页 ${n.edgeCount || 0} 条${n.intraCount?` · 页内 ${n.intraCount} 条`:''}${(n.gapCount+n.issueCount)?` · <span style="color:#d97706">缺口 ${n.gapCount+n.issueCount} 项</span>`:''}</div>`;
+  } else {
+    mid += `<div class="flegend">${esc(n.tier)} · 重要度 ${esc(n.importance||'')} · 所属页面 ${esc(pageTitle[n.page] || n.page || '—')}</div>`;
+  }
+  mid += `<div class="flegend">${myPage ? '同类模块（点选继续聚焦）' : '同层模块'}</div>`
+    + `<div class="chipset">${siblings.length ? siblings.map(chip).join('') : '<span class="chip">—</span>'}</div>`;
+
+  $('focusHd').innerHTML = `<span class="ft">聚焦视图</span>`
+    + `<span class="fk">${esc(n.label)} · ${esc(n.id)} · 入 ${ins.length} / 出 ${outs.length}</span>`
+    + `<span class="acts">`
+    + `<span class="btn" id="focusLocate">在全景图中定位</span>`
+    + `<span class="btn ghost" id="focusClear">清除聚焦</span></span>`;
+  $('focusBody').innerHTML =
+    `<div><div class="fcol-h">上游 · 谁指向它（${ins.length}）</div>${ins.length ? ins.map(e => edgeCard(e, 'in')).join('') : '<div class="empty">无</div>'}</div>`
+    + `<div class="fmid">${mid}</div>`
+    + `<div><div class="fcol-h">下游 · 它指向谁（${outs.length}）</div>${outs.length ? outs.map(e => edgeCard(e, 'out')).join('') : '<div class="empty">无</div>'}</div>`;
+
+  $('focusClear').addEventListener('click', () => { ST.focusId = null; $('focus').style.display = 'none'; });
+  $('focusLocate').addEventListener('click', () => {
+    if(!nodeById[id]){ ST.view = 'full'; ST.persona = 'all'; renderToolbar(); renderCanvas(); }
+    scrollToCard(id);
+  });
+  $('focusBody').addEventListener('click', ev => {
+    const t = ev.target.closest('[data-focus]');
+    if(!t) return;
+    const target = t.dataset.focus;
+    if(!nodeById[target] && ovById[target]){ ST.view = 'overview'; renderToolbar(); renderCanvas(); }
+    else if(nodeById[target] && ST.view === 'overview' && !ovById[target]){ ST.view = 'full'; renderToolbar(); renderCanvas(); }
+    const g = nodeById[target];
+    if(g && ST.collapsed[g.col]){ delete ST.collapsed[g.col]; renderCanvas(); }
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === target));
+    focusOn(target);
+    scrollToCard(target);
+  });
+}
+function scrollToCard(id){
+  const el = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+}
+
+/* 术语对照：扫正文里出现的术语，在详情底部列成对照表（不改原文） */
+function termBlock(text){
+  const hit = TERMS.filter(t => text.indexOf(t.term) >= 0);
+  if(!hit.length) return '';
+  return block('涉及术语', `<div class="quote"><table class="termtab">`
+    + hit.map(t => `<tr><td>${esc(t.term)}</td><td>${esc(t.plain)}</td></tr>`).join('')
+    + `</table></div>`);
 }
 
 function nodeDetail(id){
-  const n = nodeById[id];
+  const n = nodeById[id] || ovById[id];
   if(!n) return '<div class="empty">未找到</div>';
+  if(ST.view === 'overview' && ovById[id]){
+    const o = ovById[id];
+    const myNodes = DATA.graph.nodes.filter(x => x.page === id);
+    let h = kv([
+      ['id', `<span class="mono">${esc(o.id)}</span>`],
+      ['名称', esc(o.label)],
+      ['端', (o.personas||[]).map(p => esc(DATA.personaMeta[p]||p)).join(' / ') || '—'],
+      ['模块数', String(o.nodeCount)],
+      ['跨页连线', String(o.edgeCount)],
+      ['缺口', `<span style="color:${(o.gapCount+o.issueCount)?'#d97706':'inherit'}">${o.gapCount+o.issueCount}</span>`],
+    ]);
+    if(o.description) h += block('说明', `<div class="quote">${esc(o.description)}</div>`);
+    if(o.file) h += block('主组件', `<div class="quote mono">${esc(o.file)}</div>`);
+    h += block(`本页模块（${myNodes.length}）`, `<div class="chipset">` + (myNodes.length
+      ? myNodes.map(x => `<span class="chip c2${x.orphan?' orph':''}" data-focus="${esc(x.id)}" title="${x.orphan?'未参与任何连线':''}">${esc(x.label)}</span>`).join('')
+      : '—') + `</div>`);
+    h += `<div class="flegend">提示：点下面「② 全景（节点级）」可看本页模块与连线的细节；点任意模块会打开下方聚焦视图。</div>`;
+    return h;
+  }
   const outs = DATA.edges.filter(e => e.from===id), ins = DATA.edges.filter(e => e.to===id);
   let h = kv([
     ['id', `<span class="mono">${esc(n.id)}</span>`],
@@ -716,12 +1214,125 @@ function edgeDetail(id){
   if(e.issue) h += block('待确认问题', `<div class="quote warn">${esc(e.issue)}</div>`);
   if(e.evidenceChain) h += block('证据链', `<div class="quote">${esc(e.evidenceChain)}</div>`);
   if(e.sources && e.sources.length) h += block('sources', `<div class="quote mono">${e.sources.map(esc).join('<br>')}</div>`);
+  h += termBlock([e.trigger, e.payload, e.logic, e.note, e.designRef, e.expected, e.blockedBy, e.issue, e.evidenceChain].join(' '));
   return h;
 }
 
+/* 总览层的聚合连线：列出它由哪几条节点级连线折叠而来 */
+function selectOvEdge(id){
+  const e = ovEdgeById[id];
+  if(!e) return;
+  ST.selKind = 'ovedge'; ST.selId = id;
+  const a = ovById[e.from], b = ovById[e.to];
+  const list = e.edgeIds.map(x => edgeById[x]).filter(Boolean);
+  let h = kv([
+    ['起点', esc(a ? a.label : e.from)],
+    ['终点', esc(b ? b.label : e.to)],
+    ['折叠自', `${list.length} 条节点级连线`],
+    ['缺口', `<span style="color:${e.gap?'#d97706':'inherit'}">${e.gap}</span>`],
+  ]);
+  h += block(`组成连线（${list.length}）`, list.map(x => {
+    const on = nodeById[x.to], of = nodeById[x.from];
+    const col = x.status==='implemented' ? '#16a34a' : (x.status==='intended' ? '#d97706' : '#64748b');
+    return `<div class="eitem" data-id="${esc(x.id)}" data-kind="edge">
+      <div class="e1"><span class="pill" style="background:${x.color}1a;color:${x.color}">${esc(x.typeLabel)}</span>
+        <span class="pill" style="background:${col}1a;color:${col}">${esc(x.statusLabel)}</span></div>
+      <div class="e2">${esc(of?of.label:x.from)} → ${esc(on?on.label:x.to)}</div></div>`;
+  }).join('') || '<div class="empty">无</div>');
+  h += `<div class="flegend">当前为总览视图（页面级）。点「② 全景（节点级）」可看这些连线的具体落点。</div>`;
+  $('detailHint').textContent = '聚合连线';
+  $('detail').innerHTML = h;
+}
+
+/* issue 详情：通俗版（plain，人写的）/ 原始数据（一字未改的原始字段）双页签 */
+function issueDetail(id){
+  const it = issueById[id];
+  if(!it) return '<div class="empty">未找到</div>';
+  const hasPlain = !!(it.plain && it.plain.oneLine);
+  const mode = (ST.plainMode === 'raw' || !hasPlain) ? 'raw' : 'plain';
+  const n = nodeById[it.where] || ovById[it.where];
+  const sevColor = it.severity === 'high' ? '#dc2626' : (it.severity === 'medium' ? '#d97706' : '#64748b');
+  let h = kv([
+    ['位置', n ? `${esc(n.label)}<br><span class="mono" style="color:#94a3b8">${esc(it.where)}</span>`
+               : `<span class="mono">${esc(it.where)}</span><br><span style="color:#94a3b8">不在结构图上（外部引用）</span>`],
+    ['级别', `<span style="color:${sevColor};font-weight:600">${esc(it.severity||'—')}</span>`],
+    ['分类', esc(it.category||'—')],
+    ['归属', esc(it.owner||'—')],
+  ]);
+  h += `<div class="tabs2">`
+    + `<div class="btn ${mode==='plain'?'on':''}" data-pm="plain">通俗版</div>`
+    + `<div class="btn ${mode==='raw'?'on':''}" data-pm="raw">原始数据</div></div>`;
+  if(mode === 'plain'){
+    const p = it.plain;
+    h += `<div class="plain-box">`
+      + `<div class="pf">一句话</div><div class="pv">${esc(p.oneLine)}</div>`
+      + (p.symptom ? `<div class="pf">现象（页面上会看到什么）</div><div class="pv">${esc(p.symptom)}</div>` : '')
+      + (p.impact ? `<div class="pf">影响</div><div class="pv">${esc(p.impact)}</div>` : '')
+      + (p.ask ? `<div class="pf">需要谁做什么</div><div class="pv">${esc(p.ask)}</div>` : '')
+      + `</div>`;
+    h += `<div class="flegend">通俗版是另写的解释层，原始数据一字未改（点上方「原始数据」查看）。</div>`;
+    return h;
+  }
+  if(!hasPlain) h += `<div class="fallback">该条暂无通俗版，以下为原始记录。</div>`;
+  h += block('问题', `<div class="quote">${esc(it.title)}</div>`);
+  if(it.detail) h += block('详情', `<div class="quote">${esc(it.detail)}</div>`);
+  if(it.status){
+    const stMap = {implemented: '已实现', intended: '设计有·未实现', undefined: '待确认（设计本身也没定）'};
+    h += block('状态', `<div class="quote">${esc(stMap[it.status] || it.status)}</div>`);
+  }
+  if(it.designRef) h += block('设计要求（来自）', `<div class="quote warn">${esc(it.designRef)}</div>`);
+  if(it.expected) h += block('期望行为', `<div class="quote warn">${esc(it.expected)}</div>`);
+  if(it.blockedBy) h += block('卡在哪', `<div class="quote warn">${esc(it.blockedBy)}</div>`);
+  if(it.issue) h += block('待确认问题', `<div class="quote warn">${esc(it.issue)}</div>`);
+  h += termBlock([it.title, it.detail, it.designRef, it.expected, it.blockedBy, it.issue].join(' '));
+  return h;
+}
+
+/* 点击缺口列表里的 issue：①在结构图中定位并高亮模块（滚动 + 聚焦视图）②右栏显示该 issue 详情。
+   定位不到时给出明确说明，而不是无声无息（旧版 40 条 issue 有 15 条点了完全没反应）。 */
+function locateIssue(id){
+  const it = issueById[id];
+  if(!it) return;
+  const w = it.where;
+  const anchored = !!(nodeById[w] || ovById[w]);
+  if(anchored){
+    if(!ovById[w] && ST.view === 'overview'){       // 只有节点级卡片：先切到全景
+      ST.view = 'full';
+      renderToolbar();
+      renderCanvas();
+    }
+    const g = nodeById[w];
+    if(g && ST.collapsed[g.col]){ delete ST.collapsed[g.col]; renderCanvas(); }
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === w));
+    focusOn(w);
+    scrollToCard(w);
+  } else {
+    ST.focusId = null;
+    renderFocus();
+  }
+  select('issue', id);                              // 右栏显示问题详情（通俗版优先）
+}
+
 $('detail').addEventListener('click', ev => {
+  const pm = ev.target.closest('[data-pm]');
+  if(pm){ ST.plainMode = pm.dataset.pm; if(ST.selKind === 'issue') $('detail').innerHTML = issueDetail(ST.selId); return; }
+  const fc = ev.target.closest('[data-focus]');
+  if(fc){
+    const t = fc.dataset.focus;
+    if(!nodeById[t] && ovById[t]){ ST.view = 'overview'; renderToolbar(); renderCanvas(); }
+    else if(nodeById[t] && ST.view === 'overview' && !ovById[t]){ ST.view = 'full'; renderToolbar(); renderCanvas(); }
+    const gg = nodeById[t];
+    if(gg && ST.collapsed[gg.col]){ delete ST.collapsed[gg.col]; renderCanvas(); }
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === t));
+    focusOn(t);
+    scrollToCard(t);
+    return;
+  }
   const it = ev.target.closest('.eitem');
-  if(it) select('edge', it.dataset.id);
+  if(it){
+    if(it.dataset.kind === 'edge') select('edge', it.dataset.id);
+    else if(it.dataset.kind === 'issue') locateIssue(it.dataset.id);
+  }
 });
 
 /* ---------- gaps ---------- */
@@ -734,25 +1345,29 @@ $('detail').addEventListener('click', ev => {
       w:`${e.typeLabel} · ${e.statusLabel}`, d:e.blockedBy || e.issue || ''});
   });
   DATA.issues.forEach(i => {
-    const n = nodeById[i.where];
-    rows.push({kind:'issue', id:i.id, sev:i.severity, color:'#94a3b8',
-      t:i.title, w:`${i.where}${n?'（'+n.label+'）':''} · ${i.status||''}`, d:i.detail || ''});
+    const n = nodeById[i.where] || ovById[i.where];
+    const p = i.plain || {};
+    rows.push({kind:'issue', id:i.id, sev:i.severity,
+      color: i.severity==='high' ? '#dc2626' : (i.severity==='medium' ? '#c2760b' : '#64748b'),
+      t:i.title,
+      w:`${n ? n.label : i.where} · ${i.category||''}${i.owner ? (' · ' + i.owner) : ''}`,
+      d:(p.oneLine || i.detail || ''),
+      loc: n ? '点击定位到结构图中的模块' : '不在结构图上（外部引用的元问题）',
+      noanchor: !n});
   });
   rows.sort((x,y) => ({high:0,medium:1,low:2}[x.sev] ?? 9) - ({high:0,medium:1,low:2}[y.sev] ?? 9));
   $('gapCnt').textContent = rows.length + ' 项';
-  $('gaps').innerHTML = rows.map(r => `<div class="iitem ${r.kind==='edge'?'eitem':''}" data-id="${esc(r.id)}" data-kind="${r.kind}">
+  $('gaps').innerHTML = rows.map(r => `<div class="iitem clickable ${r.kind==='edge'?'eitem':''}${r.noanchor?' noanchor':''}" data-id="${esc(r.id)}" data-kind="${r.kind}">
       <div class="t" style="color:${r.color}">${esc(r.t)}</div>
       <div class="w">${esc(r.w)}</div>
-      <div class="d">${esc(r.d).slice(0,240)}${r.d && r.d.length>240?'…':''}</div>
+      <div class="d">${esc(r.d).slice(0,200)}${r.d && r.d.length>200?'…':''}</div>
+      <div class="loc">▸ ${esc(r.loc)}</div>
     </div>`).join('') || '<div class="empty">无缺口</div>';
   $('gaps').addEventListener('click', ev => {
     const it = ev.target.closest('[data-kind]');
     if(!it) return;
     if(it.dataset.kind === 'edge'){ select('edge', it.dataset.id); scrollToEdge(it.dataset.id); }
-    else {
-      const iss = DATA.issues.find(i => i.id === it.dataset.id);
-      if(iss && nodeById[iss.where]) select('node', iss.where);
-    }
+    else locateIssue(it.dataset.id);
   });
 })();
 
@@ -814,13 +1429,16 @@ function renderTabBody(id){
     return h + '</table>';
   }
   if(id === 'issues'){
-    let h = `<table style="${st}"><tr><th style="padding:9px 12px;background:#f8fafc;text-align:left">位置</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">问题</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">级别</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">详情</th></tr>`;
+    let h = `<table style="${st}"><tr><th style="padding:9px 12px;background:#f8fafc;text-align:left">位置</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">问题</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">级别</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">分类/归属</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">一句话（通俗版）</th></tr>`;
     DATA.issues.forEach(i => {
-      const n = nodeById[i.where];
-      h += `<tr><td style="padding:9px 12px;border-top:1px solid #eef2f7">${esc(n?n.label:i.where)}</td>
+      const n = nodeById[i.where] || ovById[i.where];
+      const p = i.plain || {};
+      h += `<tr class="clickable" data-id="${esc(i.id)}" data-kind="issue" style="cursor:pointer">
+        <td style="padding:9px 12px;border-top:1px solid #eef2f7">${esc(n?n.label:i.where)}</td>
         <td style="padding:9px 12px;border-top:1px solid #eef2f7"><b>${esc(i.title)}</b></td>
         <td style="padding:9px 12px;border-top:1px solid #eef2f7">${esc(i.severity||'')}</td>
-        <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(i.detail)}</td></tr>`;
+        <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(i.category||'')}<br><span style="color:#94a3b8">${esc(i.owner||'')}</span></td>
+        <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(p.oneLine || i.detail)}</td></tr>`;
     });
     return h + '</table>';
   }
@@ -842,11 +1460,15 @@ $('tabs').addEventListener('click', ev => {
 });
 $('tabBody').addEventListener('click', ev => {
   const tr = ev.target.closest('tr.clickable');
-  if(tr){ select('edge', tr.dataset.id); scrollToEdge(tr.dataset.id); }
+  if(!tr) return;
+  if(tr.dataset.kind === 'issue') locateIssue(tr.dataset.id);
+  else { select('edge', tr.dataset.id); scrollToEdge(tr.dataset.id); }
 });
 
 /* ---------- boot ---------- */
-window.addEventListener('load', () => { drawEdges(); });
+renderToolbar();
+renderCanvas();
+window.addEventListener('load', () => { renderCanvas(); });
 window.addEventListener('resize', () => { requestAnimationFrame(drawEdges); });
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawEdges());
 setTimeout(drawEdges, 60);
