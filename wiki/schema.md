@@ -232,7 +232,7 @@ sources:
 | `wiki/gen_wiki_tools.py` | **正式工具链**：`validate` / `sync-edges` / `index` / `map` / `gaps` 五命令（纯标准库） | ✅ 已落盘并跑通 |
 | `wiki/llms.txt` · `wiki/gaps.md` | 由 `index` / `gaps` 生成的产物 | ✅ 已落盘 |
 | `wiki/module-map.html` · `wiki/site/index.html` | 结构图（本地预览 + 发布副本，内容一致） | ✅ 已落盘 |
-| `wiki/validate_pilot.py` | 试点校验器 | ⛔ 已被 `gen_wiki_tools.py validate` 取代（保留作历史留存，勿再使用） |
+| ~~`wiki/validate_pilot.py`~~ | 试点校验器 | 🗑 **2026-09-14 删除**（09-13 退役后仍硬编码旧基线路径 `shuangchuang-design-SY`，误用风险大于留存价值；副本见 SY 只读镜像与 `RanZhuang/2026-09/AI生成/0914-11-SY-wiki-v2备份/`，或本仓 git 历史 `acebad6`） |
 
 校验结果：**section 8 · page 15（已下钻 2 / 待铺开 13）· node 18 · 边 23（18 implemented / 4 intended / 1 undefined）· issues 9；0 error / 1 warning**
 （唯一 warning = 13 个 page 尚未铺开的汇总提示）。
@@ -251,6 +251,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.3.4 ✅ | 删除退役的 `wiki/validate_pilot.py`（防误跑得假绿；历史副本见 SY 只读镜像与 0914 备份，本仓 git 历史 `acebad6` 亦可取回）；本文件 §9 表格与 `wiki-drilldown` skill 坑条目同步改口 |
 | 2026-09-14 | v0.3.3 ✅ | **建模基线回归本仓**：`main` 重定基线至团队 `main`（`505a858`，只读 `upstream` 远程 + `pushurl=no_push`，误推实测失败）；v2 全量迁入本仓 `wiki/`（30 文件、哈希与 SY 一致），v1 转 `wiki-v1/`；`baseline` / `repoRoot` / 本文基线表同步改正；`validate` 0 error、231 处引用全部可解析 |
 | 2026-09-13 | v0.3.2 ✅ | **第 4 步首批完成**：`page-guidance` 由 2 个最小节点补全为 **10 节点**（顶栏 / 任务条 / 快照提示条 / 章节速达条 / BP 打磨区 / 诊断报告 / 评分详情 / AI 教练 / 版本抽屉 / diff 弹层）；边 11 → **23**（新增 12 条本页内边），issues 4 → **9**（新增 5 条：死弹层组件 / 教练死状态 / 快照预览不换内容 / diff 正文硬编码 / 三套阶段口径）；`build_map.py` 图布局改为按页面自动分列；D4 规则收窄为「跨页且已实现的跳转边」 |
 | 2026-09-13 | v0.3.1 ✅ | **第 3 步完成**：正式工具链 `gen_wiki_tools.py`（`validate` / `sync-edges` / `index` / `map` / `gaps`）落盘并跑通，校验 0 error / 2 warning；新增产物 `llms.txt` / `gaps.md`；10 个 node 的第 5 节改为工具生成（含 up/down 边详情）；`map` 产物名与实现对齐为 `module-map.html`；`validate_pilot.py` 退役 |
