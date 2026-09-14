@@ -1,7 +1,7 @@
 {
   "schemaVersion": "0.3",
   "generatedAt": "2026-09-11",
-  "baseline": "shuangchuang-design-SY",
+  "baseline": "shuangchuang-design-main",
   "description": "节点间的有向关系真源。type 表达语义，status 表达实现状态。implemented 边必须带可验证 sources；intended 边必须带 designRef/expected/blockedBy；undefined 边必须带 issue。",
   "typeEnum": ["navigate", "navigate-with-payload", "read", "writeback", "reuse", "embed"],
   "statusEnum": ["implemented", "intended", "undefined"],

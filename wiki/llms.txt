@@ -1,6 +1,6 @@
 # 双创赛事智能体 · 结构知识库
 
-> 面向 AI Coding 的可验证结构图谱：以 SY 版原型源码为唯一事实来源，按 section → page → node 三层拆分，边（edge）记录节点间的跳转/传参/读写/复用关系，并标注实现状态。
+> 面向 AI Coding 的可验证结构图谱：以本仓源码为唯一事实来源，按 section → page → node 三层拆分，边（edge）记录节点间的跳转/传参/读写/复用关系，并标注实现状态。
 >
 > 结构真源 `wiki/structure.json`，边真源 `wiki/edges.json`，页面 `wiki/pages/<page-id>.md`，节点 `wiki/nodes/<page-id>/<node-id>.md`。
 > 行号口径：UTF-8 解码行数（与编辑器显示一致）。重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标节点 + 其 related_pages / 出入边即可，不必全读。

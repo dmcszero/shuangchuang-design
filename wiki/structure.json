@@ -1,17 +1,17 @@
 {
   "id": "shuangchuang-ai-wiki",
   "title": "双创赛事智能体 · 结构知识库",
-  "description": "面向 AI Coding 的可验证结构图谱：以 SY 版原型源码为唯一事实来源，按 section → page → node 三层拆分，边（edge）记录节点间的跳转/传参/读写/复用关系，并标注实现状态。",
+  "description": "面向 AI Coding 的可验证结构图谱：以本仓源码为唯一事实来源，按 section → page → node 三层拆分，边（edge）记录节点间的跳转/传参/读写/复用关系，并标注实现状态。",
   "schemaVersion": "0.3",
   "generatedAt": "2026-09-13",
-  "baseline": "shuangchuang-design-SY",
-  "baselineNote": "2026-09-11 起建模真源切换为 shuangchuang-design-SY（团队最新版）；旧 shuangchuang-design-main/wiki 冻结为 v1，仅供对照，不再更新。",
+  "baseline": "shuangchuang-design-main",
+  "baselineNote": "2026-09-14 起建模回到本仓 main：已重定基线到团队仓 guideshiny/shuangchuang-design 的 main（505a858），源码与团队最新同版本，此后用 `git fetch upstream && git merge upstream/main` 跟进。旧 v1 结构（20 页 taxonomy）移入 wiki-v1/ 冻结对照；shuangchuang-design-SY/ 克隆降为只读镜像，不再作为产出地。",
   "coldStart": true,
   "coldStartNote": "事实只从源码来，不采信既有调研文档；三份他人 spec（LeanSpec/SpecKit/SuperSpec）仅用作 designRef（设计意图来源），不作为事实依据。",
   "ownershipPrinciple": "功能归属看业务域，不看入口出现在哪。一个 node 归属哪个 page，取决于它服务于哪段用户任务，而不是它的入口按钮长在哪个页面上。",
-  "lineNumberConvention": "UTF-8 解码行数，1-based，闭区间；引用语法 Sources: [相对路径:起[-止]]()，路径相对 shuangchuang-design-SY/。",
+  "lineNumberConvention": "UTF-8 解码行数，1-based，闭区间；引用语法 Sources: [相对路径:起[-止]]()，路径相对本仓根 shuangchuang-design-main/。",
   "layerModel": ["section", "page", "node", "edge"],
-  "repoRoot": "shuangchuang-design-SY",
+  "repoRoot": "shuangchuang-design-main",
   "sectionsNote": "2026-09-11 庄冉确认【接受本提案】。v1 按角色+数据分 7 区，本版改按【用户任务域】分 8 区——用户视角的一级模块应是「谁在什么处境下要连续完成的一件事」，而不是功能的机械分组。",
   "sections": [
     {

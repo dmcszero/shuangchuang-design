@@ -9,13 +9,13 @@
 
 | 项 | 值 | 说明 |
 |---|---|---|
-| **真源仓** | `shuangchuang-design-SY` | 2026-09-11 起；**所有建模以此为准**（团队最新版本） |
-| **旧基线** | `shuangchuang-design-main/wiki/` | 冻结为 **v1**，不再更新；仅供 v2 对照 |
+| **真源仓** | `shuangchuang-design-main`（本仓 `main`） | 2026-09-14 起；本仓已重定基线到团队仓 `guideshiny/shuangchuang-design` 的 `main`（`505a858`），**所有建模以本仓当前源码为准**；跟进用 `git fetch upstream && git merge upstream/main` |
+| **旧基线** | `wiki-v1/`（本仓） | v1 结构（20 页 taxonomy，2026-09-10 产出）冻结，不再更新；仅供 v2 对照——其 `Sources` 指向的旧行号已不可回溯 |
 | **行号口径** | UTF-8 解码行数，1-based，闭区间 | `路径:起[-止]` |
-| **路径口径** | 相对 `shuangchuang-design-SY/` | 例：`src/App.tsx` |
+| **路径口径** | 相对本仓根 `shuangchuang-design-main/` | 例：`src/App.tsx` |
 | **引用语法** | `Sources: [路径:行号]()` | 复用既有 `CITATION_RE` 契约，不新增格式 |
 
-**为什么换仓**：v1 的 `Sources` 指向 design-main 行号，SY 已推进若干版本，行号不可互认。结构必须与源码同仓同版本，否则"可回溯"是假的。
+**基线轨迹**：v1 的 `Sources` 指向 design-main 09-10 快照的行号；团队仓继续推进后，2026-09-11 曾把建模基线切到 `shuangchuang-design-SY/` 克隆目录，以求「结构与源码同仓同版本」——但那是**他人的仓、且产出未入库**，无任何版本保护。**2026-09-14 改回本仓**：`main` 重定基线到团队 `main`、`upstream` 只读远程挂上（`pushurl=no_push`，误推实测失败），于是「同版本」由 fetch+merge 保证、「产出受保护」由本仓 git 保证——两件事拆成两套独立机制，互不牵扯。
 
 ---
 
@@ -251,6 +251,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.3.3 ✅ | **建模基线回归本仓**：`main` 重定基线至团队 `main`（`505a858`，只读 `upstream` 远程 + `pushurl=no_push`，误推实测失败）；v2 全量迁入本仓 `wiki/`（30 文件、哈希与 SY 一致），v1 转 `wiki-v1/`；`baseline` / `repoRoot` / 本文基线表同步改正；`validate` 0 error、231 处引用全部可解析 |
 | 2026-09-13 | v0.3.2 ✅ | **第 4 步首批完成**：`page-guidance` 由 2 个最小节点补全为 **10 节点**（顶栏 / 任务条 / 快照提示条 / 章节速达条 / BP 打磨区 / 诊断报告 / 评分详情 / AI 教练 / 版本抽屉 / diff 弹层）；边 11 → **23**（新增 12 条本页内边），issues 4 → **9**（新增 5 条：死弹层组件 / 教练死状态 / 快照预览不换内容 / diff 正文硬编码 / 三套阶段口径）；`build_map.py` 图布局改为按页面自动分列；D4 规则收窄为「跨页且已实现的跳转边」 |
 | 2026-09-13 | v0.3.1 ✅ | **第 3 步完成**：正式工具链 `gen_wiki_tools.py`（`validate` / `sync-edges` / `index` / `map` / `gaps`）落盘并跑通，校验 0 error / 2 warning；新增产物 `llms.txt` / `gaps.md`；10 个 node 的第 5 节改为工具生成（含 up/down 边详情）；`map` 产物名与实现对齐为 `module-map.html`；`validate_pilot.py` 退役 |
 | 2026-09-11 | v0.3 ✅ | **转冻结**（粒度与 section 验收通过）；体检区按业务归宿拆为 3 节点；新增 2 条边（逻辑断点→动态待办 `intended`、评委提问→答辩训练 `undefined`） |

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LLM Wiki 工具链 · shuangchuang-design-SY（schema v0.3）
+"""LLM Wiki 工具链 · shuangchuang-design-main（schema v0.3）
 
 五个子命令（纯标准库，零第三方依赖）：
 
@@ -26,7 +26,7 @@
 设计原则
 --------
 - 行号口径 = UTF-8 解码行数，1-based，闭区间；引用语法 `Sources: [相对路径:起[-止]]()`，
-  路径相对 `shuangchuang-design-SY/`。
+  路径相对本仓根 `shuangchuang-design-main/`。
 - node 第 5 节的真源是 `edges.json`。手写会与边表漂移，故由 sync-edges 生成并在 markers
   （`<!-- EDGES:BEGIN -->` / `<!-- EDGES:END -->`）之间整段覆盖；validate 的 D5 校验二者一致。
 - 文件一律 LF + 末尾换行；本工具读写均显式声明 newline，不随平台漂移。
