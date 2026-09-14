@@ -56,7 +56,7 @@ _学生团队：从「我该改什么」到「改完交付并留痕」_
 
 _学生：随时问、随时练，答辩前把问题问遍_
 
-- [AI 备赛教练](pages/page-coach.md): 会话式备赛主体：任务选择、专家智能体调用、ReAct 过程可视化、诊断报告生成，右侧产物与审核区。 _(importance: high · 待铺开)_
+- [AI 备赛教练](pages/page-coach.md): 会话式备赛主体：任务选择、专家智能体调用、ReAct 过程可视化、诊断报告生成，右侧产物与审核区。框架口径（2026-09-14 拍板）：与「AI助手」统一，会话历史/新建对话（new_chat + standaloneSessions）为其功能子集；与 page-guidance 右栏内嵌简版教练是两套独立实现、零共享。 _(importance: high · 待铺开)_
 - [模拟答辩训练](pages/page-defense.md): 四阶段答辩演练：选模式 → 备赛准备 → 路演展示 → 问答对抗 → 报告复盘，含录像回放与评分。 _(importance: high · 待铺开)_
 
 ## 素材与知识

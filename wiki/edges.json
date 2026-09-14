@@ -1,10 +1,31 @@
 {
-  "schemaVersion": "0.3",
-  "generatedAt": "2026-09-11",
+  "schemaVersion": "0.4",
+  "generatedAt": "2026-09-14",
   "baseline": "shuangchuang-design-main",
-  "description": "节点间的有向关系真源。type 表达语义，status 表达实现状态。implemented 边必须带可验证 sources；intended 边必须带 designRef/expected/blockedBy；undefined 边必须带 issue。",
-  "typeEnum": ["navigate", "navigate-with-payload", "read", "writeback", "reuse", "embed"],
-  "statusEnum": ["implemented", "intended", "undefined"],
+  "description": "节点间的有向关系真源。type 表达语义，status 表达实现状态。implemented 边必须带可验证 sources；intended 边必须带 designRef/expected/blockedBy；undefined 边必须带 issue。v0.4（2026-09-14 框架合流）：issues[] 增加分流字段 category（产品决策 / 技术实现 / 数据口径）与 owner（上司拍板 / 工程自决 / 待产品定义）；undefined 边可带同名字段；category=产品决策 的条目由 gaps 命令汇总生成 wiki/decisions.md《待拍板清单》。",
+  "issueCategoryEnum": [
+    "产品决策",
+    "技术实现",
+    "数据口径"
+  ],
+  "issueOwnerEnum": [
+    "上司拍板",
+    "工程自决",
+    "待产品定义"
+  ],
+  "typeEnum": [
+    "navigate",
+    "navigate-with-payload",
+    "read",
+    "writeback",
+    "reuse",
+    "embed"
+  ],
+  "statusEnum": [
+    "implemented",
+    "intended",
+    "undefined"
+  ],
   "edges": [
     {
       "id": "e-workbench-todo-2-guidance-ai",
@@ -168,7 +189,9 @@
       "status": "undefined",
       "issue": "评委提问不走动态待办，那走哪？**建议（待拍板）：接「模拟答辩训练」的问答对抗阶段，把它当题库用。** 三条理由：①该区块源码标题本身就写着「评委尖锐提问攻防演练」（src/components/ProjectMemberWorkbench.tsx:751），业务定位本就是演练而非任务；②提问没有终态——待办可勾掉，提问要反复练，与答辩训练的重复演练语义一致；③page-defense 已有问答对抗阶段，天然是它的下游。备选路径：单题「去练」直达 AI 教练并预填该问题（更轻，但缺少针对单题的演练结构）。接洽前必须先解的前置：killerQuestions 是 string[]（src/types.ts:124），载不动题目 id / 应对要点 / 佐证材料 / 时长；且 defenseConstants 的题库与本区块各自 mock，无共享。",
       "sources": [],
-      "severity": "high"
+      "severity": "high",
+      "category": "产品决策",
+      "owner": "上司拍板"
     },
     {
       "id": "e-guidance-topbar-2-version-drawer-navigate",
@@ -361,7 +384,9 @@
       "designRef": "区块文案 src/components/ProjectMemberWorkbench.tsx:876；按钮实现 src/components/ProjectMemberWorkbench.tsx:883-888",
       "expected": "点击「存入项目文件夹」后：该产物从待归档区消失，并在大事记时间轴顶部新增一条 kind='archive' 的记录。",
       "blockedBy": "FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。",
-      "severity": "medium"
+      "severity": "medium",
+      "category": "技术实现",
+      "owner": "工程自决"
     },
     {
       "id": "issue-diag-questions-suggestion-hardcoded",
@@ -372,7 +397,9 @@
       "designRef": "src/components/ProjectMemberWorkbench.tsx:762-764；题目数据 src/data/mockProjects.ts:96-100",
       "expected": "每题有各自的应对要点、佐证材料指向与建议回答时长。",
       "blockedBy": "killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。",
-      "severity": "medium"
+      "severity": "medium",
+      "category": "技术实现",
+      "owner": "工程自决"
     },
     {
       "id": "issue-diag-region-no-empty-state",
@@ -383,7 +410,9 @@
       "designRef": "src/data/mockProjects.ts:205（logicGaps: []）",
       "expected": "",
       "blockedBy": "需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。",
-      "severity": "low"
+      "severity": "low",
+      "category": "产品决策",
+      "owner": "待产品定义"
     },
     {
       "id": "issue-workbench-material-registry-gap",
@@ -394,7 +423,9 @@
       "designRef": "src/components/workbench/workbenchMockData.ts:114-124",
       "expected": "",
       "blockedBy": "需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。",
-      "severity": "low"
+      "severity": "low",
+      "category": "数据口径",
+      "owner": "待产品定义"
     },
     {
       "id": "issue-guidance-unused-modals",
@@ -405,7 +436,9 @@
       "designRef": "src/components/guidance/GuidanceModals.tsx:177-481",
       "expected": "",
       "blockedBy": "需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。",
-      "severity": "low"
+      "severity": "low",
+      "category": "产品决策",
+      "owner": "待产品定义"
     },
     {
       "id": "issue-guidance-dead-coach-state",
@@ -416,7 +449,9 @@
       "designRef": "src/components/SceneGuidanceWorkbench.tsx:99-102；INITIAL_COACH_SESSIONS 数据 src/components/guidance/guidanceMockData.ts:506-531",
       "expected": "会话列表可切换（sessions 驱动）、面板可折叠（chatCollapsed 驱动）、阶段徽章可切换并影响 AI 回复口径（coachIntent 真正可写）。",
       "blockedBy": "三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。",
-      "severity": "medium"
+      "severity": "medium",
+      "category": "产品决策",
+      "owner": "上司拍板"
     },
     {
       "id": "issue-guidance-snapshot-preview-no-content",
@@ -427,7 +462,9 @@
       "designRef": "提示条文案 src/components/SceneGuidanceWorkbench.tsx:439-441；只读实现 src/components/SceneGuidanceWorkbench.tsx:559-560",
       "expected": "选中历史快照后，中栏展示该快照的 content（或该快照对应的 BP 正文），而不是当前编辑内容。",
       "blockedBy": "①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。",
-      "severity": "high"
+      "severity": "high",
+      "category": "技术实现",
+      "owner": "工程自决"
     },
     {
       "id": "issue-guidance-diff-modal-hardcoded",
@@ -438,7 +475,9 @@
       "designRef": "弹层标题与副标题 src/components/guidance/GuidanceModals.tsx:56-57；写死的变更卡 src/components/guidance/GuidanceModals.tsx:118-160",
       "expected": "按所选两版的 content 生成真实的章节级/行级差异；「与当前对比」应把所在版本作为 compare 目标传入。",
       "blockedBy": "依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。",
-      "severity": "medium"
+      "severity": "medium",
+      "category": "技术实现",
+      "owner": "工程自决"
     },
     {
       "id": "issue-guidance-stage-taxonomy-mismatch",
@@ -449,7 +488,62 @@
       "designRef": "src/components/guidance/guidanceMockData.ts:29-36（L1~L6）；page-milestones 的 L1~L5 见 structure.json 该页 description",
       "expected": "",
       "blockedBy": "需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。",
-      "severity": "medium"
+      "severity": "medium",
+      "category": "产品决策",
+      "owner": "上司拍板"
+    },
+    {
+      "id": "issue-product-coach-session-unification",
+      "where": "nd-guidance-coach",
+      "title": "两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套）",
+      "detail": "「AI助手」三名并存（2026-09-14 用户要求明确，见《0914-15-LLM-Wiki框架合流变更方案》§3.3）：①page-coach（SceneAICoach.tsx，2965 行）+ new_chat 通用会话 = 框架 1.1「AI助手」本体（ReAct 过程可视化、会话历史、新建对话）；②page-guidance 右栏「AI 备赛伴学教练」= 内嵌简版辅助栏（关键词 if-else 假回复 SceneGuidanceWorkbench.tsx:206-238、无会话管理、三个死状态），与 page-coach 零共享（不同 state/mock/消息类型）；③「材料打磨工作台」= page-guidance 改名后的页面名。统一前，guidance 右栏按「内嵌辅助栏」定位下钻，不与 1.1 混同。",
+      "status": "undefined",
+      "designRef": "《0914-15-LLM-Wiki框架合流变更方案》§3.3 待拍板问题；guidance 右栏实现 src/components/SceneGuidanceWorkbench.tsx:841-961",
+      "expected": "",
+      "issue": "两套会话实现是否统一？若统一，保留哪一套（完整版 page-coach 还是内嵌简版）？统一前 guidance 右栏维持「内嵌辅助栏」定位。",
+      "blockedBy": "待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。",
+      "severity": "high",
+      "category": "产品决策",
+      "owner": "上司拍板"
+    },
+    {
+      "id": "issue-product-single-project-binding",
+      "where": "page-workbench",
+      "title": "产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）",
+      "detail": "用户大框架（2026-09-14）「1. 学生角色」注：每个学生仅会绑定一个项目，demo 中展示仅因为方便查看，后续学生端只会看到自己的项目无法切换。当前 demo 登录时会 setActiveTeamProjectId 并允许切换查看不同项目（App.tsx:323-328），工作台/驾驶舱多处以 activeTeamProjectId 驱动。",
+      "status": "intended",
+      "designRef": "用户大框架 1 注（RanZhuang/2026-09/prompt/0914.md #5）；登录分流 src/App.tsx:323-328",
+      "expected": "学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。",
+      "blockedBy": "规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。",
+      "severity": "medium",
+      "category": "产品决策",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-product-guidance-rename-material-workbench",
+      "where": "page-guidance",
+      "title": "产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）",
+      "detail": "用户大框架「1.3」注：全链路指导工作台后续要更改为材料打磨工作台，专门支持可编辑文本材料的编辑、打磨——因为 L1~L6 本质上涉及各个模块，而非单模块负责。由此两条后果：①page-guidance 定位收窄为「材料打磨工作台」，改 title + 节点口径（排期：批 3 完成后统一执行，同步改 schema 变更记录）；②「阶段」概念不归属单一页面，加剧三套阶段口径并存问题（见 issue-guidance-stage-taxonomy-mismatch，需上司拍板唯一口径）。",
+      "status": "intended",
+      "designRef": "用户大框架 1.3 注（RanZhuang/2026-09/prompt/0914.md #5）；《0914-15-LLM-Wiki框架合流变更方案》§四",
+      "expected": "批 3 完成后：page-guidance title 改为「材料打磨工作台」，页面/节点文档口径同步改写（只改口径描述不改行号引用）；structure.json 该页 frameworkRef 去除改名排期注记。",
+      "blockedBy": "改名动作本身已排期（批 3 后）；但 L1~L6 唯一阶段口径未拍板前，节点文档中涉及阶段的表述维持现状只登记不展开（issue-guidance-stage-taxonomy-mismatch）。",
+      "severity": "medium",
+      "category": "产品决策",
+      "owner": "上司拍板"
+    },
+    {
+      "id": "issue-product-framework-incremental-growth",
+      "where": "shuangchuang-ai-wiki",
+      "title": "产品规则：功能模块树会持续生长，structure.json 需允许增量扩展",
+      "detail": "用户大框架总注：后续还会继续基于当前版本进行功能开发，即功能模块树还会继续生长，但当前先按现状设计。对 wiki 的含义：section/page/persona/placeholder 均须支持增量登记，不允许推翻式重构；新增功能若 demo 未实现，走 placeholders[] 占位（只登记、不建 page/node），与 2026-09-14 框架合流原则一致。",
+      "status": "intended",
+      "designRef": "用户大框架总注（RanZhuang/2026-09/prompt/0914.md #5）；《0914-15-LLM-Wiki框架合流变更方案》§一",
+      "expected": "新增模块时：demo 已实现 → 增量登记 page（+personas/frameworkRef）并排期下钻；demo 未实现 → 登记 placeholders[]。schema 变更走 §10 变更记录，批次规划随之追加。",
+      "blockedBy": "无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。",
+      "severity": "low",
+      "category": "产品决策",
+      "owner": "工程自决"
     }
   ]
 }

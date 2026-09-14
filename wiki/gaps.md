@@ -1,9 +1,9 @@
 # 缺口清单（gaps）
 
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
-> 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。
+> 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。
 >
-> 统计：边 23 条（已实现 18 · intended 4 · undefined 1）· issues 9 条。
+> 统计：边 23 条（已实现 18 · intended 4 · undefined 1）· issues 13 条。
 
 ## intended（设计有·未实现）
 
@@ -25,13 +25,17 @@
 | id | 位置 | 状态 | severity | 问题 | 卡点 |
 |---|---|---|---|---|---|
 | `issue-guidance-snapshot-preview-no-content` | 快照只读预览提示条 | intended | high | 「快照只读预览」不显示快照内容，看到的仍是当前正文 | ①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。 |
+| `issue-product-coach-session-unification` | 右栏 AI 备赛伴学教练 | undefined | high | 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套） | 待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。 |
 | `issue-diag-questions-suggestion-hardcoded` | 评委尖锐提问攻防演练 | intended | medium | 评委提问的「建议应对策略」是硬编码单条文案，不随题目变化 | killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。 |
 | `issue-guidance-dead-coach-state` | 右栏 AI 备赛伴学教练 | intended | medium | 右栏 AI 教练有 4 个 state 声明后从未被消费 | 三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。 |
 | `issue-guidance-diff-modal-hardcoded` | 版本快照差异比对弹层 | intended | medium | 版本 diff 弹层正文为写死示例，不随所选版本变化 | 依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。 |
 | `issue-guidance-stage-taxonomy-mismatch` | 全链路指导工作台 | undefined | medium | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5） | 需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。 |
+| `issue-product-guidance-rename-material-workbench` | 全链路指导工作台 | intended | medium | 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行） | 改名动作本身已排期（批 3 后）；但 L1~L6 唯一阶段口径未拍板前，节点文档中涉及阶段的表述维持现状只登记不展开（issue-guidance-stage-taxonomy-mismatch）。 |
+| `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
 | `issue-workbench-pending-archive` | 项目文件夹 | intended | medium | 待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记 | FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。 |
 | `issue-diag-region-no-empty-state` | 逻辑断点与硬伤 | undefined | low | 体检区三块均无空态处理，数据为空时只剩标题 | 需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。 |
 | `issue-guidance-unused-modals` | 版本快照差异比对弹层 | undefined | low | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行） | 需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。 |
+| `issue-product-framework-incremental-growth` | shuangchuang-ai-wiki | intended | low | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展 | 无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。 |
 | `issue-workbench-material-registry-gap` | 项目文件夹 | undefined | low | 材料注册表的来源映射键集与渲染集不闭合 | 需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。 |
 
 ## 逐条详情

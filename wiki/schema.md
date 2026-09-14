@@ -1,7 +1,7 @@
-# LLM Wiki 结构 Schema v0.2（冻结候选）
+# LLM Wiki 结构 Schema v0.4
 
 > 本文是 wiki 结构的**唯一约定源**。任何节点/边/页面的新增与修改以本文为准。
-> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」）
+> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认）
 
 ---
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 1. 四层模型
+## 1. 四层模型 + 正交维度（v0.4）
 
 | 层 | 名称 | 载体 | 粒度判据 | 预期量级 |
 |---|---|---|---|---|
@@ -28,11 +28,23 @@
 | L3 | **node** 可见交互单元 | `nodes/<page-id>/<id>.md` | **用户能指认、能点**的功能块 | 5~12 / page |
 | L4 | **edge** 边 | `edges.json` | 两个 node 间的**有向、带语义**关系 | — |
 
+**正交维度（2026-09-14 框架合流新增，与四层不互相替代）**：
+
+| 维度 | 名称 | 载体 | 说明 |
+|---|---|---|---|
+| persona | **端** | `structure.json` → `personas[]` + `page.personas` | 权限与导航视角（学生 / 学校管理 / 辅导导师 / admin 超管，4 端）；section 是任务链路视角，两者正交。`page.personas` 为多值——复用页面标多端（如 page-knowledge-base 同时服务学生/校管/admin） |
+| placeholder | **占位** | `structure.json` → `placeholders[]` | 大框架里有、demo 尚未实现的功能：**只登记占位（id/title/personas/frameworkRef/note），不建 page/node**，待产品定义明确后补 |
+| frameworkRef | **大框架条目号** | `page.frameworkRef` / `placeholder.frameworkRef` | 对应用户大框架（0914 #5）的条目编号（如 `1.3`、`2.11`），保持 wiki 与产品大框架可追溯 |
+
+persona 定义含 `defaultPage`（该端登录后的默认落地页），**一律以源码分流逻辑为准**（App.tsx 初始化与登录处理器），不以方案文档猜测为准。
+
 层级表达：
 ```
 section ──(membership)──▶ page ──(page 字段)──▶ node
                                                     │
                                               edge ─┴─▶ node / page
+
+persona ──(page.personas 多值)──▶ page        placeholder（🧩 仅登记，不入图）
 ```
 
 > `section → page` 的归属写在 `structure.json` 的 section 成员里；`page → node` 的归属写在 node 的 `page` 字段里。二者都不需要额外的边。
@@ -47,6 +59,9 @@ section ──(membership)──▶ page ──(page 字段)──▶ node
 | page | `page-<view>` | `page-workbench` |
 | node | `nd-<page缩写>-<unit>` | `nd-workbench-todo` |
 | edge | `e-<from简>-2-<to简>[-<区分词>]` | `e-workbench-todo-2-guidance-ai` |
+| persona（v0.4） | `p-<role>` | `p-student` |
+| placeholder（v0.4） | `ph-<feature>` | `ph-review-report` |
+| issue（v0.4 补充） | 产品规则类用 `issue-product-<slug>` | `issue-product-single-project-binding` |
 
 - 全小写，单词间用 `-`
 - node 的 `id` **必须等于文件名**（去掉 `.md`）
@@ -150,6 +165,19 @@ sources:
 | `expected` | **期望行为**是什么 | 点「完整版本历史」→ 切到工作台并打开版本抽屉 |
 | `blockedBy` | **卡在哪** | 该处为纯文本 div，无 onClick / 无回传链路 |
 
+### 5.3 issues 分流字段（v0.4）
+
+`edges.json` 的 `issues[]` 每条必须带两个分流字段（校验规则 E2）：
+
+| 字段 | 枚举 | 说明 |
+|---|---|---|
+| `category` | `产品决策` / `技术实现` / `数据口径` | 问题性质：要不要人拍板、工程自己就能做、还是口径需对齐 |
+| `owner` | `上司拍板` / `工程自决` / `待产品定义` | 谁来解：拿去问上司、工程落地时顺手做、等产品侧给定义 |
+
+- `undefined` 边可带同名 `category` / `owner`（可选，带了就必须 ∈ 枚举）。
+- `category = 产品决策` 的条目（issues + 带标记的边）由 `gaps` 命令分流生成 **`wiki/decisions.md`《待拍板清单》**，按 severity 排序，含背景 + 建议 + 卡点；技术实现 / 数据口径类只留在 `gaps.md`，不混入清单。
+- 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后 decisions.md **一次性全量交付**，不逐批对齐。
+
 ---
 
 ## 6. 校验规则（在 v1 的 A~D 上扩展）
@@ -160,6 +188,7 @@ sources:
 | | **A5** | node 的 `page` 必须存在于 `structure.json` | error |
 | | **A6** | node 的 `id` 唯一且 = 文件名 | error |
 | | **A7** | `docStatus: "drilled"` 的 page 必须至少 1 个 node | error |
+| | **A8**（v0.4） | `page.personas` / `placeholders[].personas` 引用的 id 必须存在于 `personas[]`；`persona.defaultPage` 必须是已定义 page；page 未声明 personas 时 warning | error / warning |
 | B frontmatter | B1~B4 | 沿用 v1，字段集换成 node 必填集 | error |
 | | **B5** | `kind` ∈ 枚举 | error |
 | C 引用 | C1~C4 | 沿用 v1 | error |
@@ -170,6 +199,7 @@ sources:
 | | **D4** | `navigate*` 边应存在反向 UI 入口 | **warning**（有去无回） |
 | | **D5** | node 第 5 节与 `edges.json` 一致 | error |
 | E 缺口 | **E1** | 汇总所有非 `implemented` 边 | 报告 |
+| | **E2**（v0.4） | issues 必须有 `category` / `owner` 且 ∈ 枚举；边若带同名字段也须 ∈ 枚举（见 5.3） | error |
 
 ---
 
@@ -213,7 +243,7 @@ sources:
 | `sync-edges` | 把 `edges.json` 渲染进各 node 第 5 节 | 覆盖 `<!-- EDGES:BEGIN/END -->` |
 | `index` | 生成 `llms.txt`（含 node 清单） | `wiki/llms.txt` |
 | `map` | 生成结构图（node 为点，边带 type/status 着色） | `wiki/module-map.html` + `wiki/site/index.html` |
-| `gaps` ★ | 汇总非 `implemented` 边，按 `blockedBy` 聚合 | `wiki/gaps.md` |
+| `gaps` ★ | 汇总非 `implemented` 边，按 `blockedBy` 聚合；并分流 `category=产品决策` 条目生成《待拍板清单》 | `wiki/gaps.md` + `wiki/decisions.md`（v0.4） |
 
 > `map` 的 HTML 模板与图布局由同目录 `build_map.py` 单独承担（单一模板源），`gen_wiki_tools.py map` 只做入口转发——避免 40 KB 模板双份漂移。产物文件名以实际落盘为准：`module-map.html`（发布副本 `site/index.html`，入口落在 `/`）。
 
@@ -237,11 +267,19 @@ sources:
 校验结果：**section 8 · page 15（已下钻 2 / 待铺开 13）· node 18 · 边 23（18 implemented / 4 intended / 1 undefined）· issues 9；0 error / 1 warning**
 （唯一 warning = 13 个 page 尚未铺开的汇总提示）。
 
-> 其余 13 个视图的页面与节点排在**第 4 步**，待粒度验收通过后铺开。
-> 铺开范围（按 `structure.json` 顺序）：`page-cockpit` / `page-milestones` / `page-screening` /
-> `page-mentorship` / `page-supervision` / `page-mentors-pool` / `page-coach` / `page-defense` /
-> `page-assets` / `page-knowledge-base` / `page-users` / `page-teams` / `page-login`。
-> 每铺开一批需重跑 `sync-edges` → `validate` → `index` → `map` → `gaps`。
+> 其余 13 个视图按**批次规划**铺开（2026-09-14《0914-15-LLM-Wiki框架合流变更方案》§五，学生端优先、逐端推进）：
+>
+> | 批次 | 范围 | 页面（顺序） |
+> |---|---|---|
+> | 批 0 | 框架合流落地 | personas / placeholders / issues 分流 / 工具链 A8·E2·decisions（**本版 v0.4 完成**） |
+> | 批 1 | 学生端 | page-login → page-coach → page-defense → page-assets（4 页；先按「学生单项目绑定」「coach=AI助手」口径复核 page-workbench / page-guidance 节点文档，只改口径不改行号） |
+> | 批 2 | 学校管理端 | page-cockpit → page-screening → page-mentorship → page-supervision → page-mentors-pool → page-milestones（6 页） |
+> | 批 3 | 治理与复用页 | page-teams → page-users → page-knowledge-base（3 页） |
+> | 批 4 | 交付总装 | 《待拍板清单》全量交付 + 设计方案说明书 + 结构图发布 |
+>
+> 每铺开一批需重跑 `sync-edges` → `validate` → `index` → `map` → `gaps`；
+> **每批完成定义**：五命令 0 error + 该批页面 docStatus=drilled + issues 全部分流（category/owner）+ commit。
+> 逐页执行细节见 `wiki/drilldown-manual.md`《铺开执行手册》。
 >
 > `build_map.py` 的图布局已改为**按已下钻页面自动分列**（不再是写死的三列），后续新增页面无需改生成器。
 
@@ -251,6 +289,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.4 ✅ | **框架合流（批 0）**：新增 persona 维度（4 端 `p-*`，§1 正交维度表）+ `placeholders[]` 占位（`ph-*`，只登记不建页）+ page 增 `personas`/`frameworkRef` 字段；edges.json issues 分流（`category`/`owner`，§5.3）+ 新增 4 条产品规则 issue；工具链新增校验 **A8**（persona 引用完整性）与 **E2**（分流字段必填），`gaps` 扩展生成 `wiki/decisions.md`《待拍板清单》；§9 铺开计划改为批 0~4。口径修正：`p-student.defaultPage` 按源码定为 `page-coach`（App.tsx:59/323-324，变更方案原写 page-workbench）、`p-mentor.defaultPage` 为 `page-supervision`（App.tsx:60，方案原写 page-mentorship）——均按「源码为唯一事实源」改正。依据：《0914-15-LLM-Wiki框架合流变更方案》 |
 | 2026-09-14 | v0.3.4 ✅ | 删除退役的 `wiki/validate_pilot.py`（防误跑得假绿；历史副本见 SY 只读镜像与 0914 备份，本仓 git 历史 `acebad6` 亦可取回）；本文件 §9 表格与 `wiki-drilldown` skill 坑条目同步改口 |
 | 2026-09-14 | v0.3.3 ✅ | **建模基线回归本仓**：`main` 重定基线至团队 `main`（`505a858`，只读 `upstream` 远程 + `pushurl=no_push`，误推实测失败）；v2 全量迁入本仓 `wiki/`（30 文件、哈希与 SY 一致），v1 转 `wiki-v1/`；`baseline` / `repoRoot` / 本文基线表同步改正；`validate` 0 error、231 处引用全部可解析 |
 | 2026-09-13 | v0.3.2 ✅ | **第 4 步首批完成**：`page-guidance` 由 2 个最小节点补全为 **10 节点**（顶栏 / 任务条 / 快照提示条 / 章节速达条 / BP 打磨区 / 诊断报告 / 评分详情 / AI 教练 / 版本抽屉 / diff 弹层）；边 11 → **23**（新增 12 条本页内边），issues 4 → **9**（新增 5 条：死弹层组件 / 教练死状态 / 快照预览不换内容 / diff 正文硬编码 / 三套阶段口径）；`build_map.py` 图布局改为按页面自动分列；D4 规则收窄为「跨页且已实现的跳转边」 |

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LLM Wiki 工具链 · shuangchuang-design-main（schema v0.3）
+"""LLM Wiki 工具链 · shuangchuang-design-main（schema v0.4）
 
 五个子命令（纯标准库，零第三方依赖）：
 
@@ -9,19 +9,20 @@
     python wiki/gen_wiki_tools.py index        生成 wiki/llms.txt（含 node 清单）
     python wiki/gen_wiki_tools.py map          生成 wiki/module-map.html + wiki/site/index.html
     python wiki/gen_wiki_tools.py gaps         汇总非 implemented 边与 issues → wiki/gaps.md
+                                               并分流产品决策条目 → wiki/decisions.md
 
 真源与产物
 ----------
 真源（手写，唯一事实来源）：
-    wiki/structure.json          section / page / 壳层 / 弹层 / 孤儿
-    wiki/edges.json              边 + issues
+    wiki/structure.json          section / page / persona / placeholder / 壳层 / 弹层 / 孤儿
+    wiki/edges.json              边 + issues（issues 带 category / owner 分流字段）
     wiki/nodes/<page-id>/*.md    节点（frontmatter + 前 4 节）
     wiki/pages/<page-id>.md      页面（frontmatter + 页面级事实 + 节点地图）
 产物（工具生成，勿手改）：
     wiki/nodes/**/ 第 5 节「出入边」   ← sync-edges
     wiki/llms.txt                      ← index
     wiki/module-map.html · wiki/site/index.html ← map
-    wiki/gaps.md                       ← gaps
+    wiki/gaps.md · wiki/decisions.md   ← gaps
 
 设计原则
 --------
@@ -55,6 +56,7 @@ STRUCTURE_FILE = WIKI_DIR / "structure.json"
 EDGES_FILE = WIKI_DIR / "edges.json"
 LLMS_TXT = WIKI_DIR / "llms.txt"
 GAPS_MD = WIKI_DIR / "gaps.md"
+DECISIONS_MD = WIKI_DIR / "decisions.md"
 MAP_FILE = WIKI_DIR / "module-map.html"
 SITE_DIR = WIKI_DIR / "site"
 SITE_INDEX = SITE_DIR / "index.html"
@@ -77,6 +79,10 @@ STATUS_REQUIRED = {
     "undefined": ["issue"],
 }
 NAV_TYPES = {"navigate", "navigate-with-payload"}
+
+# v0.4 新增：persona（端）维度与 issues 分流
+VALID_ISSUE_CATEGORY = {"产品决策", "技术实现", "数据口径"}
+VALID_ISSUE_OWNER = {"上司拍板", "工程自决", "待产品定义"}
 
 PAGE_MIN_CITES = 5   # 页面正文最少引用条数（防空壳页）
 NODE_MIN_CITES = 3   # 节点正文最少引用条数
@@ -373,6 +379,27 @@ def cmd_validate(args: argparse.Namespace) -> int:
             if pid not in pages:
                 rep.error("[A2] section %s 引用了未定义的 page id：%s" % (s.get("id"), pid))
 
+    # ---- A8 persona 维度（v0.4；structure.json 未声明 personas[] 时跳过，向后兼容） ----
+    personas = structure.get("personas", [])
+    if personas:
+        persona_ids = {p.get("id") for p in personas}
+        for p in personas:
+            dp = p.get("defaultPage")
+            if dp and dp not in pages:
+                rep.error("[A8] persona %s 的 defaultPage=%r 不是已定义的 page" % (p.get("id"), dp))
+        for pg in structure.get("pages", []):
+            pgs = pg.get("personas")
+            if pgs is None:
+                rep.warn("[A8] page %s 未声明 personas（v0.4 起每页应至少服务一端）" % pg.get("id"))
+                continue
+            for ps in as_list(pgs):
+                if ps not in persona_ids:
+                    rep.error("[A8] page %s 的 personas 引用了未定义的 persona id：%s" % (pg.get("id"), ps))
+        for ph in structure.get("placeholders", []):
+            for ps in as_list(ph.get("personas")):
+                if ps not in persona_ids:
+                    rep.error("[A8] placeholder %s 的 personas 引用了未定义的 persona id：%s" % (ph.get("id"), ps))
+
     # ---- A3 页面文件存在（已下钻必须存在=error；待铺开缺失=汇总提示） ----
     pending: list[str] = []
     for pid in declared:
@@ -554,6 +581,26 @@ def cmd_validate(args: argparse.Namespace) -> int:
         expected = render_edges_block(w, nid)
         if current.strip() != expected.strip():
             rep.error("[D5] %s：第 5 节与 edges.json 不一致 —— 运行 `python wiki/gen_wiki_tools.py sync-edges`" % rel)
+
+    # ---- E2 issues 分流字段（v0.4）：category / owner 必填且 ∈ 枚举；边若带同名字样也须 ∈ 枚举 ----
+    for i in w.issues:
+        iid = i.get("id", "<no-id>")
+        cat = i.get("category")
+        own = i.get("owner")
+        if not cat:
+            rep.error("[E2] issue %s：缺少 `category`（产品决策 / 技术实现 / 数据口径）" % iid)
+        elif cat not in VALID_ISSUE_CATEGORY:
+            rep.error("[E2] issue %s：category=%r 不在枚举内" % (iid, cat))
+        if not own:
+            rep.error("[E2] issue %s：缺少 `owner`（上司拍板 / 工程自决 / 待产品定义）" % iid)
+        elif own not in VALID_ISSUE_OWNER:
+            rep.error("[E2] issue %s：owner=%r 不在枚举内" % (iid, own))
+    for e in w.edges:
+        eid = e.get("id", "<no-id>")
+        if e.get("category") is not None and e.get("category") not in VALID_ISSUE_CATEGORY:
+            rep.error("[E2] edge %s：category=%r 不在枚举内" % (eid, e.get("category")))
+        if e.get("owner") is not None and e.get("owner") not in VALID_ISSUE_OWNER:
+            rep.error("[E2] edge %s：owner=%r 不在枚举内" % (eid, e.get("owner")))
 
     # ---- E1 缺口汇总（报告区，不阻断） ----
     gaps = [e for e in w.edges if e.get("status") != "implemented"]
@@ -886,6 +933,7 @@ def cmd_gaps(args: argparse.Namespace) -> int:
     out.append(
         "> 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。"
         "`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。"
+        "其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。"
     )
     out.append(">")
     out.append(
@@ -995,13 +1043,105 @@ def cmd_gaps(args: argparse.Namespace) -> int:
         out.append("")
 
     write_text_lf(GAPS_MD, "\n".join(out))
+
+    # ---- decisions.md《待拍板清单》（v0.4）：只收 category=产品决策 的条目 ----
+    n_dec = _write_decisions(w, sev_rank)
+
     print("== gaps ==")
     print("  已生成：%s" % GAPS_MD)
+    print("  已生成：%s（待拍板条目 %d 条）" % (DECISIONS_MD, n_dec))
     print(
         "  缺口边 %d 条（intended %d / undefined %d）· issues %d 条"
         % (len(gaps), len(intended), len(undefined), len(w.issues))
     )
     return 0
+
+
+def _write_decisions(w: Wiki, sev_rank: dict[str, int]) -> int:
+    """生成 wiki/decisions.md《待拍板清单》：只收 category=产品决策 的 issues 与边。"""
+    entries: list[dict[str, Any]] = []
+    for i in w.issues:
+        if i.get("category") != "产品决策":
+            continue
+        entries.append({
+            "id": str(i.get("id")),
+            "kind": "issue",
+            "title": str(i.get("title", "")),
+            "where": "%s（`%s`）" % (w.label(str(i.get("where", ""))), i.get("where", "")),
+            "owner": str(i.get("owner", "")),
+            "severity": str(i.get("severity", "")),
+            "background": str(i.get("detail", "")),
+            "suggestion": str(i.get("expected") or i.get("issue") or ""),
+            "blockedBy": str(i.get("blockedBy", "")),
+        })
+    for e in w.edges:
+        if e.get("category") != "产品决策":
+            continue
+        frm, to = str(e.get("from")), str(e.get("to"))
+        entries.append({
+            "id": str(e.get("id")),
+            "kind": "边",
+            "title": str(e.get("trigger", "")),
+            "where": "%s（`%s`）→ %s（`%s`）" % (w.label(frm), frm, w.label(to), to),
+            "owner": str(e.get("owner", "")),
+            "severity": str(e.get("severity", "")),
+            "background": str(e.get("logic", "")),
+            "suggestion": str(e.get("issue") or e.get("expected") or ""),
+            "blockedBy": str(e.get("blockedBy", "")),
+        })
+    entries.sort(key=lambda x: (sev_rank.get(x["severity"], 9), x["id"]))
+
+    owner_count: dict[str, int] = {}
+    for x in entries:
+        owner_count[x["owner"]] = owner_count.get(x["owner"], 0) + 1
+
+    out: list[str] = []
+    out.append("# 待拍板清单（产品决策分流）")
+    out.append("")
+    out.append("> 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。")
+    out.append(
+        "> 口径：只收 `category = 产品决策` 的条目（issues[] 与带该标记的边），"
+        "按 severity 排序（high → medium → low）；技术实现 / 数据口径类问题不混入本清单，见 `wiki/gaps.md`。"
+    )
+    out.append(
+        "> 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。"
+        "owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。"
+    )
+    out.append(">")
+    out.append(
+        "> 统计：共 %d 条（%s）。"
+        % (len(entries), " · ".join("%s %d" % (k, v) for k, v in sorted(owner_count.items())) or "无")
+    )
+    out.append("")
+
+    out.append("## 汇总表")
+    out.append("")
+    out.append("| # | 条目 | 位置 / 走向 | owner | severity |")
+    out.append("|---|---|---|---|---|")
+    for n, x in enumerate(entries, 1):
+        out.append(
+            "| %d | %s（`%s`） | %s | %s | %s |"
+            % (n, x["title"].replace("|", "\\|"), x["id"], x["where"], x["owner"], x["severity"])
+        )
+    out.append("")
+
+    out.append("## 逐条详情")
+    out.append("")
+    for n, x in enumerate(entries, 1):
+        out.append("### %d. %s" % (n, x["title"]))
+        out.append("")
+        out.append("- 来源：`%s`（%s）｜位置：%s" % (x["id"], x["kind"], x["where"]))
+        out.append("- owner：**%s**｜severity：**%s**" % (x["owner"], x["severity"]))
+        if x["background"]:
+            out.append("- **背景**：%s" % x["background"])
+        if x["suggestion"]:
+            out.append("- **建议 / 期望**：%s" % x["suggestion"])
+        if x["blockedBy"]:
+            out.append("- **卡点**：%s" % x["blockedBy"])
+        out.append("")
+
+    write_text_lf(DECISIONS_MD, "\n".join(out))
+    return len(entries)
 
 
 # --------------------------------------------------------------------------
