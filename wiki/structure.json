@@ -286,10 +286,11 @@
       "importance": "medium",
       "view": "knowledge_base",
       "component": "src/components/KnowledgeBaseManagement.tsx",
-      "relevant_files": ["src/components/KnowledgeBaseManagement.tsx", "src/components/PlatformKnowledgeBaseManagement.tsx", "src/data/mockKnowledgeBase.ts"],
-      "related_pages": ["page-assets", "page-coach"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "relevant_files": ["src/components/KnowledgeBaseManagement.tsx", "src/components/PlatformKnowledgeBaseManagement.tsx", "src/data/mockKnowledgeBase.ts", "src/data/mockPlatformKnowledgeBase.ts"],
+      "related_pages": ["page-assets", "page-coach", "page-mentors-pool"],
+      "docStatus": "drilled",
+      "nodeCount": 7,
+      "nodeScopeNote": "2026-09-14 批 3 下钻：7 节点覆盖校端页头与宏指标/知识库列表卡与启停删除/新建库弹窗/库内文件管理/上传文件弹窗/文件解析要点预览/admin 端平台赛事知识库。未下钻为节点的页面级结构：两级视图切换（viewLevel）、两端空态与 Toast、派生计算。**一页两端**（同 page-mentors-pool 模式）：校端（MOCK_KNOWLEDGE_BASES：5库17文件3332要点）与 admin 端（MOCK_PLATFORM_KNOWLEDGE_BASES：5库16文件4090切片）两套独立实现与数据（App.tsx:761-766 分流）、分类枚举相同但零互链（issue-kb-two-ends-not-synced）。本页指标卡全部真实派生（与 page-users/page-teams 相反），但上传的 chunks 为随机数、预览要点写死（issue-kb-preview-hardcoded-chunks）。"
     },
     {
       "id": "page-users",
@@ -302,9 +303,10 @@
       "view": "users_management",
       "component": "src/components/UserManagement.tsx",
       "relevant_files": ["src/components/UserManagement.tsx", "src/data/mockUsersAndTeams.ts"],
-      "related_pages": ["page-teams"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "related_pages": ["page-teams", "page-mentors-pool", "page-login"],
+      "docStatus": "drilled",
+      "nodeCount": 5,
+      "nodeScopeNote": "2026-09-14 批 3 下钻：5 节点覆盖页头与新增入口/账号规模指标卡/四维筛选/用户台账表与账号操作/新增用户弹窗。未下钻为节点的页面级结构：Toast（123-130）、filteredUsers 与 collegesList 派生（105-119）。关键发现：①指标卡三写死一半真（users.length + 333 / 48 位 / 26 个学院 / 268 人）；②本页数据是孤岛——无任何上行 prop，新增账号与启停不出页面（issue-users-accounts-isolated），与 page-login 的登录账号体系互不相通；③新增用户邮箱自动生成会把中文姓名拼进域（issue-users-auto-email）；④onOpenProject prop 备而未用，到项目抽屉的通路是断的；⑤表头笔误「工工号」。"
     },
     {
       "id": "page-teams",
@@ -317,9 +319,10 @@
       "view": "teams_management",
       "component": "src/components/TeamManagement.tsx",
       "relevant_files": ["src/components/TeamManagement.tsx", "src/data/mockUsersAndTeams.ts"],
-      "related_pages": ["page-users", "page-workbench"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "related_pages": ["page-workbench", "page-screening"],
+      "docStatus": "drilled",
+      "nodeCount": 4,
+      "nodeScopeNote": "2026-09-14 批 3 下钻：4 节点覆盖页头与合规全检入口/团队资质指标卡/搜索与团队筛选/团队卡与成员名册。未下钻为节点的页面级结构：Toast（50-57）、filteredTeams 派生（43-56）。关键发现：①指标卡全为 `teams.length + 77` 推导的假数据（issue-teams-fake-metrics）；②trackFilter 与 ipReady 两处死代码（issue-teams-dead-state）；③本页与 page-workbench 读同一份 MOCK_PROJECT_TEAMS（ProjectMemberWorkbench.tsx:65），是全库第二处跨页共享数据。"
     },
     {
       "id": "page-login",

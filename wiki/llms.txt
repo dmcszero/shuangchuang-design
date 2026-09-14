@@ -121,14 +121,30 @@ _全角色：取现成素材、查知识与评审规则_
   - [版本时间线（右栏）](nodes/page-assets/nd-assets-timeline.md) `nd-assets-timeline`: 「项目资产管理系统（Git 模式）」的版本轴：按日期分组的提交记录流，可切换当前查看的版本快照、可提交新版本、可进入某一版本的资产状态——左中两栏的内容随之整体切换。 _(list · high)_
   - [版本 Diff 对比弹层](nodes/page-assets/nd-assets-diff.md) `nd-assets-diff`: 点某条提交的「查看 diff」时弹出的差异查看器：上方列出该 commit 触及的文件（带 +A / ~M / -D 与增删行数），下方是带行号与配色的统一 diff——**Git 体验的最后一块拼图**。 _(modal · medium)_
   - [新增资产归档弹窗](nodes/page-assets/nd-assets-addfile.md) `nd-assets-addfile`: 「把一份新材料归档进项目资产」的入口：填文件名、选目标目录与资产类型、写一句说明，确认后立刻在文件树/清单里出现（并自动打开预览）——**这是全页唯一的写操作**。 _(modal · medium)_
-- [知识库管理](pages/page-knowledge-base.md): 知识源接入、连接器状态与检索配置的双角色视图（校端 / 平台端）。 _(importance: medium · 待铺开)_
+- [知识库管理](pages/page-knowledge-base.md): 「知识库管理」**一页两端**：校管端维护本校私有智库（校内扶持政策 / 竞赛规则 / 金奖案例 / 专家经验 / OPC 孵化五类），admin 超管端维护全平台标准库；两端是两套独立实现与独立数据，靠 `session.role` 分流。 _(importance: medium · 已下钻)_
+  - [校端页头与知识库宏指标](nodes/page-knowledge-base/nd-kb-overview.md) `nd-kb-overview`: 校端知识库一级视图的页头与规模盘：说明本库群面向「校内扶持政策 / 2026 规则 / 金奖案例 / 专家经验」，并用五张卡交代库数、启用数、文档数、知识要点数与调用频次——**五张卡全部真实派生**。 _(bar · medium)_
+  - [知识库列表卡与启停/删除](nodes/page-knowledge-base/nd-kb-list.md) `nd-kb-list`: 一级视图的主体：知识库卡片网格，每张卡可开关「运行/停用」、可进库管理文件、可删除——**校端知识库的自有写操作集中在卡片右上角的开关上**。 _(list · high)_
+  - [新建知识库弹窗](nodes/page-knowledge-base/nd-kb-create.md) `nd-kb-create`: 校端建库入口：填名称、选业务分类、写受众与职能简介，确认后新库直接以「运行中」状态创建并**自动进入该库的文件管理页**。 _(modal · medium)_
+  - [库内文件管理（二级视图）](nodes/page-knowledge-base/nd-kb-detail.md) `nd-kb-detail`: 进入某个库后的二级视图：面包屑 + 库概况卡（启停/删除）+ 文件检索条 + 文档表（含「提炼知识要点」「RAG 检索命中」两列）+ 底部脱敏与引文声明——**知识库的「内容层」**。 _(panel · high)_
+  - [上传文件弹窗](nodes/page-knowledge-base/nd-kb-upload.md) `nd-kb-upload`: 往当前库里加文档：点击/拖拽选取本地文件（**全库少数真正调用 `input[type=file]` 的控件之一**）→ 补全名称、格式、大小与摘要 → 提交后 600ms「语义解析」占位，随后文件入表并更新库规格。 _(modal · high)_
+  - [文件解析要点预览](nodes/page-knowledge-base/nd-kb-preview.md) `nd-kb-preview`: 点文档名或「查看解析要点」后弹出的解读卡：上半是 AI 摘要与元信息，下半是「核心知识要点与结构化提取示例」——**下半的要点内容是写死的示例，与所选文件无关**。 _(modal · medium)_
+  - [平台赛事知识库（admin 端）](nodes/page-knowledge-base/nd-platform-kb.md) `nd-platform-kb`: 同一侧栏入口在 **admin 超管端**渲染的另一套界面：平台级「中央总控」知识库，管的是全国统考规程、近五年国赛金奖全案、百位评委追问题库等**下发给全平台各校**的标准库——与校端库数据完全独立。 _(panel · high)_
 
 ## 平台治理
 
 _系统管理员：管人、管团队、管平台侧配置_
 
-- [用户管理](pages/page-users.md): 系统管理员的用户账号维护、角色分配与状态管理。 _(importance: medium · 待铺开)_
-- [团队管理](pages/page-teams.md): 项目团队的组织架构、成员构成与合规审查状态。 _(importance: medium · 待铺开)_
+- [用户管理](pages/page-users.md): 学校管理端的账号台账页：四张规模卡 + 四维筛选 + 一张可即时启停的用户表 + 一个新增用户弹窗，管的是学校侧五类账号（超管 / 学院秘书 / 评审专家 / 指导教师 / 学生负责人）。 _(importance: medium · 已下钻)_
+  - [页头与新增用户入口](nodes/page-users/nd-users-banner.md) `nd-users-banner`: 用户管理页的页头：标明本页维护的五类账号（校级管理者 / 学院秘书 / 评审专家 / 指导教师 / 学生负责人），右侧一个动作——新增注册用户。 _(bar · medium)_
+  - [账号规模指标卡](nodes/page-users/nd-users-metrics.md) `nd-users-metrics`: 四张账号规模卡（全校注册用户 / 专家与导师智库 / 学院联络秘书 / 学生申报骨干）——**三张写死、一张半真半假**，是本页演示态的集中处。 _(panel · medium)_
+  - [四维筛选（搜索 + 角色 + 学院 + 状态）](nodes/page-users/nd-users-filters.md) `nd-users-filters`: 用户台账的检索条：关键词 + 角色 + 学院 + 账号状态四个条件，把用户表收窄——**学院下拉的选项是从当前用户数据动态去重生成的**（本页唯一一处「数据驱动 UI」）。 _(form · medium)_
+  - [用户台账表与账号操作](nodes/page-users/nd-users-table.md) `nd-users-table`: 本页主体：七列用户台账（姓名工号 / 角色 / 单位 / 关联项目 / 联系方式 / 状态 / 操作），行内可**点击状态徽标即时启用或停用**、可重置密码——本页的两个写/动作入口都在这一行里。 _(table · high)_
+  - [新增用户弹窗](nodes/page-users/nd-users-adduser.md) `nd-users-adduser`: 本页唯一的创建入口：填姓名、工号学号、角色、学院与联系方式，提交后新用户即时出现在台账首行——**表单六项全在组件内，无任何后端**。 _(modal · high)_
+- [团队管理](pages/page-teams.md): 学校管理端的团队资质核查页：四张资质指标卡 + 三条件筛选 + 可展开的团队卡（内含 AI 诊断意见、三项结构合规检查与逐人明细名册），对标 2026 评审的「个人成长 / 团队架构」要素。 _(importance: medium · 已下钻)_
+  - [页头与合规全检入口](nodes/page-teams/nd-teams-banner.md) `nd-teams-banner`: 团队管理页的页头：一句话交代本页对标的评审要素（个人成长 / 团队架构），右侧一个动作——「一键合规全检」，点击即弹提示。 _(bar · medium)_
+  - [团队资质指标卡](nodes/page-teams/nd-teams-metrics.md) `nd-teams-metrics`: 四张团队资质指标卡（团队总数 / 跨学科交叉率 / 财务专人配置率 / 核心专利人入队率）——**数字全部由一个写死的「总数」推导**，是本页最需要警惕的一处。 _(panel · high)_
+  - [搜索与团队筛选](nodes/page-teams/nd-teams-filters.md) `nd-teams-filters`: 团队列表的检索条：一个关键词框 + 两个下拉（核验状态 / 跨学院），把 5 支团队收窄成要看的那几支。 _(form · medium)_
+  - [团队卡与成员名册](nodes/page-teams/nd-teams-card.md) `nd-teams-card`: 本页主体：每支团队一张可展开的卡——收起时看项目/队长/导师/规模与核验结论，展开后看 AI 诊断意见、三项合规检查与**逐人明细名册**（学段、分工、是否核心发明人、联系方式），并可下发整改催办或跳项目档案。 _(list · high)_
 
 ## 入口
 

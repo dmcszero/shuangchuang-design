@@ -21,6 +21,7 @@
 | 批 3 | 治理与复用页 | page-teams → page-users → page-knowledge-base | 3 |
 
 - **批 1 开工前先做复核**（不产生新页面）：按「学生单项目绑定」「coach=AI助手」口径复核已下钻的 page-workbench / page-guidance 的节点文档，**只改口径描述，不改行号引用**。
+- **执行进度（2026-09-14）**：批 0 ✅ · 批 1 ✅（学生端 4 页）· 批 2 ✅（校管端 6 页）· 批 3 ✅（治理与复用页 3 页）→ **15/15 页全部 drilled**；node 95 · 边 98 · issues 41 · validate 0 error。**下一批＝批 4 交付总装**：《待拍板清单》全量交付（`decisions.md` 现 15 条）+ 设计方案说明书 + 结构图发布。
 - 每页下钻的完整流程 = Skill `wiki-drilldown` 步骤 0~6，一页走完后才开下一页。
 - **行号漂移防线**：每批开工必须先跑 Skill 步骤 0（`git fetch upstream && git merge upstream/main`，代理 `$env:HTTPS_PROXY='http://127.0.0.1:7890'`），merge 有动静就先 `validate` 验既有引用，红了先修再动手。
 

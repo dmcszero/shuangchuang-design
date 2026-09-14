@@ -42,9 +42,16 @@ sources:
 <!-- EDGES:BEGIN -->
 > 本节的**真源是 `wiki/edges.json`**，由 `python wiki/gen_wiki_tools.py sync-edges` 整段渲染，手写会被覆盖。要改边请改边表后重跑该命令。
 
-**入边 0 条**
+**入边 1 条**
 
-（无）
+- **`e-teams-card-2-workbench-team-reuse`** ← `nd-teams-card`（团队卡与成员名册）｜`reuse` · **implemented（已实现）**
+  - 触发：（无触发，数据同源）
+  - 逻辑：两侧读同一份 `MOCK_PROJECT_TEAMS`：本页 `useState(MOCK_PROJECT_TEAMS)`（TeamManagement.tsx:28），学生端工作台 `MOCK_PROJECT_TEAMS.find(t => t.projectId === project.id) || MOCK_PROJECT_TEAMS[0]`（ProjectMemberWorkbench.tsx:65）；共用 `auditStatus` / `auditRemark` / `members` / `crossCollege` 等字段。区别只在呈现：本页全校罗列可筛选，工作台按当前项目取单队。
+  - 出处：`src/components/TeamManagement.tsx:24`
+  - 出处：`src/components/TeamManagement.tsx:28`
+  - 出处：`src/components/ProjectMemberWorkbench.tsx:24`
+  - 出处：`src/components/ProjectMemberWorkbench.tsx:65`
+  - 备注：全库第二处「跨页共享同一份数据」（第一处是 page-supervision ↔ page-workbench 的 workOrders 写回；本处为只读复用）。
 
 **出边 0 条**
 

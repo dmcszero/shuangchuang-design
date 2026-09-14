@@ -44,13 +44,14 @@
 | `module-map.html` | ⚙️ 产物：本地预览的结构可视化（按已下钻页面自动分列；双击即开） |
 | `site/index.html` | ⚙️ 产物：**发布副本**（发布单元只含这一个文件） |
 
-## 三、当前进度（2026-09-14，批 2 校管端下钻后）
+## 三、当前进度（2026-09-14，批 3 完成后 — **全库 15 页全部下钻**）
 
-**section 8 · page 15（已下钻 12 / 待铺开 3）· node 79 · 边 89（80 implemented · 8 intended · 1 undefined）· issues 33 · `validate` 0 error / 8 warning**（warning = 3 页待铺开汇总 + 5 条预期的单向跳转边）
+**section 8 · page 15（已下钻 15 / 待铺开 0）· node 95 · 边 98（86 implemented · 11 intended · 1 undefined）· issues 41 · `validate` 0 error / 7 warning**（warning 全部为 D4 单向跳转边，属预期）
 
-- 已下钻：`page-workbench` 项目工作台（8）、`page-guidance` 全链路指导工作台（10）、`page-login` 登录分流（4）、`page-coach` AI 助手（10）、`page-defense` 模拟答辩训练（7）、`page-assets` 资产系统 Git 模式（6）、`page-cockpit` 数据驾驶舱（6）、`page-screening` 智能初筛中心（4）、`page-mentorship` 导师智能调度（5）、`page-supervision` 督导闭环中心（9）、`page-milestones` 里程碑看板（4）、`page-mentors-pool` 导师池管理（6，含 admin 端）
-- 待铺开按批次：~~批 1 学生端 4 页~~ ✅ → ~~批 2 校管端 6 页~~ ✅ → **批 3 治理 3 页（teams / users / knowledge-base）**
-- 《待拍板清单》现 4 条（上司拍板），另有 29 条技术/数据口径缺口在 `gaps.md`，批 1~3 攒齐后一次性交付
+- 已下钻（15/15）：`page-workbench`(8) · `page-guidance`(10) · `page-login`(4) · `page-coach`(10) · `page-defense`(7) · `page-assets`(6) · `page-cockpit`(6) · `page-screening`(4) · `page-mentorship`(5) · `page-supervision`(9) · `page-milestones`(4) · `page-mentors-pool`(6) · `page-teams`(4) · `page-users`(5) · `page-knowledge-base`(7)
+- 批次：批 0 框架合流 ✅ → 批 1 学生端 4 页 ✅ → 批 2 校管端 6 页 ✅ → **批 3 治理与复用页 3 页 ✅**
+- **下一步＝批 4 交付总装**：《待拍板清单》全量交付 + 设计方案说明书 + 结构图发布（见《铺开执行手册》§1）
+- **《待拍板清单》现 15 条**（`decisions.md`，由 `gaps` 自动生成）：上司拍板 8 · 待产品定义 5 · 工程自决 2；另 26 条技术/数据口径缺口在 `gaps.md`（issues 共 41 条）
 
 ## 四、工具链（固定五条，顺序不可换）
 

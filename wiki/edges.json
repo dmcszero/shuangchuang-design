@@ -1293,6 +1293,135 @@
         "src/components/MilestoneKanban.tsx:151",
         "src/App.tsx:756"
       ]
+    },
+    {
+      "id": "e-teams-card-2-project-drawer",
+      "from": "nd-teams-card",
+      "to": "shell-project-drawer",
+      "type": "navigate-with-payload",
+      "trigger": "展开任一团队卡，点底部「查看项目全景档案」",
+      "payload": "projectId（字符串）",
+      "logic": "onClick={() => onSelectProject(team.projectId)} → App.handleSelectProjectById：projects.find(p => p.id === projectId) → 命中则 handleSelectProject（开抽屉）；**未命中静默无反应**。按钮仅在 prop 存在时渲染。",
+      "status": "implemented",
+      "sources": [
+        "src/components/TeamManagement.tsx:416-425",
+        "src/App.tsx:775-778",
+        "src/App.tsx:501-506"
+      ],
+      "note": "本页唯一真正的跨页出口；与 page-screening / page-cockpit 的项目卡走同一个全局抽屉。"
+    },
+    {
+      "id": "e-teams-card-2-workbench-team-reuse",
+      "from": "nd-teams-card",
+      "to": "nd-workbench-team",
+      "type": "reuse",
+      "trigger": "（无触发，数据同源）",
+      "logic": "两侧读同一份 `MOCK_PROJECT_TEAMS`：本页 `useState(MOCK_PROJECT_TEAMS)`（TeamManagement.tsx:28），学生端工作台 `MOCK_PROJECT_TEAMS.find(t => t.projectId === project.id) || MOCK_PROJECT_TEAMS[0]`（ProjectMemberWorkbench.tsx:65）；共用 `auditStatus` / `auditRemark` / `members` / `crossCollege` 等字段。区别只在呈现：本页全校罗列可筛选，工作台按当前项目取单队。",
+      "status": "implemented",
+      "sources": [
+        "src/components/TeamManagement.tsx:24",
+        "src/components/TeamManagement.tsx:28",
+        "src/components/ProjectMemberWorkbench.tsx:24",
+        "src/components/ProjectMemberWorkbench.tsx:65"
+      ],
+      "note": "全库第二处「跨页共享同一份数据」（第一处是 page-supervision ↔ page-workbench 的 workOrders 写回；本处为只读复用）。"
+    },
+    {
+      "id": "e-users-table-2-shell-accounts-intended",
+      "from": "nd-users-table",
+      "to": "shell-app",
+      "type": "writeback",
+      "trigger": "点击状态列徽标切换启用/停用；或在新增弹窗提交新用户",
+      "designRef": "页尾声明「按校级统一身份认证系统 (CAS/OAuth2) 权限策略实时同步」src/components/UserManagement.tsx:407；新增弹窗「账号开通后将自动下发短信及激活邮件…」src/components/UserManagement.tsx:530-532；弹窗标题「录入新用户与分配权限」src/components/UserManagement.tsx:437",
+      "expected": "账号的新增、启停与角色授权应进入系统级权限体系（可被登录/鉴权消费），并同步到统一身份认证；停用后该用户应无法登录或失去相应权限。",
+      "blockedBy": "users 是组件本地 state（初值 MOCK_USERS），本页**没有任何上行 prop**（只有可选 onOpenProject）；账号与登录体系（page-login 的 DEMO_PRESET_ACCOUNTS + 前端自选角色）互不相通，Auth 层不存在。",
+      "status": "intended",
+      "sources": [],
+      "severity": "high"
+    },
+    {
+      "id": "e-kb-list-2-detail-navigate",
+      "from": "nd-kb-list",
+      "to": "nd-kb-detail",
+      "type": "navigate-with-payload",
+      "trigger": "点击库卡标题，或卡片底部「进入文件管理 / 管理库内文件」",
+      "payload": "kbId（字符串）",
+      "logic": "handleEnterKbFiles(kbId)：setSelectedKbId + 清空文件筛选 + setViewLevel('detail') + window.scrollTo(顶部平滑滚动)；二级视图由 currentKb 派生渲染。",
+      "status": "implemented",
+      "sources": [
+        "src/components/KnowledgeBaseManagement.tsx:73-79",
+        "src/components/KnowledgeBaseManagement.tsx:492-499",
+        "src/components/KnowledgeBaseManagement.tsx:542-549"
+      ]
+    },
+    {
+      "id": "e-kb-create-2-detail-navigate",
+      "from": "nd-kb-create",
+      "to": "nd-kb-detail",
+      "type": "writeback",
+      "trigger": "新建库弹窗提交「确认创建并管理文件」",
+      "payload": "KnowledgeBase{id:'kb-custom-*', code:'KB-*', category, audience, enabled:true, files:[], chunkCount:0, ...}",
+      "logic": "handleCreateKnowledgeBase：setKnowledgeBases([newKb, ...]) → setSelectedKbId(newKb.id) → 关弹窗清表单 → Toast → setViewLevel('detail') **直接进入新库的文件管理页**。",
+      "status": "implemented",
+      "sources": [
+        "src/components/KnowledgeBaseManagement.tsx:106-145"
+      ],
+      "note": "新库为空（0 文件 / 0 要点）；一级页宏指标的「文档/要点」两卡在创建瞬间不变。"
+    },
+    {
+      "id": "e-kb-upload-2-detail-writeback",
+      "from": "nd-kb-upload",
+      "to": "nd-kb-detail",
+      "type": "writeback",
+      "trigger": "上传弹窗提交「确认上传并解析」",
+      "payload": "KnowledgeBaseFile{name, fileType, size, sizeBytes, uploader, chunks(随机 60~209), status:'indexed', summary, hitCount:0} + 所属库的 fileCount/chunkCount/totalSize/updatedAt 同步更新",
+      "logic": "handleUploadFileSubmit：isUploading → setTimeout(600ms) → 构造文件 → setKnowledgeBases 就地更新所属库（files 前置、fileCount=新长度、chunkCount 累加、totalSize 相加、updatedAt='刚刚'）→ 关弹窗 → Toast「已成功上传并完成结构化知识解析（提取 N 条要点）」。",
+      "status": "implemented",
+      "sources": [
+        "src/components/KnowledgeBaseManagement.tsx:163-212"
+      ],
+      "note": "真实 `<input type=\"file\">` 只读取文件名/扩展名/大小，**文件内容从不读取**；chunks 为随机数、sizeBytes 写死 2500000。"
+    },
+    {
+      "id": "e-kb-detail-2-preview-embed",
+      "from": "nd-kb-detail",
+      "to": "nd-kb-preview",
+      "type": "navigate-with-payload",
+      "trigger": "点击文档名，或行末「查看解析要点」",
+      "payload": "KnowledgeBaseFile（完整对象）",
+      "logic": "setPreviewFile(file) → 渲染预览弹窗；头部三个数字（size / chunks / hitCount）与摘要取自该对象，但「核心知识要点」两条为写死示例。",
+      "status": "implemented",
+      "sources": [
+        "src/components/KnowledgeBaseManagement.tsx:775-780",
+        "src/components/KnowledgeBaseManagement.tsx:801-809",
+        "src/components/KnowledgeBaseManagement.tsx:1085-1149"
+      ]
+    },
+    {
+      "id": "e-kb-list-2-coach-intended",
+      "from": "nd-kb-list",
+      "to": "page-coach",
+      "type": "read",
+      "trigger": "（设计意图）AI 助手/备赛教练应挂载已启用的知识库做 RAG 检索",
+      "designRef": "校端页头徽标「校内专属智库 (RAG底层)」src/components/KnowledgeBaseManagement.tsx:323；启停 Toast「AI大模型与智能备赛教练即刻恢复检索调用」src/components/KnowledgeBaseManagement.tsx:97；底部声明「在 AI 智能导师与备赛问答中提供准确的原文引文出处（Grounding Citations）」src/components/KnowledgeBaseManagement.tsx:831",
+      "expected": "启用的知识库应作为 AI 助手（及校内智库提问）的检索底座：问答引用可回溯到库内文档与要点；停用后该库不再被检索。",
+      "blockedBy": "AI 助手的「校内智库」回答读的是 `mockCoachData` 的另一套语料（默认厦门大学、引用文号硬编码「厦大创字〔2025〕06号」），与知识库的 22 个 state 零连接；全库无检索引擎与向量库调用。",
+      "status": "intended",
+      "sources": [],
+      "severity": "high"
+    },
+    {
+      "id": "e-platform-kb-2-school-kb-intended",
+      "from": "nd-platform-kb",
+      "to": "nd-kb-list",
+      "type": "read",
+      "trigger": "（设计意图）平台标准库应下发/供给各高校使用",
+      "designRef": "平台端副文「本模块数据独立于各高校本校私有智库，作为底层标准供给全平台」src/components/PlatformKnowledgeBaseManagement.tsx:330-332；指标卡「面向全部入驻高校下发」:352",
+      "expected": "平台库作为底层标准对校端可见（订阅或引用），校端 AI 检索时可同时命中平台标准与本校私有库。",
+      "blockedBy": "两端各自自持 state（`MOCK_PLATFORM_KNOWLEDGE_BASES` vs `MOCK_KNOWLEDGE_BASES`）、均无 props、无共享数据层与订阅机制；App 仅按 `session.role === 'system_admin'` 分流渲染，两者之间没有任何数据流动。",
+      "status": "intended",
+      "sources": [],
+      "severity": "medium"
     }
   ],
   "issues": [
@@ -1724,6 +1853,110 @@
       "blockedBy": "阶段段数需产品先拍板（L1~L4/L5/L6 之争）；真实计算则依赖历史分数数据源的建立。",
       "severity": "low",
       "category": "数据口径",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-teams-fake-metrics",
+      "where": "nd-teams-metrics",
+      "title": "团队资质指标卡全为假数据：总数凭空 +77，三个比率写死且与真实字段可算值不符",
+      "detail": "四张卡的实际来源：`totalTeams = teams.length + 77`（= 82，凭空加 77）；`crossTeams = round(82 × 0.683)`、`financeReady = round(82 × 0.78)`、`ipReady = round(82 × 0.942)`；卡片上显示的百分比 `68.3%` / `78.0%` / `94.2%` 是 JSX 里的写字面量，「平均每队 5.2 位成员」「剩余 18 队亟待补齐」「1 项存在成果权属高风险拦截」同样是写死文案。而 mock 里 `crossCollege` / `hasFinanceSpecialist` / `ipOwnerEnrolled` 三个布尔字段**本就可直接聚合**：真实为 5 支团队中 4/5（80%）、3/5（60%）、4/5（80%）。此外 `ipReady` 派生后从未被使用（死计算）。",
+      "status": "undefined",
+      "designRef": "派生计算 src/components/TeamManagement.tsx:58-62；四张卡 :100-159；字段定义 src/data/mockUsersAndTeams.ts:57-60",
+      "expected": "四张卡改为对 `teams` 直接聚合（比例 = `filter(布尔字段).length / teams.length`），总数用 `teams.length`，三条写死副文案改为由数据推导。",
+      "blockedBy": "无外部阻塞，属实现补齐（字段齐备）；需先与产品确认「全校团队总数」的口径来源（本页数据只有 5 支 mock，真实规模需接后端）。",
+      "severity": "medium",
+      "category": "数据口径",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-teams-dead-state",
+      "where": "nd-teams-filters",
+      "title": "团队管理页两处死代码：trackFilter 声明后从未被读取、ipReady 派生后从未被使用",
+      "detail": "①`trackFilter`（TeamManagement.tsx:30）声明后全文件无任何读写点，界面上也没有赛道筛选控件，`filteredTeams` 只含搜索/状态/跨学院三条件——数据里有 `trackLabel` 可用；②`ipReady`（:62）派生后未在 JSX 引用（卡四直接写字面量 94.2%）。另有 `handleSendReminder(teamName, issue)` 的第二个参数 `issue` 在函数体内未被使用（Toast 文案只含团队名）。",
+      "status": "undefined",
+      "designRef": "死状态 src/components/TeamManagement.tsx:30；死计算 :62；未用参数 :40-42",
+      "expected": "二选一：补上赛道筛选控件使 `trackFilter` 生效（与 `page-screening` 的赛道下拉同理），或删除该死状态；`ipReady` 与 `issue` 参数按最终实现决定保留或删除。",
+      "blockedBy": "无外部阻塞；建议与 issue-teams-fake-metrics 一并处理（同一文件的清理批次）。",
+      "severity": "low",
+      "category": "技术实现",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-users-fake-metrics",
+      "where": "nd-users-metrics",
+      "title": "用户管理指标卡四张全部写死/假派生（users.length + 333、48 位、26 个学院、268 人）",
+      "detail": "卡一 `users.length + 333`（显示 342，mock 实为 9 人）；卡二「专家与导师智库 48 位」与卡三「学院联络秘书 26 个学院」与卡四「学生项目申报骨干 268 人」全是字面量，副文案「正常活跃账号率 98.2%」「含18位校外投融资及国赛评委」「绑定 82 个正式申报项目」同样写死。实测 mock：`mentor` 角色仅 2 位、`college_coordinator` 仅 2 位、学院去重仅 6 个、`active` 8/9。真实值可直接由 `users` 聚合得到。",
+      "status": "undefined",
+      "designRef": "指标卡 src/components/UserManagement.tsx:155-210；数据源 src/data/mockUsersAndTeams.ts:64-201",
+      "expected": "四张卡改为对 `users` 聚合（按 `role` 分组计数、按 `college` 去重计数、按 `status` 算活跃率），或明确标注为演示数据。",
+      "blockedBy": "无外部阻塞；需与产品确认「学院数」的口径（账号所在单位 vs 学校院系总数）。",
+      "severity": "medium",
+      "category": "数据口径",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-users-accounts-isolated",
+      "where": "page-users",
+      "title": "用户账号体系是孤岛：新增账号无法登录、停用不影响任何权限，且与登录页预置账号互不相通",
+      "detail": "本页 `users` 是组件本地 state（初值 `MOCK_USERS`），**没有任何上行 prop**（唯一可选 prop `onOpenProject` 在全页无调用点）；「新增注册用户」只把对象插进本地数组，「切换状态」只翻转本地 `status`，两者都不影响登录体系。而 `page-login` 的账号来源是 `DEMO_PRESET_ACCOUNTS`（前端四端自选身份 + 一键免密），二者无任何关联：本页新增的账号登不进系统，登录页能进的账号也不在本页台账里。页尾却声明「按校级统一身份认证系统 (CAS/OAuth2) 权限策略实时同步」，新增弹窗也承诺「自动下发短信及激活邮件、短信两步验证、强制改密」。",
+      "status": "undefined",
+      "designRef": "本页数据持有 src/components/UserManagement.tsx:27；页尾声明 :407；弹窗承诺 :524-534；登录页账号来源 src/data/mockUniversities.ts:50-151",
+      "expected": "统一账号体系：本页维护的账号应成为登录/鉴权的数据源（或从统一身份认证同步而来），停用即时生效；「CAS/OAuth2 实时同步」「短信/邮件激活」要么实现、要么从文案中移除。",
+      "blockedBy": "涉及整体鉴权方案（与 issue-login-sso-placeholder 同源），需产品先定「demo 用假鉴权还是接统一认证」；工程侧还需在 App 层建立用户状态与登录流程的联动。",
+      "severity": "high",
+      "category": "产品决策",
+      "owner": "待产品定义"
+    },
+    {
+      "id": "issue-users-auto-email",
+      "where": "nd-users-adduser",
+      "title": "新增用户邮箱自动生成会把中文姓名拼进域名（如「张三@university.edu.cn」）",
+      "detail": "`handleCreateUser` 中邮箱为空值时用 `${newUserName.toLowerCase()}@university.edu.cn` 生成占位邮箱（UserManagement.tsx:79）；中文姓名经 `toLowerCase()` 仍是中文字符，产出的是非法邮箱地址，且会被写进台账与后续「重置密码」的收件地址（Toast 宣称发往该邮箱）。另：`staffOrStudentId` 缺省用 `ID{6位随机数}`、`phone` 缺省 `138-0000-0000`、`avatar` 写死一张网图。",
+      "status": "undefined",
+      "designRef": "邮箱生成 src/components/UserManagement.tsx:78-80；其它占位 :74-83",
+      "expected": "自动生成应产出合法值：可用学号/工号前缀（`{staffOrStudentId}@university.edu.cn`）或姓名拼音；或改为必填/显式留空，不伪造。",
+      "blockedBy": "无外部阻塞，属实现修补；若引入拼音方案需新增依赖。",
+      "severity": "low",
+      "category": "技术实现",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-kb-two-ends-not-synced",
+      "where": "page-knowledge-base",
+      "title": "知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见",
+      "detail": "`page-knowledge-base` 在 admin 端渲染 `PlatformKnowledgeBaseManagement`（自持 `MOCK_PLATFORM_KNOWLEDGE_BASES`：5 库 / 16 文件 / 4,090 切片 / 31,480 命中），在校管端渲染 `KnowledgeBaseManagement`（自持 `MOCK_KNOWLEDGE_BASES`：5 库 / 17 文件 / 3,332 要点 / 11,382 命中）；两个组件**都不接收任何 props**，App 仅按 `session?.role === 'system_admin'` 分流渲染。两端使用**完全相同的五类分类枚举**（school_policy / competition_rules / gold_cases / expert_experience / opc_incubation），视觉与交互同构，却没有任何数据流动：平台端副文称「作为底层标准供给全平台」，实际平台库不会出现在校端列表、校端也无从查看平台库。",
+      "status": "undefined",
+      "designRef": "分流渲染 src/App.tsx:761-766；平台端自持数据 src/components/PlatformKnowledgeBaseManagement.tsx:33-34；两端分类枚举 :246-256 与 KnowledgeBaseManagement.tsx:241-250",
+      "expected": "明确两端关系并建链路：平台库对校端可见（订阅/引用/只读下发），校端检索可同时命中平台标准与本校私有库；或明确两者独立运营、把「供给全平台」的表述改掉。",
+      "blockedBy": "属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。",
+      "severity": "medium",
+      "category": "产品决策",
+      "owner": "上司拍板"
+    },
+    {
+      "id": "issue-kb-not-connected-to-coach",
+      "where": "page-knowledge-base",
+      "title": "知识库与 AI 助手零连接：RAG 底座、检索命中、Grounding Citations 均为文案承诺",
+      "detail": "校端页头徽标称「校内专属智库 (RAG底层)」，启停 Toast 称「AI大模型与智能备赛教练即刻恢复检索调用」「AI检索问答已暂停挂载此库」，页尾声明「知识库文件已自动进行脱敏处理，并在 AI 智能导师与备赛问答中提供准确的原文引文出处（Grounding Citations）」。但：①全库无检索引擎/向量库调用，`chunkCount` / `hitCount` 均是 mock 字段（上传时 `chunks` 还是随机数）；②AI 助手（`page-coach`）的校内智库回答读 `mockCoachData` 的另一套语料，默认厦门大学、引用文号硬编码「厦大创字〔2025〕06号」，**完全不读本页任何库**；③「脱敏处理」无任何实现。",
+      "status": "undefined",
+      "designRef": "校端徽标 src/components/KnowledgeBaseManagement.tsx:323；启停 Toast :97；页尾声明 :831；AI 助手校内智库 src/components/SceneAICoach.tsx:1460-1520",
+      "expected": "①知识库成为 AI 问答的真实检索源（启用库参与检索、命中可回溯到文档与要点、停用即摘除）；②或明确 demo 阶段为演示数据，去掉「RAG 底层 / Grounding Citations / 脱敏」等能力性表述。",
+      "blockedBy": "需后端检索链路（向量库 + 文档解析 + 引用回传）与 App 层知识库状态共享；技术选型方向已在《0819-技术选型方案》中给出（MySQL+Redis+Qdrant+BGE-M3），待确认后落地。",
+      "severity": "high",
+      "category": "技术实现",
+      "owner": "工程自决"
+    },
+    {
+      "id": "issue-kb-preview-hardcoded-chunks",
+      "where": "nd-kb-preview",
+      "title": "文件预览弹窗的「核心知识要点」是写死示例（任何文件都显示同样两条，含写死匹配度）",
+      "detail": "预览弹窗上半部分（文件名、大小、要点数、命中数、摘要、上传人、入库时间）取自真实的 `previewFile` 对象，但下半部分「核心知识要点与结构化提取示例」是**两条写死的 JSX 文本**：「知识要点 #001 · 匹配度 94.2% · 字数 380 字」与「#002 · 匹配度 89.5% · 字数 412 字」，正文为校内扶持政策与网评专家视角的示例段落。任何文件（含新上传的文件、其它分类的文件）打开都看到同样内容；「匹配度」这一概念在全库仅此一处出现，无数据来源。",
+      "status": "undefined",
+      "designRef": "预览弹窗 src/components/KnowledgeBaseManagement.tsx:1124-1149；`KnowledgeBaseFile` 结构 src/data/mockKnowledgeBase.ts（无要点数组字段）",
+      "expected": "要点列表应来自该文件真实的切片内容（或明确标注为示例）；匹配度需有真实相似度来源，否则移除。",
+      "blockedBy": "需 `KnowledgeBaseFile` 增补 `chunks[]` / `excerpts[]` 字段并由解析服务填充（与 issue-kb-not-connected-to-coach 同一条链路）。",
+      "severity": "medium",
+      "category": "技术实现",
       "owner": "工程自决"
     }
   ]
