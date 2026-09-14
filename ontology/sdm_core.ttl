@@ -1,0 +1,929 @@
+# ============================================================
+# shuangchuang-design-main 系统本体（v0.2）
+# ------------------------------------------------------------
+# 目的：为前端 demo 建立可机读的交互骨架真源：
+#   ① 剖析与控制 demo  ② 后续 AI 开发的骨架/引导。
+# 口径：忠实反推 demo 现状（代码 2026-09-09 快照），不掺愿景。
+# 修订（v0.2，回应「对 demo 理解不够」的质疑）：
+#   - 修正：指导工作台状态机改为真实 centerTab(3)+任务条+快照只读+抽屉+diff
+#   - 修正：用户/团队管理→项目抽屉不是跨视图导航，改为 invokes 特性
+#   - 新增维度二：生命周期 L1~L6（serves 映射）+ 工件流转（produces/changes）
+#   - 新增：学生端 13 步旅程链（JourneyStep 有序链，SPARQL 可游走）
+#   - 补漏：TopHeader 预警中心、3 个全局弹层、初筛 3 视图模式、
+#           教练-内嵌答辩子流程 6 态、督导工单 3 态、AI 能力装配 8 技能+5 连接器
+# 真源：src/App.tsx / Sidebar.tsx / SceneAICoach.tsx / SceneGuidanceWorkbench.tsx /
+#   ProjectMemberWorkbench.tsx / SceneDefenseTraining.tsx / ScreeningHub.tsx /
+#   SupervisionClosure.tsx / TopHeader.tsx / guidance/* / defense/* / mockCoachAgentsAndSkills.ts
+# 命名空间：sdm = https://github.com/dmcszero/shuangchuang-design/ontology#
+# ============================================================
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix sdm:  <https://github.com/dmcszero/shuangchuang-design/ontology#> .
+
+############################################################
+# 1. 顶层类（Upper Ontology）
+############################################################
+
+sdm:SystemElement a owl:Class ;
+    rdfs:label "系统元素"@zh ;
+    rdfs:comment "本系统本体中一切顶级元素的总根。" .
+
+# —— 维度一：人（角色） ——
+sdm:Role a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "用户角色"@zh ;
+    rdfs:comment "登录时确定，决定可见导航（canSee）与默认落地（landsOn）。" .
+
+# —— 静态结构：视图 / 特性 ——
+sdm:View a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "视图"@zh ;
+    rdfs:comment "路由级主视图，对应 Sidebar TabType 枚举值，activeTab 承载。" .
+
+sdm:MachineView a owl:Class ;
+    rdfs:subClassOf sdm:View ;
+    rdfs:label "状态机视图"@zh ;
+    rdfs:comment "内部自带屏幕状态机的视图。" .
+
+sdm:WorkspaceFeature a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "页面内特性"@zh ;
+    rdfs:comment "非路由级功能单元：抽屉/弹窗/分栏/预警中心等全局或页内能力。" .
+
+# —— 动态行为 ——
+sdm:Behavior a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "行为"@zh ;
+    rdfs:comment "导航、状态迁移、AI 调用、版本与归档操作等动态交互。" .
+
+sdm:NavigationEdge a owl:Class ;
+    rdfs:subClassOf sdm:Behavior ;
+    rdfs:label "导航边"@zh ;
+    rdfs:comment "视图到视图的路由跳转能力（静态可枚举）。" .
+
+sdm:StateTransition a owl:Class ;
+    rdfs:subClassOf sdm:Behavior ;
+    rdfs:label "状态迁移"@zh ;
+    rdfs:comment "状态机内部的状态间迁移。" .
+
+sdm:State a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "状态"@zh ;
+    rdfs:comment "状态机视图或子流程内的一个停留节点。" .
+
+sdm:StateFlow a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "子流程状态机"@zh ;
+    rdfs:comment "不属于路由视图的状态机：视图内嵌子流程（教练答辩交互/工单流转/视图模式切换）。" .
+
+# —— 维度二：时间（生命周期）+ 工件 ——
+sdm:LifeCycleStage a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "备赛生命周期阶段"@zh ;
+    rdfs:comment "L1~L6，真源 guidance/guidanceMockData.INITIAL_STAGE_ITEMS；里程碑看板用 L1~L5，教练开场用 L1~L4。" .
+
+sdm:JourneyStep a owl:Class ;
+    rdfs:subClassOf sdm:Behavior ;
+    rdfs:label "旅程步骤"@zh ;
+    rdfs:comment "单一角色（学生）端到端交互链上的有序步骤，next 谓词成链。" .
+
+sdm:Entity a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "业务实体"@zh ;
+    rdfs:comment "业务对象骨架层（不做字段级展开，字段见 src/types.ts）。" .
+
+# —— 维度三：AI 能力（支撑层） ——
+sdm:IntelligenceUnit a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "智能体单元"@zh ;
+    rdfs:comment "4.1~4.6 子智能体（专家引擎）。" .
+
+# —— 辅助 ——
+sdm:NavGroup a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "导航分组"@zh ;
+    rdfs:comment "Sidebar 角色导航的分组容器。" .
+
+sdm:ScopeAnchor a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "范围锚注"@zh ;
+    rdfs:comment "试点范围/口径声明的承载节点。" .
+
+############################################################
+# 2. 谓词
+############################################################
+
+sdm:canSee a owl:ObjectProperty ;
+    rdfs:label "可见导航"@zh ;
+    rdfs:domain sdm:Role ; rdfs:range sdm:View .
+sdm:landsOn a owl:ObjectProperty ;
+    rdfs:label "默认落地"@zh ;
+    rdfs:domain sdm:Role ; rdfs:range sdm:View .
+sdm:hasNavigation a owl:ObjectProperty ;
+    rdfs:label "拥有导航组"@zh ;
+    rdfs:domain sdm:Role ; rdfs:range sdm:NavGroup .
+sdm:includesView a owl:ObjectProperty ;
+    rdfs:label "包含视图项"@zh ;
+    rdfs:domain sdm:NavGroup ; rdfs:range sdm:View .
+
+sdm:navigatesTo a owl:ObjectProperty ;
+    rdfs:label "跳转目标"@zh ;
+    rdfs:domain sdm:NavigationEdge ; rdfs:range sdm:View .
+sdm:navigatesFrom a owl:ObjectProperty ;
+    rdfs:label "跳转来源"@zh ;
+    rdfs:domain sdm:NavigationEdge ; rdfs:range sdm:View .
+sdm:carriesPayload a owl:ObjectProperty ;
+    rdfs:label "携带上下文"@zh ;
+    rdfs:domain sdm:NavigationEdge ; rdfs:range sdm:Entity .
+sdm:opensFeature a owl:ObjectProperty ;
+    rdfs:label "经由特性入口"@zh ;
+    rdfs:range sdm:WorkspaceFeature .
+
+sdm:requires a owl:ObjectProperty ;
+    rdfs:label "前置包含"@zh ;
+    rdfs:comment "视图需要某页面特性 / 状态迁移需要输入 / 行为需要实体，通用谓词。" .
+sdm:invokes a owl:ObjectProperty ;
+    rdfs:label "唤起特性"@zh ;
+    rdfs:domain sdm:View ; rdfs:range sdm:WorkspaceFeature ;
+    rdfs:comment "视图内操作唤起特性（不发生路由跳转，如用户/团队管理唤起项目抽屉）。" .
+sdm:summons a owl:ObjectProperty ;
+    rdfs:label "联动唤起"@zh ;
+    rdfs:domain sdm:WorkspaceFeature ; rdfs:range sdm:WorkspaceFeature ;
+    rdfs:comment "特性间联动（如预警中心点击→唤起项目抽屉）。" .
+
+sdm:containsState a owl:ObjectProperty ;
+    rdfs:label "内含状态"@zh .
+sdm:transitionsTo a owl:ObjectProperty ;
+    rdfs:label "迁移至"@zh ;
+    rdfs:domain sdm:StateTransition ; rdfs:range sdm:State .
+sdm:hasFlow a owl:ObjectProperty ;
+    rdfs:label "含子流程"@zh ;
+    rdfs:domain sdm:View ; rdfs:range sdm:StateFlow .
+
+sdm:serves a owl:ObjectProperty ;
+    rdfs:label "服务于阶段"@zh ;
+    rdfs:domain sdm:View ; rdfs:range sdm:LifeCycleStage ;
+    rdfs:comment "该视图的主要产出/推进目标是哪个 L 阶段（维度二骨架）。" .
+sdm:produces a owl:ObjectProperty ;
+    rdfs:label "产出工件"@zh ;
+    rdfs:domain sdm:Behavior ; rdfs:range sdm:Entity .
+sdm:changes a owl:ObjectProperty ;
+    rdfs:label "修改对象"@zh ;
+    rdfs:domain sdm:Behavior ; rdfs:range sdm:Entity .
+
+sdm:next a owl:ObjectProperty ;
+    rdfs:label "下一步"@zh ;
+    rdfs:domain sdm:JourneyStep ; rdfs:range sdm:JourneyStep ;
+    rdfs:comment "旅程链顺序边；每步至多一个直接后继。" .
+sdm:atView a owl:ObjectProperty ;
+    rdfs:label "驻留视图"@zh ;
+    rdfs:domain sdm:JourneyStep ; rdfs:range sdm:View .
+sdm:stepOfRole a owl:ObjectProperty ;
+    rdfs:label "步骤归属角色"@zh ;
+    rdfs:domain sdm:JourneyStep ; rdfs:range sdm:Role .
+sdm:usesEdge a owl:ObjectProperty ;
+    rdfs:label "借由导航边"@zh ;
+    rdfs:domain sdm:JourneyStep ; rdfs:range sdm:NavigationEdge .
+sdm:usesBehavior a owl:ObjectProperty ;
+    rdfs:label "执行行为"@zh ;
+    rdfs:comment "通用谓词（无 domain 限制）：旅程步骤或学生功能执行某行为；v0.2 时 domain 限定 JourneyStep 导致 cap 节点误入 JourneyStep 类域，v0.3 放开。" .
+
+sdm:registersAgent a owl:ObjectProperty ;
+    rdfs:label "装配子智能体"@zh ;
+    rdfs:domain sdm:View ; rdfs:range sdm:IntelligenceUnit .
+sdm:deepCalls a owl:ObjectProperty ;
+    rdfs:label "深度调用"@zh ;
+    rdfs:domain sdm:IntelligenceUnit ; rdfs:range sdm:IntelligenceUnit ;
+    rdfs:comment "跨模块 RPC 管道（v2.1-RPC-PIPELINE）：确认弹层→执行→结果回传。" .
+sdm:shallowCalls a owl:ObjectProperty ;
+    rdfs:label "浅度调用"@zh ;
+    rdfs:domain sdm:IntelligenceUnit ; rdfs:range sdm:IntelligenceUnit ;
+    rdfs:comment "原子能力（v2.1-ATOMIC-MCP）：出题/章节速诊/壁垒自测。" .
+sdm:builtOn a owl:ObjectProperty ;
+    rdfs:label "内建能力"@zh ;
+    rdfs:domain sdm:IntelligenceUnit ; rdfs:range sdm:Entity ;
+    rdfs:comment "子智能体内建技能/连接器（EXPERT_AGENTS.builtinSkills/builtinConnectors）。" .
+sdm:routeByIntent a owl:ObjectProperty ;
+    rdfs:label "按意图自动路由"@zh ;
+    rdfs:domain sdm:View ; rdfs:range sdm:IntelligenceUnit ;
+    rdfs:comment "会话 taskKey/标题关键词 → 自动切换子智能体（SceneAICoach useEffect 意图匹配）。" .
+
+sdm:tabId a owl:DatatypeProperty ; rdfs:range xsd:string .
+sdm:componentPath a owl:DatatypeProperty ; rdfs:range xsd:string .
+sdm:demoOnly a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+sdm:specRef a owl:DatatypeProperty ; rdfs:range xsd:string ;
+    rdfs:comment "指向双仓 spec 的路径（两仓 .git 未重建，当前为占位）。" .
+sdm:protocolVersion a owl:DatatypeProperty ; rdfs:range xsd:string .
+sdm:payloadType a owl:DatatypeProperty ; rdfs:range xsd:string .
+sdm:triggerLabel a owl:DatatypeProperty ; rdfs:range xsd:string .
+sdm:stageFocus a owl:DatatypeProperty ; rdfs:range xsd:string ;
+    rdfs:comment "L 阶段核心目标（INITIAL_STAGE_ITEMS.hint）。" .
+
+############################################################
+# 3. 角色（维度一：人）
+############################################################
+
+sdm:role_team_member a sdm:Role ; rdfs:label "项目组成员"@zh ; sdm:demoOnly true .
+sdm:role_school_admin a sdm:Role ; rdfs:label "学校管理端"@zh ; sdm:demoOnly true .
+sdm:role_mentor a sdm:Role ; rdfs:label "导师端"@zh ; sdm:demoOnly true .
+sdm:role_system_admin a sdm:Role ; rdfs:label "超管端"@zh ; sdm:demoOnly true .
+
+############################################################
+# 4. 视图（13 个 TabType 全集）
+############################################################
+
+sdm:view_cockpit a sdm:View ;
+    rdfs:label "备赛数据驾驶舱"@zh ;
+    sdm:tabId "cockpit" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/CockpitDashboard.tsx" ;
+    sdm:specRef "" ;
+    rdfs:comment "校级培育驾驶舱：A/B/C/D 分级池、健康预警、AI 决策横幅；管理端枢纽。" .
+
+sdm:view_screening a sdm:View ;
+    rdfs:label "智能对标初筛与排名"@zh ;
+    sdm:tabId "screening" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/ScreeningHub.tsx" ;
+    rdfs:comment "2026 细则初筛：5 赛道规则切换/A/B/C/D 梯队/合规筛选；3 种视图模式见 sdm:flow_screening_views；服务项目准入分级。" .
+
+sdm:view_mentorship a sdm:View ;
+    rdfs:label "常态化辅导与调度"@zh ;
+    sdm:tabId "mentorship" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/MentorshipDispatch.tsx" ;
+    rdfs:comment "批次辅导任务（CohortBatchTask）+ 项目×导师排期；onNavigateToMentorPool 跳导师库。" .
+
+sdm:view_supervision a sdm:View ;
+    rdfs:label "辅导资产沉淀与督导"@zh ;
+    sdm:tabId "supervision" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/SupervisionClosure.tsx" ;
+    rdfs:comment "工单流转闭环（待学生处理→已提交→已复核），状态机见 sdm:flow_workorder。" .
+
+sdm:view_milestones a sdm:View ;
+    rdfs:label "重点项目全流程看板"@zh ;
+    sdm:tabId "milestones" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/MilestoneKanban.tsx" ;
+    rdfs:comment "L1~L5 五阶段看板（维度二的管理端镜像）。" .
+
+sdm:view_mentors_pool a sdm:View ;
+    rdfs:label "导师智库管理"@zh ;
+    sdm:tabId "mentors_pool" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/MentorPoolManagement.tsx / PlatformMentorPoolManagement.tsx" ;
+    rdfs:comment "超管渲染平台版、校内渲染校内版（App.tsx 双分支）；卡片/表格为展示样式不入链（范围锚注）。" .
+
+sdm:view_knowledge_base a sdm:View ;
+    rdfs:label "赛事知识库管理"@zh ;
+    sdm:tabId "knowledge_base" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/KnowledgeBaseManagement.tsx / PlatformKnowledgeBaseManagement.tsx" ;
+    rdfs:comment "同上超管/校内双版本。" .
+
+sdm:view_users_management a sdm:View ;
+    rdfs:label "用户与权限管理"@zh ;
+    sdm:tabId "users_management" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/UserManagement.tsx" ;
+    rdfs:comment "onOpenProject 唤起项目抽屉（不路由，见 invokes）。" .
+
+sdm:view_teams_management a sdm:View ;
+    rdfs:label "项目团队架构管理"@zh ;
+    sdm:tabId "teams_management" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/TeamManagement.tsx" ;
+    rdfs:comment "onSelectProject 唤起项目抽屉（不路由）。" .
+
+sdm:view_my_project a sdm:View ;
+    rdfs:label "项目工作台"@zh ;
+    sdm:tabId "my_project" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/ProjectMemberWorkbench.tsx" ;
+    rdfs:comment "学生主页：5 子栏（动态待办/专家工单/全维诊断/团队/项目文件夹）；双源待办（AI 诊断 + 专家工单）。" .
+
+sdm:view_coach a sdm:View ;
+    rdfs:label "新建对话（金牌 AI 教练）"@zh ;
+    sdm:tabId "coach" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/SceneAICoach.tsx" ;
+    rdfs:comment "全库最大单体 2659 行：空间/会话管理 + 专家装配 + 6 类咨询动作 ReAct 流 + 深/浅调用协议 + 内嵌答辩子流程 + 右侧独立工作区。会话流无固定屏节点，不设状态机；意图路由见 routeByIntent。" .
+
+sdm:view_guidance_workbench a sdm:MachineView ;
+    rdfs:label "全链路指导工作台"@zh ;
+    sdm:tabId "guidance_workbench" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/SceneGuidanceWorkbench.tsx" ;
+    sdm:containsState sdm:st_gw_tab_bp, sdm:st_gw_tab_diag, sdm:st_gw_tab_score,
+        sdm:st_gw_task_banner, sdm:st_gw_snapshot_readonly, sdm:st_gw_diff_modal, sdm:st_gw_version_drawer ;
+    rdfs:comment "中栏三 tab（BP 12章/全维诊断/六维评分）+ 顶部 L 阶段 stepper + 任务上下文条（0908-16 闭环）+ 版本抽屉/diff；v0.1 误建的 dashboard/triage/viewer 等状态已废弃。" .
+
+sdm:view_defense_training a sdm:MachineView ;
+    rdfs:label "模拟评审与答辩训练"@zh ;
+    sdm:tabId "defense_training" ; sdm:demoOnly true ;
+    sdm:componentPath "src/components/SceneDefenseTraining.tsx + defense/" ;
+    sdm:containsState sdm:st_def_selector, sdm:st_def_prep, sdm:st_def_session, sdm:st_def_report ;
+    rdfs:comment "4 屏状态机 + 5 训练模式（standard/elevator/followup/weakness/adversarial）+ 评委席配置（单/多评委·难度·轮次·限时）。" .
+
+############################################################
+# 5. 角色导航矩阵（Sidebar.getNavGroups）
+############################################################
+
+sdm:role_team_member sdm:canSee sdm:view_coach, sdm:view_my_project, sdm:view_guidance_workbench, sdm:view_defense_training ;
+    sdm:landsOn sdm:view_coach ;
+    sdm:hasNavigation sdm:nav_tm_ai .
+
+sdm:nav_tm_ai a sdm:NavGroup ; rdfs:label "AI伴学与答辩实训"@zh ;
+    sdm:includesView sdm:view_coach, sdm:view_my_project, sdm:view_guidance_workbench, sdm:view_defense_training .
+
+sdm:role_school_admin sdm:canSee sdm:view_cockpit, sdm:view_coach, sdm:view_screening, sdm:view_mentorship,
+    sdm:view_supervision, sdm:view_milestones, sdm:view_mentors_pool, sdm:view_knowledge_base,
+    sdm:view_users_management, sdm:view_teams_management ;
+    sdm:landsOn sdm:view_cockpit ;
+    sdm:hasNavigation sdm:nav_sa_cockpit, sdm:nav_sa_ai, sdm:nav_sa_core, sdm:nav_sa_org .
+
+sdm:nav_sa_cockpit a sdm:NavGroup ; rdfs:label "决策中枢驾驶舱"@zh ; sdm:includesView sdm:view_cockpit .
+sdm:nav_sa_ai a sdm:NavGroup ; rdfs:label "AI数智备赛"@zh ; sdm:includesView sdm:view_coach .
+sdm:nav_sa_core a sdm:NavGroup ; rdfs:label "备赛培育核心"@zh ;
+    sdm:includesView sdm:view_screening, sdm:view_mentorship, sdm:view_supervision, sdm:view_milestones .
+sdm:nav_sa_org a sdm:NavGroup ; rdfs:label "校本智库与组织管理"@zh ;
+    sdm:includesView sdm:view_mentors_pool, sdm:view_knowledge_base, sdm:view_users_management, sdm:view_teams_management .
+
+sdm:role_mentor sdm:canSee sdm:view_supervision ;
+    sdm:landsOn sdm:view_supervision ;
+    sdm:hasNavigation sdm:nav_mt_supervision .
+sdm:nav_mt_supervision a sdm:NavGroup ; rdfs:label "导师评审工作台"@zh ; sdm:includesView sdm:view_supervision .
+
+sdm:role_system_admin sdm:canSee sdm:view_mentors_pool, sdm:view_knowledge_base ;
+    sdm:landsOn sdm:view_mentors_pool ;
+    sdm:hasNavigation sdm:nav_sys_all .
+sdm:nav_sys_all a sdm:NavGroup ; rdfs:label "全平台资源与权限总控"@zh ;
+    sdm:includesView sdm:view_mentors_pool, sdm:view_knowledge_base .
+
+sdm:feat_login_persist a sdm:WorkspaceFeature ;
+    rdfs:label "登录会话持久化"@zh ;
+    rdfs:comment "localStorage('ai_studio_innovation_session_2026') 持久化；刷新后按角色回默认落地页。" .
+
+############################################################
+# 6. 导航边（视图间路由跳转，全部经 App.tsx setActiveTab）
+############################################################
+
+sdm:nav_cockpit_screening a sdm:NavigationEdge ;
+    rdfs:label "驾驶舱→初筛"@zh ;
+    sdm:navigatesFrom sdm:view_cockpit ; sdm:navigatesTo sdm:view_screening .
+sdm:nav_cockpit_mentorship a sdm:NavigationEdge ;
+    rdfs:label "驾驶舱→辅导调度"@zh ;
+    sdm:navigatesFrom sdm:view_cockpit ; sdm:navigatesTo sdm:view_mentorship .
+sdm:nav_cockpit_supervision a sdm:NavigationEdge ;
+    rdfs:label "驾驶舱→督导"@zh ;
+    sdm:navigatesFrom sdm:view_cockpit ; sdm:navigatesTo sdm:view_supervision .
+sdm:nav_cockpit_milestones a sdm:NavigationEdge ;
+    rdfs:label "驾驶舱→里程碑"@zh ;
+    sdm:navigatesFrom sdm:view_cockpit ; sdm:navigatesTo sdm:view_milestones .
+sdm:nav_screening_assign_mentor a sdm:NavigationEdge ;
+    rdfs:label "初筛·指派导师"@zh ;
+    sdm:navigatesFrom sdm:view_screening ; sdm:navigatesTo sdm:view_mentorship ;
+    sdm:opensFeature sdm:feat_project_drawer .
+sdm:nav_drawer_assign_mentor a sdm:NavigationEdge ;
+    rdfs:label "项目抽屉·指派导师"@zh ;
+    sdm:navigatesFrom sdm:view_cockpit ; sdm:navigatesTo sdm:view_mentorship ;
+    sdm:opensFeature sdm:feat_project_drawer .
+sdm:nav_mentorship_to_pool a sdm:NavigationEdge ;
+    rdfs:label "辅导调度→导师库"@zh ;
+    sdm:navigatesFrom sdm:view_mentorship ; sdm:navigatesTo sdm:view_mentors_pool .
+sdm:nav_pool_to_mentorship a sdm:NavigationEdge ;
+    rdfs:label "导师库→辅导调度"@zh ;
+    sdm:navigatesFrom sdm:view_mentors_pool ; sdm:navigatesTo sdm:view_mentorship .
+sdm:nav_my_project_execute_todo a sdm:NavigationEdge ;
+    rdfs:label "动态待办·去执行"@zh ;
+    sdm:navigatesFrom sdm:view_my_project ; sdm:navigatesTo sdm:view_guidance_workbench ;
+    sdm:carriesPayload sdm:ent_guidance_task_context ;
+    sdm:payloadType "GuidanceTaskContext{taskId, title, source('ai'|'workorder'), sourceLabel, chapterId?}" ;
+    sdm:triggerLabel "点「去执行」按钮（AI 诊断来源 indigo / 专家工单来源 sky 双源）"@zh ;
+    rdfs:comment "handleExecuteTodo：setGuidanceTaskContext + setActiveTab('guidance_workbench')（0908-16 闭环）。" .
+sdm:nav_coach_guidance a sdm:NavigationEdge ;
+    rdfs:label "教练→指导工作台"@zh ;
+    sdm:navigatesFrom sdm:view_coach ; sdm:navigatesTo sdm:view_guidance_workbench ;
+    rdfs:comment "onNavigateToScene 跨 Scene 导航之一。" .
+sdm:nav_coach_defense a sdm:NavigationEdge ;
+    rdfs:label "教练→答辩训练"@zh ;
+    sdm:navigatesFrom sdm:view_coach ; sdm:navigatesTo sdm:view_defense_training ;
+    rdfs:comment "onNavigateToScene 跨 Scene 导航之二。" .
+
+############################################################
+# 7. 指导工作台状态（真实 3 tab + 4 覆盖物）
+############################################################
+
+sdm:st_gw_tab_bp a sdm:State ; rdfs:label "BP 12章 tab"@zh ;
+    rdfs:comment "排版预览/源码编辑双模式 + 章节速达 12 章；AI diff 一键应用落此 tab。" .
+sdm:st_gw_tab_diag a sdm:State ; rdfs:label "全维诊断 tab"@zh ;
+    rdfs:comment "创新类型分诊卡（TriageResult）+ 诊断报告（缺项/下一步）；L 阶段 stepper 点击即切此 tab。" .
+sdm:st_gw_tab_score a sdm:State ; rdfs:label "六维评分 tab"@zh ;
+    rdfs:comment "基准分/六维条形/评审细项采分点与增量归因表（AssessResult）。" .
+sdm:st_gw_task_banner a sdm:State ; rdfs:label "任务上下文条（覆盖）"@zh ;
+    rdfs:comment "0908-16 闭环载荷呈现：章节直达 + AI 预填三选一 + 完成回写/关闭。" .
+sdm:st_gw_snapshot_readonly a sdm:State ; rdfs:label "快照只读预览（覆盖）"@zh ;
+    rdfs:comment "选中历史快照 → 中栏只读 + 深色提示条；编辑/导出禁用。" .
+sdm:st_gw_diff_modal a sdm:State ; rdfs:label "版本对比弹层"@zh ;
+    rdfs:comment "GuidanceVersionDiffModal 双版本 diff。" .
+sdm:st_gw_version_drawer a sdm:State ; rdfs:label "版本历史抽屉（右缘）"@zh ;
+    rdfs:comment "快照时间线 + 与当前对比 + 回滚；打开时遮盖右栏 AI 面板。" .
+
+############################################################
+# 8. 答辩训练 4 屏 + 迁移
+############################################################
+
+sdm:st_def_selector a sdm:State ; rdfs:label "选择屏"@zh ;
+    rdfs:comment "项目（当前项目自动带入）× 5 训练模式 × 评委席配置。" .
+sdm:st_def_prep a sdm:State ; rdfs:label "备战屏"@zh .
+sdm:st_def_session a sdm:State ; rdfs:label "实战屏"@zh ;
+    rdfs:comment "多轮问答（roundCount 递增）+ 评委消息流 + 计时。" .
+sdm:st_def_report a sdm:State ; rdfs:label "报告屏"@zh ;
+    rdfs:comment "六维雷达 + 复盘建议 + 历史记录回看。" .
+
+sdm:tr_def_start a sdm:StateTransition ; rdfs:label "进入训练"@zh ; sdm:transitionsTo sdm:st_def_selector .
+sdm:tr_def_prep a sdm:StateTransition ; rdfs:label "开始备战（需项目×模式×配置）"@zh ;
+    sdm:transitionsTo sdm:st_def_prep ;
+    sdm:requires sdm:ent_defense_project, sdm:ent_defense_mode, sdm:ent_defense_config .
+sdm:tr_def_session a sdm:StateTransition ; rdfs:label "进入实战"@zh ; sdm:transitionsTo sdm:st_def_session .
+sdm:tr_def_report a sdm:StateTransition ; rdfs:label "结束答辩生成报告"@zh ; sdm:transitionsTo sdm:st_def_report .
+sdm:tr_def_again a sdm:StateTransition ; rdfs:label "再来一次"@zh ; sdm:transitionsTo sdm:st_def_selector .
+sdm:tr_def_reprep a sdm:StateTransition ; rdfs:label "复盘回备战"@zh ; sdm:transitionsTo sdm:st_def_prep .
+sdm:tr_def_reconfig a sdm:StateTransition ; rdfs:label "改配置回选择"@zh ; sdm:transitionsTo sdm:st_def_selector .
+sdm:tr_def_back a sdm:StateTransition ; rdfs:label "中途退回备战"@zh ; sdm:transitionsTo sdm:st_def_prep .
+
+sdm:ent_defense_project a sdm:Entity ; rdfs:label "答辩项目快照"@zh ; sdm:demoOnly true .
+sdm:ent_defense_mode a sdm:Entity ; rdfs:label "训练模式(5种)"@zh ; sdm:demoOnly true .
+sdm:ent_defense_config a sdm:Entity ; rdfs:label "评委席配置"@zh ; sdm:demoOnly true .
+
+############################################################
+# 9. 内嵌子流程状态机（StateFlow）
+############################################################
+
+sdm:flow_coach_defense a sdm:StateFlow ;
+    rdfs:label "教练·答辩模拟子流程"@zh ;
+    sdm:containsState sdm:st_cfd_notStarted, sdm:st_cfd_q1, sdm:st_cfd_q1a,
+        sdm:st_cfd_q2, sdm:st_cfd_q2a, sdm:st_cfd_done ;
+    rdfs:comment "mockqa 触发的评委人设（4 考官矩阵）逐题攻防，嵌于 4.1 会话内。" .
+sdm:st_cfd_notStarted a sdm:State ; rdfs:label "未开始(选考官)"@zh .
+sdm:st_cfd_q1 a sdm:State ; rdfs:label "第一题质询"@zh .
+sdm:st_cfd_q1a a sdm:State ; rdfs:label "第一题已答"@zh .
+sdm:st_cfd_q2 a sdm:State ; rdfs:label "第二题质询"@zh .
+sdm:st_cfd_q2a a sdm:State ; rdfs:label "第二题已答"@zh .
+sdm:st_cfd_done a sdm:State ; rdfs:label "完成(评分)"@zh .
+
+sdm:flow_workorder a sdm:StateFlow ;
+    rdfs:label "督导工单流转"@zh ;
+    sdm:containsState sdm:st_wo_pending, sdm:st_wo_submitted, sdm:st_wo_checked ;
+    rdfs:comment "status 枚举另含 overdue（逾期，仅过滤条件）。" .
+sdm:st_wo_pending a sdm:State ; rdfs:label "待学生处理"@zh ;
+    rdfs:comment "pending_student：专家下发任务清单（WorkOrderTask 5 类目）。" .
+sdm:st_wo_submitted a sdm:State ; rdfs:label "学生已提交"@zh ;
+    rdfs:comment "student_submitted：提交表单含修改说明+新BP版本号+新PPT版本号+VCR可更。" .
+sdm:st_wo_checked a sdm:State ; rdfs:label "专家已复核"@zh ;
+    rdfs:comment "expert_checked：approved + finalRemark + scoreChangeDelta（评分增量回写）。" .
+
+sdm:flow_screening_views a sdm:StateFlow ;
+    rdfs:label "初筛视图模式切换"@zh ;
+    sdm:containsState sdm:st_sc_tier2, sdm:st_sc_comp, sdm:st_sc_compliance ;
+    rdfs:comment "展开式二级指标矩阵 / 综合对标总表(AI置信度) / 合规与一票否决拦截。" .
+sdm:st_sc_tier2 a sdm:State ; rdfs:label "二级指标矩阵"@zh .
+sdm:st_sc_comp a sdm:State ; rdfs:label "综合对标总表"@zh .
+sdm:st_sc_compliance a sdm:State ; rdfs:label "合规拦截视图"@zh .
+
+############################################################
+# 10. 维度二：生命周期 L1~L6 + serves 映射
+############################################################
+
+sdm:l1 a sdm:LifeCycleStage ; rdfs:label "L1 创意激发"@zh ;
+    sdm:stageFocus "痛点发掘、第一性原理推演与选题评估" ; sdm:demoOnly true .
+sdm:l2 a sdm:LifeCycleStage ; rdfs:label "L2 可行性验证"@zh ;
+    sdm:stageFocus "POC 概念验证、原型机中试与种子客户实测" ; sdm:demoOnly true .
+sdm:l3 a sdm:LifeCycleStage ; rdfs:label "L3 材料成型"@zh ;
+    sdm:stageFocus "12 章标准商业计划书构建与逻辑自洽" ; sdm:demoOnly true .
+sdm:l4 a sdm:LifeCycleStage ; rdfs:label "L4 打磨优化"@zh ;
+    sdm:stageFocus "评委视界质询、竞品壁垒补强与六维增量提分" ; sdm:demoOnly true .
+sdm:l5 a sdm:LifeCycleStage ; rdfs:label "L5 路演成型"@zh ;
+    sdm:stageFocus "15 页金奖 PPT、1/3 分钟电梯演讲与答辩攻防" ; sdm:demoOnly true .
+sdm:l6 a sdm:LifeCycleStage ; rdfs:label "L6 赛前冲刺"@zh ;
+    sdm:stageFocus "合规终审、盲审背靠背演练与突发状况特训" ; sdm:demoOnly true .
+
+sdm:view_coach sdm:serves sdm:l1, sdm:l2, sdm:l3, sdm:l4 ;
+    rdfs:comment "教练开场强制确认项目阶段（mockStages L1~L4），随后按阶段聚焦辅导。" .
+sdm:view_guidance_workbench sdm:serves sdm:l1, sdm:l2, sdm:l3, sdm:l4, sdm:l5, sdm:l6 ;
+    rdfs:comment "顶部 L 阶段 stepper 全六阶段可视，任务执行随阶段切换。" .
+sdm:view_defense_training sdm:serves sdm:l5, sdm:l6 .
+sdm:view_my_project sdm:serves sdm:l4 ;
+    rdfs:comment "动态待办主聚焦 L4（双源推进率），工件归档横跨全程。" .
+sdm:view_milestones sdm:serves sdm:l1, sdm:l2, sdm:l3, sdm:l4, sdm:l5 ;
+    rdfs:comment "L1~L5 五阶段看板（管理端对生命周期的一级投影）。" .
+
+############################################################
+# 11. 工件流：行为 → 产出/修改（维度二横向流）
+############################################################
+
+sdm:b_apply_diff a sdm:Behavior, sdm:StudentCapability ; rdfs:label "AI diff 一键应用（入文）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:changes sdm:ent_bp_content ;
+    rdfs:comment "CoachMessage.suggestedDiff → 追加至 bpContent 并切回排版预览；兼为学生可触达操作（双类型）。" .
+sdm:b_save_snapshot a sdm:Behavior, sdm:StudentCapability ; rdfs:label "保存快照（按钮）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:produces sdm:ent_bp_version ; sdm:changes sdm:ent_bp_content .
+sdm:b_mark_milestone a sdm:Behavior, sdm:StudentCapability ; rdfs:label "标为里程碑（按钮）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:produces sdm:ent_bp_version ;
+    rdfs:comment "versionType=milestone，同步记入项目全息大事记；兼学生可触达操作。" .
+sdm:b_compare_versions a sdm:Behavior, sdm:StudentCapability ; rdfs:label "版本对比（弹层）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:requires sdm:ent_bp_version .
+sdm:b_rollback a sdm:Behavior, sdm:StudentCapability ; rdfs:label "回滚版本"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:changes sdm:ent_bp_content ; sdm:requires sdm:ent_bp_version .
+sdm:b_archive_pending a sdm:Behavior, sdm:StudentCapability ; rdfs:label "待归档区存入（按钮）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:changes sdm:ent_project_file ;
+    rdfs:comment "会话生成产物 → 项目文件夹注册表，同时记入文件更改记录（大事记）；兼学生可触达操作。" .
+sdm:b_submit_deliverable a sdm:Behavior, sdm:StudentCapability ; rdfs:label "工单交付提交（表单）"@zh ;
+    sdm:reaches sdm:reach_deep ;
+    sdm:changes sdm:ent_supervision_work_order, sdm:ent_bp_version ;
+    rdfs:comment "提交新 BP/PPT 版本号后进入待复核；兼学生可触达操作。" .
+
+sdm:ent_bp_content a sdm:Entity ; rdfs:label "BP 正文"@zh ; sdm:demoOnly true ;
+    rdfs:comment "工作台 bpContent（Markdown 源）与文件夹主文档版本线同源。" .
+sdm:ent_project_file a sdm:Entity ; rdfs:label "项目文件(注册表)"@zh ; sdm:demoOnly true ;
+    rdfs:comment "三来源口径：三件套/系统 · 上传 · 会话生成（经确认入库）。" .
+
+############################################################
+# 12. 页面内特性（WorkspaceFeature）
+############################################################
+
+sdm:feat_project_drawer a sdm:WorkspaceFeature ; rdfs:label "项目详情抽屉"@zh ;
+    rdfs:comment "ProjectDetailDrawer 多视图复用容器（驾驶舱/初筛/调度/督导/用户/团队）。" .
+sdm:feat_right_workspace a sdm:WorkspaceFeature ; rdfs:label "右侧独立工作区面板"@zh ;
+    rdfs:comment "6:4 拖拽分栏 + 多 tab 文件预览 + 全屏展开；Ctrl/Cmd+J 开关、Ctrl/Cmd+B 侧栏、Esc 退出全屏。" .
+sdm:feat_alert_center a sdm:WorkspaceFeature ; rdfs:label "顶栏预警与待办中心"@zh ;
+    sdm:summons sdm:feat_project_drawer ;
+    rdfs:comment "TopHeader 告警下拉 → onSelectProjectFromAlert → 直接唤起项目抽屉（不路由）。" .
+sdm:feat_rules_modal a sdm:WorkspaceFeature ; rdfs:label "规则配置弹层(全局)"@zh .
+sdm:feat_import_modal a sdm:WorkspaceFeature ; rdfs:label "批量导入弹层(全局)"@zh .
+sdm:feat_report_modal a sdm:WorkspaceFeature ; rdfs:label "报告导出弹层(全局)"@zh .
+sdm:feat_deep_call_modals a sdm:WorkspaceFeature ; rdfs:label "DeepCall 三段弹层"@zh ;
+    rdfs:comment "Confirm→Execution→Result + DataFlowLog 数据留痕（inputPayload/outputResponse 全量）。" .
+sdm:feat_react_process a sdm:WorkspaceFeature ; rdfs:label "ReAct 过程视图"@zh ;
+    rdfs:comment "reasoning→plan→act→completed 实时流（liveTimersRef 驱动）。" .
+
+sdm:view_coach sdm:requires sdm:feat_right_workspace, sdm:feat_deep_call_modals, sdm:feat_react_process .
+sdm:view_cockpit sdm:requires sdm:feat_project_drawer, sdm:feat_alert_center,
+    sdm:feat_rules_modal, sdm:feat_import_modal, sdm:feat_report_modal .
+sdm:view_screening sdm:requires sdm:feat_project_drawer .
+sdm:view_mentorship sdm:requires sdm:feat_project_drawer .
+sdm:view_supervision sdm:requires sdm:feat_project_drawer .
+sdm:view_milestones sdm:requires sdm:feat_report_modal .
+sdm:view_users_management sdm:invokes sdm:feat_project_drawer .
+sdm:view_teams_management sdm:invokes sdm:feat_project_drawer .
+
+############################################################
+# 13. 维度三：AI 能力装配层
+############################################################
+
+sdm:agent_4_1 a sdm:IntelligenceUnit ; rdfs:label "4.1 政策引擎"@zh .
+sdm:agent_4_2 a sdm:IntelligenceUnit ; rdfs:label "4.2 诊断引擎"@zh .
+sdm:agent_4_3 a sdm:IntelligenceUnit ; rdfs:label "4.3 答辩引擎"@zh .
+sdm:agent_4_4 a sdm:IntelligenceUnit ; rdfs:label "4.4&4.5 情报局"@zh .
+sdm:agent_4_6 a sdm:IntelligenceUnit ; rdfs:label "4.6 校内智库"@zh .
+
+sdm:sk_policy_rules a sdm:Entity ; rdfs:label "技能·多级规则与赛道准入"@zh ; sdm:demoOnly true .
+sdm:sk_rubric a sdm:Entity ; rdfs:label "技能·评审标准精读"@zh ; sdm:demoOnly true .
+sdm:sk_bp_diag a sdm:Entity ; rdfs:label "技能·BP/PPT 穿透诊断"@zh ; sdm:demoOnly true .
+sdm:sk_moat a sdm:Entity ; rdfs:label "技能·创新点与壁垒"@zh ; sdm:demoOnly true .
+sdm:sk_grill a sdm:Entity ; rdfs:label "技能·答辩极限压测"@zh ; sdm:demoOnly true .
+sdm:sk_gold_cases a sdm:Entity ; rdfs:label "技能·金奖案例拆解"@zh ; sdm:demoOnly true .
+sdm:sk_competitor a sdm:Entity ; rdfs:label "技能·竞品与痛点"@zh ; sdm:demoOnly true .
+sdm:sk_campus a sdm:Entity ; rdfs:label "技能·校本智库调用"@zh ; sdm:demoOnly true .
+
+sdm:mcp_rules a sdm:Entity ; rdfs:label "连接器·官方政策规则库"@zh ; sdm:demoOnly true .
+sdm:mcp_expert a sdm:Entity ; rdfs:label "连接器·评审专家经验库(1420+)"@zh ; sdm:demoOnly true .
+sdm:mcp_cases a sdm:Entity ; rdfs:label "连接器·金奖案例库(320+)"@zh ; sdm:demoOnly true .
+sdm:mcp_industry a sdm:Entity ; rdfs:label "连接器·产业竞品情报"@zh ; sdm:demoOnly true .
+sdm:mcp_campus a sdm:Entity ; rdfs:label "连接器·高校校本智库"@zh ; sdm:demoOnly true .
+
+sdm:agent_4_1 sdm:builtOn sdm:sk_policy_rules, sdm:sk_rubric, sdm:mcp_rules, sdm:mcp_expert .
+sdm:agent_4_2 sdm:builtOn sdm:sk_bp_diag, sdm:sk_moat, sdm:mcp_expert, sdm:mcp_cases, sdm:mcp_industry .
+sdm:agent_4_3 sdm:builtOn sdm:sk_grill, sdm:mcp_expert, sdm:mcp_cases .
+sdm:agent_4_4 sdm:builtOn sdm:sk_gold_cases, sdm:sk_competitor, sdm:mcp_cases, sdm:mcp_industry .
+sdm:agent_4_6 sdm:builtOn sdm:sk_campus, sdm:mcp_campus .
+
+sdm:view_coach sdm:registersAgent sdm:agent_4_1, sdm:agent_4_2, sdm:agent_4_3, sdm:agent_4_4, sdm:agent_4_6 ;
+    sdm:routeByIntent sdm:agent_4_1, sdm:agent_4_2, sdm:agent_4_3, sdm:agent_4_4, sdm:agent_4_6 .
+
+sdm:proto_deep41_42 a sdm:Behavior ; rdfs:label "4.1→4.2 深度调用"@zh ;
+    sdm:protocolVersion "v2.1-RPC-PIPELINE" ;
+    rdfs:comment "物料打包(BP/Deck/台账 sha256)→配置确认卡→2s 管道执行→结果回 4.1 会话+DataFlowLog。" .
+sdm:proto_deep41_43 a sdm:Behavior ; rdfs:label "4.1→4.3 深度调用"@zh ;
+    sdm:protocolVersion "v2.1-RPC-PIPELINE" .
+sdm:proto_shallow_questions a sdm:Behavior ; rdfs:label "4.3 原子·尖锐质询题5道"@zh ;
+    sdm:protocolVersion "v2.1-ATOMIC-MCP" .
+sdm:proto_shallow_chapter a sdm:Behavior ; rdfs:label "4.2 原子·章节速诊"@zh ;
+    sdm:protocolVersion "v2.1-ATOMIC-MCP" .
+sdm:proto_shallow_moat a sdm:Behavior ; rdfs:label "4.2 原子·壁垒自测"@zh ;
+    sdm:protocolVersion "v2.1-ATOMIC-MCP" .
+
+sdm:agent_4_1 sdm:deepCalls sdm:agent_4_2, sdm:agent_4_3 ;
+    sdm:shallowCalls sdm:agent_4_2, sdm:agent_4_3 .
+
+############################################################
+# 14. 学生端功能触达网络（v0.4，以实测网页 UI 为准重建模）
+# ------------------------------------------------------------
+# 口径（用户 0909 二次定稿）：以学生身份登录为基础，研究各功能模块间
+# 的关联。模块清单以**真实打开网页看到的呈现**为准：
+#   主模块 4 个（侧栏导航项）：新建对话 / 项目工作台 / 全链路指导工作台 /
+#     模拟评审与答辩训练
+#   次要模块 3 个（侧栏常驻部件）：会话历史 / 备赛捷径与工具 / 当前参赛项目
+# 每个模块拆内部构件（v0.4: Capability，取代 v0.3 的 cap_* 旧清单），
+# 构件间/模块间关系用 leadsTo/triggers/feeds/collects/usesData 表达。
+# 管理端视图（初筛/调度/督导/里程碑/驾驶舱等）不入本网络——学生不可见；
+# 督导以「工单交付」构件形式出现在项目工作台内（学生侧真实入口）。
+# 触达等级：direct=侧栏一级入口 / sub=侧栏常驻部件 / in=页内构件。
+############################################################
+
+sdm:StudentModule a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "学生端功能模块"@zh ;
+    rdfs:comment "学生可见的功能模块（主模块=侧栏导航项；次要模块=侧栏常驻部件）。" .
+sdm:Capability a owl:Class ;
+    rdfs:subClassOf sdm:SystemElement ;
+    rdfs:label "模块内构件"@zh ;
+    rdfs:comment "模块内部的功能点/内容块（实测 UI 提取）。" .
+
+sdm:hasModule a owl:ObjectProperty ;
+    rdfs:label "拥有模块"@zh ;
+    rdfs:domain sdm:Role ; rdfs:range sdm:StudentModule .
+sdm:partOf a owl:ObjectProperty ;
+    rdfs:label "构件属于模块"@zh ;
+    rdfs:domain sdm:Capability ; rdfs:range sdm:StudentModule .
+sdm:relates a owl:ObjectProperty ;
+    rdfs:label "模块间关联"@zh ;
+    rdfs:domain sdm:StudentModule ; rdfs:range sdm:StudentModule ;
+    rdfs:comment "模块级关系（图上主边）。" .
+sdm:contains a owl:ObjectProperty ;
+    rdfs:label "模块含构件"@zh ;
+    rdfs:domain sdm:StudentModule ; rdfs:range sdm:Capability .
+sdm:usesData a owl:ObjectProperty ;
+    rdfs:label "使用数据"@zh ;
+    rdfs:domain sdm:Capability ; rdfs:range sdm:Entity ;
+    rdfs:comment "构件读取/写入的业务数据（实体骨架层引用）。" .
+
+sdm:touchLevel a owl:DatatypeProperty ;
+    rdfs:label "触达等级"@zh ;
+    rdfs:range xsd:string ;
+    rdfs:comment "direct=侧栏一级入口 / sub=侧栏常驻部件 / in=页内构件。" .
+
+# ==================== 模块清单（实测） ====================
+
+sdm:m_login a sdm:StudentModule ; rdfs:label "登录·四门户"@zh ;
+    sdm:touchLevel "direct" ;
+    rdfs:comment "实测：四角色选择（项目组成员高校内登录 林子越 S20220199 演示一键）+高校下拉/账号/密码/姓名/学院 5 字段。" .
+sdm:m_coach a sdm:StudentModule ; rdfs:label "① 新建对话（AI 备赛助手）"@zh ;
+    sdm:touchLevel "direct" ;
+    rdfs:comment "实测：顶栏副题「多模式智能体对话 · 空间文档互通 · 深度工具链调度」；默认落地页。" .
+sdm:m_workbench a sdm:StudentModule ; rdfs:label "② 项目工作台"@zh ;
+    sdm:touchLevel "direct" ;
+    rdfs:comment "实测：顶栏副题「AI对标得分 · 专家问诊诊断 · 整改工单交付」；5 子 tab。" .
+sdm:m_guidance a sdm:StudentModule ; rdfs:label "③ 全链路指导工作台"@zh ;
+    sdm:touchLevel "direct" ;
+    rdfs:comment "实测：顶栏副题「L1~L6全阶段智能演进 · BP12章沉浸打磨 · 多模态材料档案与版本快照」。" .
+sdm:m_defense a sdm:StudentModule ; rdfs:label "④ 模拟评审与答辩训练"@zh ;
+    sdm:touchLevel "direct" ;
+    rdfs:comment "实测：「模拟评审与答辩训练舱」选择屏=当前项目卡+5 模式卡+实训历史列表。" .
+sdm:m_sessions a sdm:StudentModule ; rdfs:label "⑤' 会话历史（侧栏）"@zh ;
+    sdm:touchLevel "sub" ;
+    rdfs:comment "实测：会话列表（可折叠）+新建+删除+单条点击切换会话并跳教练。" .
+sdm:m_shortcuts a sdm:StudentModule ; rdfs:label "⑤' 备赛捷径与工具（侧栏）"@zh ;
+    sdm:touchLevel "sub" ;
+    rdfs:comment "实测（学生视角）：仅一项「2026官方评审细则」→开规则弹窗；管理端另有导入/复盘两项（非学生）。" .
+sdm:m_current_project a sdm:StudentModule ; rdfs:label "⑤' 当前参赛项目（侧栏）"@zh ;
+    sdm:touchLevel "sub" ;
+    rdfs:comment "实测：项目卡（赛道/阶段/评级/得分）+下拉搜索切换 8 项目；标注「全端各模块实时同步」。" .
+
+sdm:role_team_member sdm:hasModule sdm:m_login, sdm:m_coach, sdm:m_workbench,
+    sdm:m_guidance, sdm:m_defense, sdm:m_sessions, sdm:m_shortcuts, sdm:m_current_project .
+
+# ==================== 模块级关系（实测链路） ====================
+
+sdm:m_login sdm:relates sdm:m_coach ;
+    rdfs:comment "登录成功→默认落新建对话（App.handleLoginSuccess）。" .
+sdm:m_current_project sdm:relates sdm:m_coach, sdm:m_workbench, sdm:m_guidance, sdm:m_defense ;
+    rdfs:comment "实测切换项目后全端联动：教练当前空间材料/工作台顶卡/工作台项目门/答辩舱「当前参赛项目」卡。" .
+sdm:m_sessions sdm:relates sdm:m_coach ;
+    rdfs:comment "实测：会话历史（列表）点击/新建/删除都在教练页上下文中操作。" .
+sdm:m_coach sdm:relates sdm:m_workbench ;
+    rdfs:comment "实测：教练行动项/DeepCall 结果生成待办喂给工作台（RightPanel Action Items→双源待办语义）。" .
+sdm:m_coach sdm:relates sdm:m_guidance ;
+    rdfs:comment "实测：onNavigateToScene 跨 Scene 跳转之一。" .
+sdm:m_coach sdm:relates sdm:m_defense ;
+    rdfs:comment "实测：onNavigateToScene 跨 Scene 跳转之二；教练内嵌答辩流程可导出全量答辩。" .
+sdm:m_workbench sdm:relates sdm:m_guidance ;
+    rdfs:comment "实测：动态待办「去执行」携 GuidanceTaskContext 跳转（全系统唯一带载荷跨模块链）。" .
+sdm:m_shortcuts sdm:relates sdm:m_workbench, sdm:m_guidance ;
+    rdfs:comment "实测：2026 评审细则弹窗是评价/诊断/对标共用的规则底座入口（规则弹窗全局可开）。" .
+
+# ==================== 模块内构件（实测提取） ====================
+
+# ---- ① 新建对话（AI 备赛助手） ----
+sdm:c_coach_space a sdm:Capability ; rdfs:label "备赛空间与工作区"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_space ;
+    rdfs:comment "实测：空间卡列表+新建(名称/赛道/本地目录)+云同步按钮+复制路径。" .
+sdm:c_coach_chat a sdm:Capability ; rdfs:label "教练会话流"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_coach_session ;
+    rdfs:comment "实测：消息流（含富卡：雷达/答辩人设/DeepCall 确认/结果/DataFlowLog）+场景卡。" .
+sdm:c_coach_composer a sdm:Capability ; rdfs:label "输入与装配区（ChatComposer）"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：@项目文件提示/上传菜单(本地文件+项目文件)/语音/专家选择/技能开关/MCP 开关/运营飞轮按钮。" .
+sdm:c_coach_quick a sdm:Capability ; rdfs:label "快捷咨询与场景胶囊"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：场景卡（新会话模式）+快捷 sticky 提问胶囊；6 大动作（政策/诊断/答辩题/金奖案例/竞品/校内智库）。" .
+sdm:c_coach_deepcall a sdm:Capability ; rdfs:label "深度/浅度调用"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：深度 RPC（确认弹层→2s 执行→结果卡回会话）/浅度原子；DataFlowLog 数据留痕。" .
+sdm:c_coach_defense_embed a sdm:Capability ; rdfs:label "内嵌答辩模拟（人设选择→攻防）"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：mockqa 动作触发评委 4 人设卡选择→两轮问答攻防→评分。" .
+sdm:c_coach_actions a sdm:Capability ; rdfs:label "右侧行动项与文件面板"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：SharedWorkspaceDrawer（行动项 toggle+文件移除+提及文件）+RightWorkspacePanel（多 tab 预览 6:4 分栏）+DeepCall 三段弹层+DataFlowLog+ReAct 过程视图。" .
+sdm:c_coach_radar a sdm:Capability ; rdfs:label "六维雷达图（RadarChart）"@zh ;
+    sdm:partOf sdm:m_coach ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：会话中 BP 诊断输出六维雷达+金奖基准对标（7.5/8.0/5.5/7.0/6.5/8.5）。" .
+
+# ---- ② 项目工作台 ----
+sdm:c_wb_header a sdm:Capability ; rdfs:label "项目门卡头（校徽/赛道/当前阶段/金奖匹配度）"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：sky 渐变横幅：高校徽标/赛道/评级分数/阶段/负责人/导师/AI 置信度+「查看2026官方打分细则」按钮。" .
+sdm:c_wb_todos a sdm:Capability ; rdfs:label "动态待办 tab"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_guidance_todo ;
+    rdfs:comment "实测：双源待办（AI 评分诊断生成 indigo + 专家工单下发 sky）；来源筛选/勾选/去执行跳指导工作台。" .
+sdm:c_wb_orders a sdm:Capability ; rdfs:label "专家辅导与督导工单 tab"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_supervision_work_order ;
+    rdfs:comment "实测：工单列表（导师名/三态徽标/进度条）→详情（诊断意见/任务清单/提交区：修改说明+BP+PPT 版本+浏览 mock+/提交后 绿色 成功提示）+复核结果卡（提分 delta）。" .
+sdm:c_wb_diag a sdm:Capability ; rdfs:label "全维诊断 tab"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：4 一级指标得分率卡+逻辑断点卡（amber）+评委尖锐提问演练（编号 Q1..，建议 45 秒作答）。" .
+sdm:c_wb_team a sdm:Capability ; rdfs:label "团队架构 tab"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：成员表（姓名/学号/学院/学历徽标/分工/IP 权属/电话）+合规徽标+秘书批注。" .
+sdm:c_wb_folder a sdm:Capability ; rdfs:label "项目文件夹 tab"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_file, sdm:ent_bp_version ;
+    rdfs:comment "实测：待归档区（会话生成产物→存入）+材料注册表（3 来源标签）+主文档版本线（4 版本点+里程碑旗）+大事记(FILE_CHANGE_LOG 时间线)。" .
+sdm:c_wb_execute a sdm:Capability ; rdfs:label "「去执行」载荷跳转按钮"@zh ;
+    sdm:partOf sdm:m_workbench ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_guidance_task_context ;
+    rdfs:comment "实测：AI/工单双源卡右缘按钮；点击→setGuidanceTaskContext→跳指导工作台+任务条呈现。" .
+
+# ---- ③ 全链路指导工作台 ----
+sdm:c_gw_topbar a sdm:Capability ; rdfs:label "顶栏（项目摘要+L1~L6 阶段 stepper+四快捷）"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：BP 徽标/项目名/赛道/阶段/版本+L stepper（done✓/current indigo/todo）+快照/里程碑/diff/版本历史四按钮。" .
+sdm:c_gw_taskcontext a sdm:Capability ; rdfs:label "任务上下文条（amber 横幅）"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_guidance_task_context ;
+    rdfs:comment "实测：去执行带入：正在执行任务+来源徽标+「跳转关联章节」+「完成并回写待办」+关闭 X。" .
+sdm:c_gw_bp a sdm:Capability ; rdfs:label "BP 12 章 tab"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_bp_chapter, sdm:ent_bp_content ;
+    rdfs:comment "实测：章节速达 12 章+章节头卡(AI 深度诊断此章按钮)+排版预览/源码编辑切换+字数。" .
+sdm:c_gw_diag a sdm:Capability ; rdfs:label "全维诊断 tab"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：创新类型分诊卡+诊断报告（缺失项/下一步清单）。" .
+sdm:c_gw_score a sdm:Capability ; rdfs:label "六维评分 tab"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：基准分/六维条形/细项采分点+增量归因表（+delta 徽标）。" .
+sdm:c_gw_versions a sdm:Capability ; rdfs:label "版本体系（快照/里程碑/diff/回滚）"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_bp_version ;
+    rdfs:comment "实测：历史抽屉+快照只读预览+对比弹层+回滚 confirm；里程碑记入大事记。" .
+sdm:c_gw_coach a sdm:Capability ; rdfs:label "右栏 AI 伴学教练（内嵌）"@zh ;
+    sdm:partOf sdm:m_guidance ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：右栏聊天窗（L 意图聚焦徽章+建议 diff 一键应用+快捷气泡）——教练能力在工作台内直接可用。" .
+
+# ---- ④ 模拟评审与答辩训练 ----
+sdm:c_df_project a sdm:Capability ; rdfs:label "当前项目卡（自动带入）"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：显示当前参赛项目+「全局选定项目 · 更换请在左侧边栏顶部的【当前参赛项目】中切换」——与换项联动的设计提示。" .
+sdm:c_df_modes a sdm:Capability ; rdfs:label "5 模式卡（标准/电梯/高压追问/弱项突击/对抗性）"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：每卡带推荐/速通/硬核徽标+能力标签+「配置参数并开始」按钮。" .
+sdm:c_df_prep a sdm:Capability ; rdfs:label "备战配置屏"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：评委席规模/风格/轮次/单题时限配置面板。" .
+sdm:c_df_session a sdm:Capability ; rdfs:label "答辩实战舱（轮次对话）"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：mode 徽标+当前轮次 N+计时+评委消息流+右侧提交按钮。" .
+sdm:c_df_report a sdm:Capability ; rdfs:label "实训报告（六维雷达+复盘）"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：六维雷达+专家级改进方案+失分点补强；历史卡「查看报告」可直接进入。" .
+sdm:c_df_history a sdm:Capability ; rdfs:label "实训历史与复盘记录"@zh ;
+    sdm:partOf sdm:m_defense ; sdm:touchLevel "in" ;
+    rdfs:comment "实测：4 条历史卡（模式/分数/项目/时间/查看报告）。" .
+
+# ---- ⑤' 会话历史（侧栏常驻） ----
+sdm:c_sess_list a sdm:Capability ; rdfs:label "会话列表（任务图标+标题+时间+删除）"@zh ;
+    sdm:partOf sdm:m_sessions ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_coach_session ;
+    rdfs:comment "实测：可折叠+新建（+）+删除（hover 红垃圾桶）+点击切会话并落教练页。" .
+
+# ---- ⑤' 备赛捷径与工具（侧栏常驻） ----
+sdm:c_sc_rules a sdm:Capability ; rdfs:label "2026 官方评审细则（弹窗入口）"@zh ;
+    sdm:partOf sdm:m_shortcuts ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_rules2026 ;
+    rdfs:comment "实测：RulesConfigModal 赛道/组别切换+指标树查看；学生侧唯一捷径（导入/复盘属管理端）。" .
+
+# ---- ⑤' 当前参赛项目（侧栏常驻） ----
+sdm:c_cp_picker a sdm:Capability ; rdfs:label "项目切换器（搜索+8 项目列表）"@zh ;
+    sdm:partOf sdm:m_current_project ; sdm:touchLevel "in" ;
+    sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "实测：项目卡（赛道/阶段/评级/分数/负责人）+下拉搜索+「全端各模块实时同步」标注+当前项对勾。" .
+
+# ---- 模块-构件关系（contains） ----
+sdm:m_coach sdm:contains sdm:c_coach_space, sdm:c_coach_chat, sdm:c_coach_composer,
+    sdm:c_coach_quick, sdm:c_coach_deepcall, sdm:c_coach_defense_embed, sdm:c_coach_actions, sdm:c_coach_radar .
+sdm:m_workbench sdm:contains sdm:c_wb_header, sdm:c_wb_todos, sdm:c_wb_orders, sdm:c_wb_diag,
+    sdm:c_wb_team, sdm:c_wb_folder, sdm:c_wb_execute .
+sdm:m_guidance sdm:contains sdm:c_gw_topbar, sdm:c_gw_taskcontext, sdm:c_gw_bp, sdm:c_gw_diag,
+    sdm:c_gw_score, sdm:c_gw_versions, sdm:c_gw_coach .
+sdm:m_defense sdm:contains sdm:c_df_project, sdm:c_df_modes, sdm:c_df_prep, sdm:c_df_session,
+    sdm:c_df_report, sdm:c_df_history .
+sdm:m_sessions sdm:contains sdm:c_sess_list .
+sdm:m_shortcuts sdm:contains sdm:c_sc_rules .
+sdm:m_current_project sdm:contains sdm:c_cp_picker .
+
+# ---- 构件级关键关系（实测跨模块/模块内联动） ----
+
+sdm:c_coach_space sdm:contains sdm:c_coach_chat ;
+    rdfs:comment "实测：切空间=切会话组（空间是会话容器）。" .
+sdm:c_coach_quick sdm:triggers sdm:c_coach_deepcall ;
+    rdfs:comment "实测：诊断/答辩题等动作可升级为深度调用。" .
+sdm:c_coach_defense_embed sdm:relates sdm:c_df_modes ;
+    rdfs:comment "实测：教练内嵌答辩是答辩训练舱的轻量形态，重需求引导过去（definitely 同一业务域）。" .
+sdm:c_coach_actions sdm:relates sdm:c_wb_todos ;
+    rdfs:comment "实测：教练行动项（4.2/4.3 产出）语义上等同 AI 诊断来源的动态待办。" .
+sdm:c_coach_radar sdm:usesData sdm:ent_project_item ;
+    rdfs:comment "雷达的六维真源 = ProjectItem.tier1Scores 同构数据。" .
+sdm:c_wb_execute sdm:relates sdm:c_gw_taskcontext ;
+    rdfs:comment "实测：点击即携载荷跳转+任务条呈现（一体的闭环两端）。" .
+sdm:c_wb_folder sdm:relates sdm:c_gw_versions ;
+    rdfs:comment "实测：文件夹版本线注明「与全链路指导工作台快照同源」，完整版本操作去工作台。" .
+sdm:c_gw_taskcontext sdm:relates sdm:c_gw_bp ;
+    rdfs:comment "实测：任务条「跳转关联章节」直达 BP tab 第 N 章。" .
+sdm:c_sc_rules sdm:relates sdm:c_wb_diag, sdm:c_wb_header, sdm:c_gw_score ;
+    rdfs:comment "实测：规则弹窗入口在工作台门卡/诊断卡片多处可开；评分/诊断的规则源。" .
+sdm:c_cp_picker sdm:relates sdm:c_wb_header, sdm:c_df_project, sdm:c_coach_space ;
+    rdfs:comment "实测：切项目→工作台门卡/答辩舱项目卡/教练空间物料三处联动。" .
+sdm:c_df_history sdm:relates sdm:c_df_report ;
+    rdfs:comment "实测：历史卡「查看报告」直接进报告屏。" .
+
+############################################################
+# 15. 业务实体骨架（其余，字段级不展开）
+############################################################
+
+sdm:ent_project_item a sdm:Entity ; rdfs:label "项目"@zh ; sdm:demoOnly true ;
+    rdfs:comment "主实体：track/stage(StageLevel L1~L5)/grade(ABCD)/六维 tier1Scores/logicGaps/killerQuestions/scoreHistory/healthStatus/materials。" .
+sdm:ent_coach_session a sdm:Entity ; rdfs:label "教练会话"@zh ; sdm:demoOnly true ;
+    rdfs:comment "taskKey(7类任务)/taskType；标题驱动意图路由。" .
+sdm:ent_project_space a sdm:Entity ; rdfs:label "项目空间"@zh ; sdm:demoOnly true ;
+    rdfs:comment "Sessions 容器 + workspace(本地路径/云桶/同步状态)。" .
+sdm:ent_supervision_work_order a sdm:Entity ; rdfs:label "督导工单"@zh ; sdm:demoOnly true ;
+    rdfs:comment "五类任务类目：创新点/商业模式/团队/材料PPT/财务数据。" .
+sdm:ent_cohort_batch_task a sdm:Entity ; rdfs:label "批次辅导任务"@zh ; sdm:demoOnly true .
+sdm:ent_mentor a sdm:Entity ; rdfs:label "导师"@zh ; sdm:demoOnly true ;
+    rdfs:comment "容量(projects/maxCapacity)/金牌带教数/可约时段。" .
+sdm:ent_alert a sdm:Entity ; rdfs:label "健康预警"@zh ; sdm:demoOnly true .
+sdm:ent_rules2026 a sdm:Entity ; rdfs:label "2026评审规则"@zh ; sdm:demoOnly true ;
+    rdfs:comment "5 赛道·组别 / 一级-二级指标树 / 一票否决；rules2026.ts。" .
+sdm:ent_guidance_task_context a sdm:Entity ; rdfs:label "跨页任务上下文"@zh ; sdm:demoOnly true .
+sdm:ent_guidance_todo a sdm:Entity ; rdfs:label "动态待办"@zh ; sdm:demoOnly true .
+sdm:ent_bp_version a sdm:Entity ; rdfs:label "版本快照"@zh ; sdm:demoOnly true ;
+    rdfs:comment "snapshot/version/milestone + 父指针/分支/commitMsg；与文件夹主文档版本线同源。" .
+sdm:ent_bp_chapter a sdm:Entity ; rdfs:label "BP标准章(1~12)"@zh ; sdm:demoOnly true .
+sdm:ent_lifecycle_stage a sdm:Entity ; rdfs:label "L1~L6 阶段(数据记录)"@zh ; sdm:demoOnly true .
+
+############################################################
+# 16. 范围锚注
+############################################################
+
+sdm:anchor_entity_skeleton a sdm:ScopeAnchor ;
+    rdfs:label "范围：实体骨架层"@zh ;
+    rdfs:comment "Entity 不展开字段，字段真源 = src/types.ts + 0908-14 调研报告。" .
+sdm:anchor_spec_pending a sdm:ScopeAnchor ;
+    rdfs:label "范围：spec 链接占位"@zh ;
+    rdfs:comment "specRef 空串，待 shuangchuang-ai-code / design 两仓 .git 重建后回填。" .
+sdm:anchor_stage_variance a sdm:ScopeAnchor ;
+    rdfs:label "口径：L 阶段演示差(如实记录)"@zh ;
+    rdfs:comment "教练开场只认 L1~L4（mockStages），指导工作台/看板认 L1~L6/L1~L5——demo 自身口径不一，本体忠实记录不调和。" .
+sdm:anchor_display_modes a sdm:ScopeAnchor ;
+    rdfs:label "口径：展示样式不入链"@zh ;
+    rdfs:comment "导师库卡/表格、知识库 list/detail 等纯展示切换不建为状态，仅记 comment。" .

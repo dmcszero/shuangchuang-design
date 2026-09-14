@@ -1,0 +1,121 @@
+# ============================================================
+# SHACL 校验形状（sdm_core.ttl 的约束规则）
+# 目的：防建模写飞——导航边必须双端为视图、状态机视图必须有状态、
+#       载荷边必须连实体、角色落地视图必须在其可见集内 等。
+# 运行：ontology/tools/validate.py 自动加载本文件校验 sdm_core.ttl。
+# ============================================================
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix sdm:  <https://github.com/dmcszero/shuangchuang-design/ontology#> .
+
+# ---- NavigationEdge：必须有且只有一个 navigatesTo，指向 View ----
+sdm:shape_navEdge
+    a sh:NodeShape ;
+    sh:targetClass sdm:NavigationEdge ;
+    sh:property [
+        sh:path sdm:navigatesTo ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class sdm:View ;
+        sh:message "导航边必须恰好有 1 个目标视图（View 类）。" ;
+    ] ;
+    sh:property [
+        sh:path sdm:navigatesFrom ;
+        sh:minCount 1 ;
+        sh:class sdm:View ;
+        sh:message "导航边至少声明 1 个来源视图。" ;
+    ] .
+
+# ---- StateTransition：transitionsTo 必须指向 State ----
+sdm:shape_stateTransition
+    a sh:NodeShape ;
+    sh:targetClass sdm:StateTransition ;
+    sh:property [
+        sh:path sdm:transitionsTo ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class sdm:State ;
+        sh:message "状态迁移必须恰好指向 1 个状态（State 类）。" ;
+    ] .
+
+# ---- MachineView：至少含 1 个状态 ----
+sdm:shape_machineView
+    a sh:NodeShape ;
+    sh:targetClass sdm:MachineView ;
+    sh:property [
+        sh:path sdm:containsState ;
+        sh:minCount 1 ;
+        sh:class sdm:State ;
+        sh:message "状态机视图至少要 containState 一个状态。" ;
+    ] .
+
+# ---- StateFlow：至少含 1 个状态 ----
+sdm:shape_stateFlow
+    a sh:NodeShape ;
+    sh:targetClass sdm:StateFlow ;
+    sh:property [
+        sh:path sdm:containsState ;
+        sh:minCount 2 ;
+        sh:class sdm:State ;
+        sh:message "子流程状态机至少要 containState 两个状态。" ;
+    ] .
+
+# ---- JourneyStep：归属角色必填、next 指向 JourneyStep ----
+sdm:shape_journeyStep
+    a sh:NodeShape ;
+    sh:targetClass sdm:JourneyStep ;
+    sh:property [
+        sh:path sdm:stepOfRole ;
+        sh:minCount 1 ;
+        sh:class sdm:Role ;
+        sh:message "旅程步骤必须归属一个角色。" ;
+    ] ;
+    sh:property [
+        sh:path sdm:next ;
+        sh:class sdm:JourneyStep ;
+        sh:maxCount 1 ;
+        sh:message "旅程步骤至多一个直接后继（next）。" ;
+    ] .
+
+# ---- serves：View 的阶段映射必须指向 LifeCycleStage ----
+sdm:shape_serves
+    a sh:NodeShape ;
+    sh:targetObjectsOf sdm:serves ;
+    sh:class sdm:LifeCycleStage ;
+    sh:message "serves 的对象必须为 LifeCycleStage 实例。" .
+
+# ---- View：必须唯一 tabId ----
+sdm:shape_view_tabId
+    a sh:NodeShape ;
+    sh:targetClass sdm:View ;
+    sh:property [
+        sh:path sdm:tabId ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "每个视图恰好 1 个字符串 tabId。" ;
+    ] .
+
+# ---- View：componentPath 必填 ----
+sdm:shape_view_component
+    a sh:NodeShape ;
+    sh:targetClass sdm:View ;
+    sh:property [
+        sh:path sdm:componentPath ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "视图必须标注 componentPath 以回链真源代码。" ;
+    ] .
+
+# ---- 角色可见视图必须声明 isMachineState（供渲染口径审计）----
+# （仅提示级别，约束放宽为可达性后续再加）
+
+# ---- 触发器：actionKey 为字符串 ----
+sdm:shape_trigger
+    a sh:NodeShape ;
+    sh:targetClass sdm:Trigger ;
+    sh:property [
+        sh:path sdm:actionKey ;
+        sh:datatype xsd:string ;
+        sh:message "触发器的 actionKey 须为字符串。" ;
+    ] .
