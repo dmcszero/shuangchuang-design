@@ -221,8 +221,9 @@
       "component": "src/components/SceneAICoach.tsx",
       "relevant_files": ["src/components/SceneAICoach.tsx", "src/components/ChatComposer.tsx", "src/components/RightWorkspacePanel.tsx", "src/components/ReActProcessView.tsx", "src/data/mockSessionMessages.ts"],
       "related_pages": ["page-guidance", "page-defense", "page-assets"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 10,
+      "nodeScopeNote": "2026-09-14 批 1 下钻：10 节点覆盖会话历史/引导页/输入区/消息流/ReAct 过程/原子调用/深度调用/页内答辩/右栏独立工作区/产物审核。未下钻为节点的页面级结构：SharedWorkspaceDrawer（不可达）、OperationFlywheelModal、DeepCallConfirmModal（不可达）、顶栏标题（壳层）。口径按 v0.4 硬约束 2 确认：本页 = 框架 1.1「AI助手」本体，会话历史/新建对话为其节点。"
     },
     {
       "id": "page-defense",
@@ -241,11 +242,17 @@
         "src/components/defense/DefenseRoadshowScreen.tsx",
         "src/components/defense/DefenseSessionScreen.tsx",
         "src/components/defense/DefenseReportScreen.tsx",
-        "src/components/defense/defenseConstants.ts"
+        "src/components/defense/DefenseVideoWindow.tsx",
+        "src/components/defense/RoadshowDefenseStage.tsx",
+        "src/components/defense/RoadshowCombinedReportModal.tsx",
+        "src/components/defense/DefenseCharts.tsx",
+        "src/components/defense/defenseConstants.ts",
+        "src/components/defense/defenseTypes.ts"
       ],
       "related_pages": ["page-coach", "page-workbench", "page-guidance"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 7,
+      "nodeScopeNote": "2026-09-14 批 1 下钻：7 节点覆盖模式选择/配置抽屉/历史入口/赛前解构/全真路演/问答对抗/复盘报告。未下钻为节点的页面级结构：五屏路由状态机（SceneDefenseTraining 18-63）、RoadshowCombinedReportModal 合并报告弹窗（与报告屏功能重叠）。relevant_files 由 7 个补全为 12 个（实测存在 DefenseVideoWindow / RoadshowDefenseStage / RoadshowCombinedReportModal / DefenseCharts / defenseTypes）。"
     },
     {
       "id": "page-assets",
@@ -259,8 +266,9 @@
       "component": "src/components/AssetManagementSystem.tsx",
       "relevant_files": ["src/components/AssetManagementSystem.tsx", "src/data/mockAssetManagementData.ts"],
       "related_pages": ["page-coach", "page-workbench"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 6,
+      "nodeScopeNote": "2026-09-14 批 1 下钻：6 节点覆盖左栏文件树/中栏清单/多模态预览/右栏版本时间线/Diff 弹层/新增资产弹窗。未下钻为节点的页面级结构：三栏容器与分隔（442-447）、中栏面包屑与工具条（577-680）、README 兜底预览（1566-1590）。本页为团队基线 505a858 新增模块（title 按侧栏文案写作「项目资产管理系统（Git 模式）」）。"
     },
     {
       "personas": ["p-student", "p-school", "p-admin"],
@@ -319,8 +327,9 @@
       "component": "src/components/LoginPage.tsx",
       "relevant_files": ["src/components/LoginPage.tsx", "src/App.tsx"],
       "related_pages": ["page-cockpit", "page-workbench", "page-supervision"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 4,
+      "nodeScopeNote": "2026-09-14 批 1 下钻：4 节点覆盖四端身份卡/高校选择器/账号表单/免密预置卡。未下钻为节点的页面级结构：顶部品牌栏（121-145）、页脚说明（564-566）、卡片外框栅格。免密登入与表单提交是两条独立路径（前者绕过校验），故分开登记。"
     }
   ],
   "shellComponents": [

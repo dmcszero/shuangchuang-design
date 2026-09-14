@@ -44,13 +44,13 @@
 | `module-map.html` | ⚙️ 产物：本地预览的结构可视化（按已下钻页面自动分列；双击即开） |
 | `site/index.html` | ⚙️ 产物：**发布副本**（发布单元只含这一个文件） |
 
-## 三、当前进度（2026-09-14，v0.4 框架合流后）
+## 三、当前进度（2026-09-14，批 1 学生端下钻后）
 
-**section 8 · page 15（已下钻 2 / 待铺开 13）· node 18 · 边 23（18 implemented · 4 intended · 1 undefined）· issues 13 · 正文可验证引用 231 处；`validate` 0 error / 1 warning**（唯一 warning = 13 个 page 尚未铺开的汇总提示）
+**section 8 · page 15（已下钻 6 / 待铺开 9）· node 45 · 边 59（52 implemented · 6 intended · 1 undefined）· issues 24 · `validate` 0 error / 1 warning**（唯一 warning = 9 个 page 尚未铺开的汇总提示）
 
-- 已下钻：`page-workbench` 项目工作台（8 节点）、`page-guidance` 全链路指导工作台（10 节点）
-- 待铺开按批次（《铺开执行手册》）：批 1 学生端 4 页（login / coach / defense / assets）→ 批 2 校管端 6 页 → 批 3 治理 3 页
-- 《待拍板清单》现 9 条（上司拍板 5 · 待产品定义 2 · 工程自决 2），批 1~3 攒齐后一次性交付
+- 已下钻：`page-workbench` 项目工作台（8 节点）、`page-guidance` 全链路指导工作台（10 节点）、`page-login` 登录分流（4）、`page-coach` AI 助手（10）、`page-defense` 模拟答辩训练（7）、`page-assets` 项目资产管理系统 Git 模式（6）
+- 待铺开按批次（《铺开执行手册》）：~~批 1 学生端 4 页~~ ✅ 已完 → 批 2 校管端 6 页 → 批 3 治理 3 页
+- 《待拍板清单》现 12 条（上司拍板 / 待产品定义 / 工程自决三类，见 `decisions.md`），批 1~3 攒齐后一次性交付
 
 ## 四、工具链（固定五条，顺序不可换）
 

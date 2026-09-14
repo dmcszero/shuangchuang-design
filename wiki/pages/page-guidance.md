@@ -63,6 +63,7 @@ nodes:
   3. AI 改写「应用至对应章节」实为追加到全文末尾（`nd-guidance-bp`）；
   4. 版本 diff 弹层正文写死、不随所选版本变化（`nd-guidance-diff-modal`）。
 - **两套会话实现并存**：本页右栏 AI 教练（简版 if-else）与 `page-coach` 的 `SceneAICoach`（完整版）零共享，详见 `nd-guidance-coach`。
+- **口径（v0.4 硬约束 3，2026-09-14）**：右栏「AI 备赛伴学教练」是**内嵌简版辅助栏**，**不属**框架 1.1「AI助手」（1.1 = `page-coach` 本体，含会话历史与新建对话）；两套会话是否统一是待拍板项 `issue-product-coach-session-unification`，**不擅自合并表述、也不替产品选留存哪套**。
 - **两套诊断口径并存**：本页「全维诊断报告」读 `SAMPLE_DIAGNOSIS`，`page-workbench` 体检区读 `mockProjects.ts` 的 `tier1Scores` / `logicGaps`，互不相通。
 - **本页所有 `alert()` 均为占位反馈**（导出计划书、标里程碑、应用 AI 改写、完成回写），接真实链路时需整体替换；不要把 alert 文案当作能力承诺引用。
 

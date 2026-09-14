@@ -56,14 +56,37 @@ _学生团队：从「我该改什么」到「改完交付并留痕」_
 
 _学生：随时问、随时练，答辩前把问题问遍_
 
-- [AI 备赛教练](pages/page-coach.md): 会话式备赛主体：任务选择、专家智能体调用、ReAct 过程可视化、诊断报告生成，右侧产物与审核区。框架口径（2026-09-14 拍板）：与「AI助手」统一，会话历史/新建对话（new_chat + standaloneSessions）为其功能子集；与 page-guidance 右栏内嵌简版教练是两套独立实现、零共享。 _(importance: high · 待铺开)_
-- [模拟答辩训练](pages/page-defense.md): 四阶段答辩演练：选模式 → 备赛准备 → 路演展示 → 问答对抗 → 报告复盘，含录像回放与评分。 _(importance: high · 待铺开)_
+- [AI 备赛教练](pages/page-coach.md): 学生端的会话式主入口（框架 1.1「AI助手」本体，含会话历史与新建对话）：左中两栏是「问-答-出卡片」的对话流，右栏挂独立产物区；它同时是 4.1↔4.2/4.3 跨模块调用的发起方与接收方，也是产物审批意见回到对话的地方。 _(importance: high · 已下钻)_
+  - [会话历史与新建对话](nodes/page-coach/nd-coach-sessions.md) `nd-coach-sessions`: AI 助手的「会话层」：侧栏底部列出历史会话、可折叠、可删除、可新建；它是框架 1.1「AI助手（含会话历史、新建对话）」的最小可指认载体，也是 `new_chat` 这个独立 tab 的入口。 _(nav · high)_
+  - [会话引导页（空态首屏）](nodes/page-coach/nd-coach-guide.md) `nd-coach-guide`: AI 助手的空会话首屏：一句「AI 备赛教练，我帮你」+ 8 个推荐任务胶囊 + 一张居中的输入卡片——用户在这里从「不知道能问什么」变成「点一下就有提示词」。 _(panel · high)_
+  - [消息输入区与能力配置](nodes/page-coach/nd-coach-composer.md) `nd-coach-composer`: AI 助手的输入与「装配台」：一条输入框 + 四个能力下拉（上传文件 / 专家智能体 / 技能 / MCP 连接器）+ 语音与发送——决定这次提问「带哪些文件、由哪个专家、开哪些技能」作答。 _(form · high)_
+  - [会话消息流](nodes/page-coach/nd-coach-stream.md) `nd-coach-stream`: AI 助手的输出面：把每条 `ChatMessage` 按 sender 与 `type` 渲染成气泡 + 13 种业务卡片（赛道对比表、诊断雷达、考官矩阵、答辩质询、复盘、金奖案例、竞品、校内资源、原子/深度调用卡…），是全库**消息类型最多的渲染分发点**。 _(list · high)_
+  - [ReAct 思考过程视图](nodes/page-coach/nd-coach-react.md) `nd-coach-react`: AI 助手回答的「透明化包装」：把一次回答拆成 思考（reasoning）→ 计划（plan）→ 行动（act）三步，可折叠展开、可单独收起子块，并在实时阶段逐帧推进——全库唯一的「过程可视化」组件。 _(panel · medium)_
+  - [浅度原子能力调用卡](nodes/page-coach/nd-coach-atomic.md) `nd-coach-atomic`: 4.1（AI 助手）向 4.2/4.3 引擎发起的「轻量一问」：一次 RPC 式原子能力调用（5 道质询题 / BP 章节速诊 / 壁垒核查），结果直接渲染在会话里，并给一个「一键升级为深度调用」的出口。 _(panel · medium)_
+  - [深度调用管道（4.2 / 4.3）](nodes/page-coach/nd-coach-deep.md) `nd-coach-deep`: 4.1（AI 助手）向 4.2/4.3 发起的「重调用」三段式流程：会话内意图确认卡（选物料/焦点/深度）→ 2 秒执行弹窗（阶段进度）→ 结果卡（雷达 + 待办 + 采纳与下一步），是本页唯一「跨模块管道」的完整形态。 _(panel · high)_
+  - [页内模拟答辩（4.3 浅度）](nodes/page-coach/nd-coach-defense.md) `nd-coach-defense`: AI 助手会话里就地跑完的一轮小型答辩：选一位考官 → 出 5 道尖锐质询 → 两轮「问-答-批注」→ 生成复盘卡；不跳页、不开录像，是完整演练（`page-defense`）的轻量替代。 _(panel · medium)_
+  - [右侧独立工作区（产物展示）](nodes/page-coach/nd-coach-workspace.md) `nd-coach-workspace`: AI 助手右侧的独立产物面板：看本次/历次生成的交付物长什么样（PPT 演进矩阵、Excel 测算表、BP 正文预览），并能全屏、拖拽调宽、切换产物——**「会话在左、产物在右」的物理分界**。 _(drawer · high)_
+  - [产物审核与改进意见](nodes/page-coach/nd-coach-review.md) `nd-coach-review`: 「AI 生成的产物要不要收下」的审批闸门：同意 / 否决 / 提改进要求三个动作，结果既改文件状态、又**在会话里以学生身份留下一条消息**，形成「AI 产出 → 人审 → 反馈回到对话」的闭环。 _(bar · high)_
+- [模拟答辩训练](pages/page-defense.md): 五屏串联的答辩实训流水线：选模式 → 赛前解构 → （路演）/（问答对抗）→ 复盘报告。它是全库**唯一接入真实设备能力**（摄像头、麦克风、语音识别、语音合成）的页面，也是学生端「临场感」最强的模块。 _(importance: high · 已下钻)_
+  - [实训模式选择与项目联动](nodes/page-defense/nd-defense-selector.md) `nd-defense-selector`: 答辩训练的首屏：横幅交代「这是哪个项目的答辩舱」，五张模式卡列出可选的训练形态（路演 / 标准答辩 / 电梯演讲 / 高压追问 / 弱项突击 / 对抗演练），点任意一张即展开配置抽屉。 _(panel · high)_
+  - [模式参数配置抽屉](nodes/page-defense/nd-defense-config.md) `nd-defense-config`: 点模式卡后从右侧滑出的配置面板：按所选模式**只显示相关参数**（评委席规模 / 质询烈度 / 问答轮次 / 单题时限 / 路演时长 / 提词模式 / 演讲时长），确认后带着这份配置进入训练舱。 _(drawer · medium)_
+  - [实训历史与复盘入口](nodes/page-defense/nd-defense-history.md) `nd-defense-history`: 首屏下方的「往期实训」卡墙：5 条历史记录（模式 / 项目 / 得分 / 日期），点任意一条**直接跳到复盘报告屏**——是「不用重练也能看报告」的通道。 _(list · medium)_
+  - [赛前解构与靶向题库](nodes/page-defense/nd-defense-prep.md) `nd-defense-prep`: 正式开练前的「AI 评委预研报告」：3.3 秒解构动画之后，给出项目亮点、评委必抓疑点与 12 题预测题库——让学员带着「评委可能问什么」登台。 _(panel · medium)_
+  - [全真路演竞技台](nodes/page-defense/nd-defense-roadshow.md) `nd-defense-roadshow`: 16:9 大屏投影式路演演练场：倒计时在走、幻灯片在翻、提词在右、评委席在反应，右侧还能开真实摄像头看自己的台风——结束后无缝转入问答或直接出合并报告。 _(panel · high)_
+  - [问答对抗实训舱](nodes/page-defense/nd-defense-session.md) `nd-defense-session`: 一对一（或多评委）的问答对抗主战场：评委先开口、学员限时作答、AI 按轮次追问，右侧实时看自己的摄像头画面与评委画像，随时可交卷出报告——**全库唯一接入了真实语音识别与录音的对话界面**。 _(panel · high)_
+  - [答辩复盘报告](nodes/page-defense/nd-defense-report.md) `nd-defense-report`: 一次训练（或一条历史记录）的收尾报告：总分环 + 高层评语 + 分项得分 + 逐页控时图 + 评委原声点评 + 问答轮次回放 + 四象限行动矩阵，并提供「重新开始 / 重练一次」两个出口。 _(panel · high)_
 
 ## 素材与知识
 
 _全角色：取现成素材、查知识与评审规则_
 
-- [素材与资产管理](pages/page-assets.md): 备赛素材的生成与管理：PPT/文档/图像/视频资产的产出、版本与复用。 _(importance: medium · 待铺开)_
+- [素材与资产管理](pages/page-assets.md): 把项目交付物当代码库管理的三栏工作台：左栏文件树、中栏清单/多模态预览、右栏版本时间线——**「Git 无分支版本演进」的隐喻落到资产上**，是团队最新提交（`505a858 feat: add asset management system`）带来的新模块。 _(importance: medium · 已下钻)_
+  - [资产文件树（左栏）](nodes/page-assets/nd-assets-tree.md) `nd-assets-tree`: 资产系统的左栏导航：按**当前版本快照**渲染文件夹树与文件，支持「Go to file」搜索与逐层下钻——它是「看到的是哪个版本」这件事最直接的体现。 _(list · medium)_
+  - [资产清单视图（中栏）](nodes/page-assets/nd-assets-list.md) `nd-assets-list`: 中栏的资产总览：面包屑 + 视图切换（表格 / 卡片）+ 一键导出清单，把当前快照里的文件按文件夹或列表铺开，点进去即进入多模态预览。 _(table · medium)_
+  - [多模态资产预览](nodes/page-assets/nd-assets-preview.md) `nd-assets-preview`: 资产系统的**可演示核心**：同一份「资产」按类型渲染成六种形态——路演幻灯片大屏、视频播放器、带 CNAS 公章的检测报告、财务三张表 + BOM、Markdown 正文、源码/JSON——并可一键切到纯文本查看。 _(panel · high)_
+  - [版本时间线（右栏）](nodes/page-assets/nd-assets-timeline.md) `nd-assets-timeline`: 「项目资产管理系统（Git 模式）」的版本轴：按日期分组的提交记录流，可切换当前查看的版本快照、可提交新版本、可进入某一版本的资产状态——左中两栏的内容随之整体切换。 _(list · high)_
+  - [版本 Diff 对比弹层](nodes/page-assets/nd-assets-diff.md) `nd-assets-diff`: 点某条提交的「查看 diff」时弹出的差异查看器：上方列出该 commit 触及的文件（带 +A / ~M / -D 与增删行数），下方是带行号与配色的统一 diff——**Git 体验的最后一块拼图**。 _(modal · medium)_
+  - [新增资产归档弹窗](nodes/page-assets/nd-assets-addfile.md) `nd-assets-addfile`: 「把一份新材料归档进项目资产」的入口：填文件名、选目标目录与资产类型、写一句说明，确认后立刻在文件树/清单里出现（并自动打开预览）——**这是全页唯一的写操作**。 _(modal · medium)_
 - [知识库管理](pages/page-knowledge-base.md): 知识源接入、连接器状态与检索配置的双角色视图（校端 / 平台端）。 _(importance: medium · 待铺开)_
 
 ## 平台治理
@@ -77,7 +100,11 @@ _系统管理员：管人、管团队、管平台侧配置_
 
 _未登录用户：登录并按角色分流到各自默认工作区_
 
-- [登录分流](pages/page-login.md): 4 端登录入口，按角色（学员/导师/校管理员/系统管理员）分流到默认工作区。 _(importance: medium · 待铺开)_
+- [登录分流](pages/page-login.md): 未登录用户的唯一入口：先选「我是哪个端」，再填账号（或点预置卡免密进入），提交后由 App 按角色分流到该端的默认工作区——学生→AI 助手、校管→数据驾驶舱、导师→督导闭环、Admin→导师池。 _(importance: medium · 已下钻)_
+  - [四端身份选择卡](nodes/page-login/nd-login-portals.md) `nd-login-portals`: 登录页左栏的「我以什么身份进来」选择区：四张身份卡对应四个业务端，点选即决定后续表单形态、预置账号与登录后的落地工作区。 _(panel · high)_
+  - [所属高校选择器](nodes/page-login/nd-login-university.md) `nd-login-university`: 学生端与校管端必填的「所属高校」选择器：自带搜索的下拉列表 + 5 所快捷徽章 + 「搜不到就用自定义校名」出口，选中的校名最终写进会话的 `university` 字段。 _(form · medium)_
+  - [账号登录表单](nodes/page-login/nd-login-form.md) `nd-login-form`: 右栏的主体登录表单：按当前身份换文案，收集账号/密码/姓名/学院，做两项本地校验后构造 `UserSession` 交给上层分流——**全库唯一产生登录态的地方**。 _(form · high)_
+  - [一键免密登入测试账号](nodes/page-login/nd-login-presets.md) `nd-login-presets`: 表单下方的 8 个演示账号卡片（每端 2 个）：点一下直接进入对应端的工作区——**跳过表单与全部校验**，是 demo 演示与自测的主入口。 _(list · high)_
 
 ## 使用约定
 
