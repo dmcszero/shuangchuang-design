@@ -1,7 +1,7 @@
-# LLM Wiki 结构 Schema v0.8
+# LLM Wiki 结构 Schema v0.9
 
 > 本文是 wiki 结构的**唯一约定源**。任何节点/边/页面的新增与修改以本文为准。
-> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5~v0.8 为批 1/2/3 下钻与批 4 改名后的版本号推进，契约未变）
+> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5~v0.8 为批 1/2/3 下钻与批 4 改名后的版本号推进；**v0.9 为可视化层（结构图）改造：视图分层 + 图节点全集 + issues 通俗版**）
 
 ---
 
@@ -48,6 +48,20 @@ persona ──(page.personas 多值)──▶ page        placeholder（🧩 仅
 ```
 
 > `section → page` 的归属写在 `structure.json` 的 section 成员里；`page → node` 的归属写在 node 的 `page` 字段里。二者都不需要额外的边。
+
+### 1.1 视图分层与图节点口径（v0.9）
+
+**问题**：一张图同时承担「看全」与「看细」会两头落空——节点级全景 16 列 / 7090px 宽，看不全；靠悬停高亮看细，鼠标一移开就没了。
+
+| 层 | 默认 | 内容 | 真源 |
+|---|---|---|---|
+| **总览层** | ✅ | 15 个 page + 页面↔页面**聚合关系**（带条数与缺口数）+ 壳层/弹层 | **实时折叠**：由节点级边按 `owning_page()` 聚合，同页内的边只计数不画线——无独立真源，不新增人工维护点 |
+| **全景层** | — | 全部 node / page / modal / shell + 全部节点级边 | `structure.json` + `edges.json`（v0.3 起原视图） |
+| **聚焦层** | — | 选中项的 **1-hop ** 出入关系 + 同页兄弟模块（含未连线者） | 前端现算，画在画布下方；**点选后钉住**，不随鼠标移开消失 |
+
+**图节点口径（v0.9 修订）**：图上**登记即入图**——page / node / modal / shell 全部有卡片，**不要求有边**；无任何连线的模块以虚线灰卡呈现（`graph.nodes[].orphan`）。理由：只画边端点会让 23 个已登记模块在图上消失（整个 `page-mentors-pool` / `page-users` / `page-teams` 的节点都不可见），并使 `issues[].where` 指向它们时点击无反应（旧版 40 条 issue 中 15 条不可达）。
+
+**过滤与降噪（全景层/总览层共用）**：端过滤（`personas`，v0.9 起真正被消费）、连线过滤（全部 / 只看缺口 / 只看跨列）、列折叠。
 
 ---
 
@@ -178,6 +192,21 @@ sources:
 - `category = 产品决策` 的条目（issues + 带标记的边）由 `gaps` 命令分流生成 **`wiki/decisions.md`《待拍板清单》**，按 severity 排序，含背景 + 建议 + 卡点；技术实现 / 数据口径类只留在 `gaps.md`，不混入清单。
 - 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后 decisions.md **一次性全量交付**，不逐批对齐。
 
+### 5.4 issues 通俗版字段（v0.9，可选）
+
+`issues[].plain` 是**解释层**——给非工程读者（上司 / 产品 / 业务同事）读的版本，**原始字段一字不改**（一一并存，不是替换）。
+
+| 子字段 | 必填 | 写什么 |
+|---|---|---|
+| `oneLine` | ✅ | 一句话说清这里怎么了（**不出现代码标识符 / 文件名 / 行号**） |
+| `symptom` | 建议 | 页面上会看到什么现象（用户视角） |
+| `impact` | 建议 | 会造成什么后果 / 谁受影响 |
+| `ask` | 建议 | 需要谁做什么（拍板口径 / 怎么修） |
+
+- 消费方：`module-map.html` 详情面板的「**通俗版 / 原始数据**」双页签（默认通俗版）、`decisions.md` 逐条详情、`gaps.md` 的 issues 表列。
+- **术语解释不写进正文**：走独立真源 **`glossary.json`**（`term` → `plain` + `kind`），详情面板在「原始数据」下方自动列出命中术语的「涉及术语」对照表。
+- 校验（E3）：`plain` 存在时必须有 `oneLine`（error）；`symptom` / `impact` / `ask` 为空仅 warning（允许分批补）。
+
 ---
 
 ## 6. 校验规则（在 v1 的 A~D 上扩展）
@@ -200,6 +229,9 @@ sources:
 | | **D5** | node 第 5 节与 `edges.json` 一致 | error |
 | E 缺口 | **E1** | 汇总所有非 `implemented` 边 | 报告 |
 | | **E2**（v0.4） | issues 必须有 `category` / `owner` 且 ∈ 枚举；边若带同名字段也须 ∈ 枚举（见 5.3） | error |
+| | **E3**（v0.9） | `issues[].where` 必须指向已登记的 page / node / modal / shell；带本库前缀（`page-`/`nd-`/`modal-`/`shell-`/`ph-`）却找不到=**error**，非本库实体=**warning**（按外部引用处理，图上无卡片） | error / warning |
+| | **E3**（v0.9） | `plain` 若存在必须含 `oneLine`（见 5.4） | error |
+| | **E3**（v0.9） | `glossary.json`：`term` 必填且唯一、`plain` 必填 | error |
 
 ---
 
@@ -218,6 +250,8 @@ sources:
 | 仅 2 ✅ | 不建（内部实现细节，不是交互单元） |
 
 **反例（不建 node）**：纯样式容器、单条静态文案、单独图标、纯布局网格。
+
+> **v0.9 起**：第 3 问（是否至少 1 条边）**不再决定上图与否**——已登记节点全部上图，无边者在图上以虚线灰卡呈现（§1.1）。第 3 问仍用于判断「它是不是一个真正的交互单元」，且**无边本身就是信号**：要么漏登记了边，要么该单元与其余部分脱节。
 
 **自检**：一个 page 拆出的 node 若 > 12 个，说明粒度切碎了——回到"用户能不能指认"重切。
 
@@ -242,7 +276,7 @@ sources:
 | `validate` | 扩展 A5~A7 / B5 / C5 / D1~D5 | 控制台报告 + 非零退出码 |
 | `sync-edges` | 把 `edges.json` 渲染进各 node 第 5 节 | 覆盖 `<!-- EDGES:BEGIN/END -->` |
 | `index` | 生成 `llms.txt`（含 node 清单） | `wiki/llms.txt` |
-| `map` | 生成结构图（node 为点，边带 type/status 着色） | `wiki/module-map.html` + `wiki/site/index.html` |
+| `map` | 生成结构图（总览层/全景层/聚焦层三层 + 端与连线过滤 + 列折叠） | `wiki/module-map.html` + `wiki/site/index.html` |
 | `gaps` ★ | 汇总非 `implemented` 边，按 `blockedBy` 聚合；并分流 `category=产品决策` 条目生成《待拍板清单》 | `wiki/gaps.md` + `wiki/decisions.md`（v0.4） |
 
 > `map` 的 HTML 模板与图布局由同目录 `build_map.py` 单独承担（单一模板源），`gen_wiki_tools.py map` 只做入口转发——避免 40 KB 模板双份漂移。产物文件名以实际落盘为准：`module-map.html`（发布副本 `site/index.html`，入口落在 `/`）。
@@ -264,8 +298,8 @@ sources:
 | `wiki/module-map.html` · `wiki/site/index.html` | 结构图（本地预览 + 发布副本，内容一致） | ✅ 已落盘 |
 | ~~`wiki/validate_pilot.py`~~ | 试点校验器 | 🗑 **2026-09-14 删除**（09-13 退役后仍硬编码旧基线路径 `shuangchuang-design-SY`，误用风险大于留存价值；副本见 SY 只读镜像与 `RanZhuang/2026-09/AI生成/0914-11-SY-wiki-v2备份/`，或本仓 git 历史 `acebad6`） |
 
-校验结果：**section 8 · page 15（已下钻 15 / 待铺开 0）· node 95 · 边 98（86 implemented / 11 intended / 1 undefined）· issues 41；0 error / 7 warning**
-（warning 全部为 D4「有去无回」的单向跳转边——驾驶舱/初筛页等导航出口无反向入口，属预期；A3「待铺开页」汇总提示已随批 3 完成而消失；本行随每批下钻重算）
+校验结果：**section 8 · page 15（已下钻 15 / 待铺开 0）· node 95 · 图上模块 117（含未连线 32）· 边 98（86 implemented / 11 intended / 1 undefined）· issues 40（全部带通俗版）· 术语表 58 条；0 error / 8 warning**
+（warning = 7 条 D4「有去无回」单向跳转边 + 1 条 E3「外部引用」（issue `issue-product-framework-incremental-growth` 的 `where` 指向 wiki 仓自身，不在本库图上）；A3「待铺开页」汇总提示已随批 3 完成而消失；本行随每批下钻重算）
 
 > 其余 13 个视图按**批次规划**铺开（2026-09-14《0914-15-LLM-Wiki框架合流变更方案》§五，学生端优先、逐端推进）：
 >
@@ -289,6 +323,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.9 ✅ | **结构图改造（可视化层，数据契约向后兼容）**：①**视图分层**——新增总览层（page 级聚合关系，默认视图，9 列 / 3926px，由节点级边实时折叠得出）与聚焦层（点选后钉住显示 1-hop 出入关系 + 同页兄弟），原 16 列节点级视图保留为「全景层」；②**图节点口径改正**——图上改为「登记即入图」，未连线模块以虚线灰卡呈现（旧版只画边端点，95 个节点中 23 个不可见）；③**issues 新增 `plain` 通俗版字段**（§5.4，40 条全写，原字段一字未改），新增术语真源 **`glossary.json`**（58 条，详情面板自动列「涉及术语」）；④新增校验 **E3**（`where` 可定位 + `plain.oneLine` + glossary 完整性）；⑤交互修复：issue 条目补点击暗示、点击后滚动定位并高亮模块（旧版 15/40 条不可达、25 条无可见反馈），新增端过滤 / 连线过滤（全部·只看缺口·只看跨列）/ 列折叠；⑥`gaps` 命令产出的 `decisions.md` 与 `gaps.md` 同步带通俗版。 |
 | 2026-09-14 | v0.8 ✅ | **批 4 交付总装（改名动作先行）**：①**`page-guidance` 改名「材料打磨工作台」**（原「全链路指导工作台」）——`structure.json` 的 title/description/frameworkRef/nodeScopeNote 按「专注可编辑文本材料的编辑打磨、L1~L6 阶段跨模块不归属本页」口径改写，页面文档 title 与「一句话定位」改写并新增「改名与定位口径」段，`nd-guidance-taskbar` / `nd-guidance-version-drawer` 两处定位按新名改写，跨页联动引用（page-coach / page-defense / page-workbench / page-assets）同步；**源码内文案仍写作「全链路指导工作台」（如 `ProjectMemberWorkbench.tsx:936` / `:950-952`）属源码事实，保留不改**；②issue `issue-product-guidance-rename-material-workbench` 已随执行**关闭并移除**（改名已完成，不再是缺口；残余的「L1~L6 唯一阶段口径」沿用 `issue-guidance-stage-taxonomy-mismatch` 跟）。③交付物：《待拍板清单（交付版）》《双创智能体设计方案说明书》+ 结构图重生成（发布动作见交付说明）。 |
 | 2026-09-14 | v0.7 ✅ | **批 3 治理与复用页下钻完成（3 页 / 16 节点）→ 全库 15 页全部 drilled**：`page-teams`（4）· `page-users`（5）· `page-knowledge-base`（7，含 admin 端平台知识库）由 `pending` → `drilled`；node 79 → **95**、边 89 → **98**（新增 9 条，其中 intended 4：账号体系应入权限系统 / 知识库应作 AI 检索底座 / 平台库应下发校端 / （见 edges）、reuse 1 条：本页与工作台共享 MOCK_PROJECT_TEAMS）、issues 33 → **41**（新增 8 条）；`structure.json`：3 页补 `nodeCount`/`nodeScopeNote`，`page-knowledge-base` 补 `mockPlatformKnowledgeBase.ts` 与 related_pages。**本批口径要点**：①团队页指标卡全为由 `teams.length + 77` 推导的假数据（issue-teams-fake-metrics）；②用户页三写死一半真且账号体系是孤岛（issue-users-accounts-isolated / issue-users-auto-email）；③知识库页指标全部真实派生（与前者相反），但上传 chunks 为随机数、预览要点写死（issue-kb-preview-hardcoded-chunks）、与 AI 助手零连接（issue-kb-not-connected-to-coach）；④第二例「一页两端」（知识库）与第二例「跨页共享数据」（MOCK_PROJECT_TEAMS）已登记为 reuse 边。**本批完成后 A3「待铺开页」警告归零，全库只剩 D4 单向跳转边 warning（7 条）。** |
 | 2026-09-14 | v0.6 ✅ | **批 2 校管端下钻完成（6 页 / 34 节点）**：`page-cockpit`（6 节点）· `page-screening`（4）· `page-mentorship`（5）· `page-supervision`（9）· `page-milestones`（4）· `page-mentors-pool`（6，含 admin 端平台导师池）由 `pending` → `drilled`；node 45 → **79**、边 59 → **89**（新增 30 条，含 intended 2：预约导师应创建工单、邀请响应应回传学校端）、issues 24 → **33**（新增 9 条，全部带 category/owner）；`structure.json`：6 页补 `nodeCount` / `nodeScopeNote`，`page-mentors-pool` 的 related_pages 补 page-supervision。**本批口径要点**：①驾驶舱「演示数字 vs 真实派生」同屏矛盾（issue-cockpit-static-metrics）；②初筛全景表固定 17 列且按下标取数，跨赛道必错位（issue-screening-fixed-columns-by-index）；③督导页是全库唯一「跨角色真实写回」闭环（与 page-workbench 共享 workOrders，已补双向边）；④导师池「一页两端」数据完全不互通（issue-mentors-pool-two-ends-not-synced）；⑤里程碑阶段筛选只影响一个数字（issue-milestones-filter-no-effect）。 |

@@ -54,6 +54,7 @@ PAGES_DIR = WIKI_DIR / "pages"
 NODES_DIR = WIKI_DIR / "nodes"
 STRUCTURE_FILE = WIKI_DIR / "structure.json"
 EDGES_FILE = WIKI_DIR / "edges.json"
+GLOSSARY_FILE = WIKI_DIR / "glossary.json"
 LLMS_TXT = WIKI_DIR / "llms.txt"
 GAPS_MD = WIKI_DIR / "gaps.md"
 DECISIONS_MD = WIKI_DIR / "decisions.md"
@@ -602,6 +603,56 @@ def cmd_validate(args: argparse.Namespace) -> int:
         if e.get("owner") is not None and e.get("owner") not in VALID_ISSUE_OWNER:
             rep.error("[E2] edge %s：owner=%r 不在枚举内" % (eid, e.get("owner")))
 
+    # ---- E3 issue 定位与通俗版（v0.9）：where 必须指向已登记实体；plain 若写则须完整 ----
+    # 背景：v0.9 前 issues[].where 可以指向画布上不存在的实体（页面自身不是边端点 / 节点无任何连线），
+    # 导致 module-map 里点 issue 无声无息（实测 40 条中 15 条不可达）。此处把「可定位」变成契约。
+    modal_ids = {m.get("id") for m in structure.get("modals", [])}
+    shell_ids = {s.get("id") for s in structure.get("shellComponents", [])}
+    ph_ids = {p.get("id") for p in structure.get("placeholders", [])}
+    node_ids = set(w.nodes)
+    known_prefix = ("page-", "nd-", "modal-", "shell-", "ph-")
+    for i in w.issues:
+        iid = i.get("id", "<no-id>")
+        wh = str(i.get("where", "") or "")
+        if not wh:
+            rep.error("[E3] issue %s：缺少 `where`（必须指向 page / node / modal / shell）" % iid)
+        elif not (wh in pages or wh in node_ids or wh in modal_ids or wh in shell_ids or wh in ph_ids):
+            if wh.startswith(known_prefix):
+                rep.error("[E3] issue %s：where=%r 不是任何已登记的 page / node / modal / shell" % (iid, wh))
+            else:
+                rep.warn("[E3] issue %s：where=%r 不是本库实体（按外部引用处理，结构图上无卡片）" % (iid, wh))
+        pl = i.get("plain")
+        if pl is not None:
+            if not isinstance(pl, dict):
+                rep.error("[E3] issue %s：plain 必须是对象" % iid)
+            else:
+                if not pl.get("oneLine"):
+                    rep.error("[E3] issue %s：plain 缺 `oneLine`（通俗版至少要有「一句话」）" % iid)
+                for k in ("symptom", "impact", "ask"):
+                    if not pl.get(k):
+                        rep.warn("[E3] issue %s：plain.%s 为空（通俗版四段建议写全）" % (iid, k))
+
+    # ---- E3 glossary.json 术语表（可选真源：只解释、不改原文） ----
+    if GLOSSARY_FILE.exists():
+        try:
+            gdoc = json.loads(GLOSSARY_FILE.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            rep.error("[E3] glossary.json 解析失败：%s" % exc)
+        else:
+            seen_terms: set[str] = set()
+            for t in gdoc.get("terms", []):
+                tm = str(t.get("term", "") or "")
+                if not tm:
+                    rep.error("[E3] glossary.json：存在缺 term 的条目")
+                elif tm in seen_terms:
+                    rep.error("[E3] glossary.json：term 重复：%s" % tm)
+                else:
+                    seen_terms.add(tm)
+                if not t.get("plain"):
+                    rep.error("[E3] glossary.json：term %s 缺 plain 释义" % (tm or "<空>"))
+            rep.stats["术语表条目"] = len(gdoc.get("terms", []))
+            rep.stats["带通俗版的 issue"] = sum(1 for i in w.issues if i.get("plain"))
+
     # ---- E1 缺口汇总（报告区，不阻断） ----
     gaps = [e for e in w.edges if e.get("status") != "implemented"]
     rep.stats["section 数"] = len(sections)
@@ -978,17 +1029,18 @@ def cmd_gaps(args: argparse.Namespace) -> int:
     if w.issues:
         out.append("## issues（节点内缺口，未落成边）")
         out.append("")
-        out.append("| id | 位置 | 状态 | severity | 问题 | 卡点 |")
-        out.append("|---|---|---|---|---|---|")
+        out.append("| id | 位置 | 状态 | severity | 问题 | 一句话（通俗版） | 卡点 |")
+        out.append("|---|---|---|---|---|---|---|")
         for i in sorted(w.issues, key=lambda x: (sev_rank.get(str(x.get("severity")), 9), str(x.get("id")))):
             out.append(
-                "| `%s` | %s | %s | %s | %s | %s |"
+                "| `%s` | %s | %s | %s | %s | %s | %s |"
                 % (
                     i.get("id"),
                     w.label(i.get("where", "")),
                     i.get("status", ""),
                     i.get("severity", ""),
                     str(i.get("title", "")).replace("|", "\\|"),
+                    str((i.get("plain") or {}).get("oneLine", "")).replace("|", "\\|"),
                     str(i.get("blockedBy", "")).replace("|", "\\|"),
                 )
             )
@@ -1073,6 +1125,7 @@ def _write_decisions(w: Wiki, sev_rank: dict[str, int]) -> int:
             "background": str(i.get("detail", "")),
             "suggestion": str(i.get("expected") or i.get("issue") or ""),
             "blockedBy": str(i.get("blockedBy", "")),
+            "plain": i.get("plain") if isinstance(i.get("plain"), dict) else {},
         })
     for e in w.edges:
         if e.get("category") != "产品决策":
@@ -1088,6 +1141,7 @@ def _write_decisions(w: Wiki, sev_rank: dict[str, int]) -> int:
             "background": str(e.get("logic", "")),
             "suggestion": str(e.get("issue") or e.get("expected") or ""),
             "blockedBy": str(e.get("blockedBy", "")),
+            "plain": {},
         })
     entries.sort(key=lambda x: (sev_rank.get(x["severity"], 9), x["id"]))
 
@@ -1106,6 +1160,10 @@ def _write_decisions(w: Wiki, sev_rank: dict[str, int]) -> int:
     out.append(
         "> 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。"
         "owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。"
+    )
+    out.append(
+        "> 可读性（v0.9）：逐条详情先给**通俗版**（一句话 / 现象 / 影响 / 需要谁做什么，取自 `edges.json` 的 `plain` 字段），"
+        "再附一字未改的「背景（原始记录）」供工程侧核对。"
     )
     out.append(">")
     out.append(
@@ -1132,8 +1190,17 @@ def _write_decisions(w: Wiki, sev_rank: dict[str, int]) -> int:
         out.append("")
         out.append("- 来源：`%s`（%s）｜位置：%s" % (x["id"], x["kind"], x["where"]))
         out.append("- owner：**%s**｜severity：**%s**" % (x["owner"], x["severity"]))
+        pl = x.get("plain") or {}
+        if pl.get("oneLine"):
+            out.append("- **一句话（通俗版）**：%s" % pl["oneLine"])
+            if pl.get("symptom"):
+                out.append("- **现象**：%s" % pl["symptom"])
+            if pl.get("impact"):
+                out.append("- **影响**：%s" % pl["impact"])
+            if pl.get("ask"):
+                out.append("- **需要谁做什么**：%s" % pl["ask"])
         if x["background"]:
-            out.append("- **背景**：%s" % x["background"])
+            out.append("- **背景（原始记录）**：%s" % x["background"])
         if x["suggestion"]:
             out.append("- **建议 / 期望**：%s" % x["suggestion"])
         if x["blockedBy"]:

@@ -1,0 +1,305 @@
+{
+  "schemaVersion": "0.1",
+  "generatedAt": "2026-09-14",
+  "baseline": "shuangchuang-design-main",
+  "description": "术语对照真源。用途：issue / 边详情中出现的设计专名与代码标识符，在「原始版」详情下方自动列成「涉及术语」对照表，让非工程读者也能读懂原始数据。匹配规则：区分大小写的朴素子串匹配；只登记唯一性强、不会误命中的术语（不用 state / props / content 这类通用词）。本文件只做解释，不修改任何原文。",
+  "kindEnum": [
+    "常量",
+    "状态",
+    "数据结构",
+    "组件",
+    "术语"
+  ],
+  "terms": [
+    {
+      "term": "INITIAL_STAGE_ITEMS",
+      "plain": "阶段条的数据（页面顶部 L1~L6 那排阶段指示）",
+      "kind": "常量"
+    },
+    {
+      "term": "stepper",
+      "plain": "阶段条（页面上那排可点的阶段格子）",
+      "kind": "组件"
+    },
+    {
+      "term": "FILE_CHANGE_LOG",
+      "plain": "文件更改记录（工作台大事记时间轴的数据）",
+      "kind": "常量"
+    },
+    {
+      "term": "PENDING_ARCHIVE_ITEMS",
+      "plain": "待归档清单（待归档区里那几条产物）",
+      "kind": "常量"
+    },
+    {
+      "term": "AI_GENERATED_FILES",
+      "plain": "AI 生成的文件列表",
+      "kind": "常量"
+    },
+    {
+      "term": "FILE_SOURCE",
+      "plain": "材料来源对照表（文件 → 来源标签）",
+      "kind": "常量"
+    },
+    {
+      "term": "killerQuestions",
+      "plain": "评委可能提出的刁钻问题清单",
+      "kind": "数据结构"
+    },
+    {
+      "term": "logicGaps",
+      "plain": "逻辑断点清单（体检结果之一）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "tier1Scores",
+      "plain": "一级指标得分（评审指标的第一层）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "tier2Scores",
+      "plain": "二级指标得分（一级指标下再细分的那层）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "bpContent",
+      "plain": "BP 正文（当前在工作台里编辑的那份文本）",
+      "kind": "状态"
+    },
+    {
+      "term": "SAMPLE_VERSIONS",
+      "plain": "示例版本数据（工作台预置的几个历史版本）",
+      "kind": "常量"
+    },
+    {
+      "term": "viewingVersionId",
+      "plain": "当前正在查看的版本编号",
+      "kind": "状态"
+    },
+    {
+      "term": "handleSaveSnapshot",
+      "plain": "「保存快照」的处理逻辑",
+      "kind": "术语"
+    },
+    {
+      "term": "ProjectVersion",
+      "plain": "项目版本（材料打磨工作台里的历史版本记录）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "ProjectItem",
+      "plain": "项目条目（一个项目的完整数据）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "DefensiveSession",
+      "plain": "答辩会话（一次模拟答辩的过程数据）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "guidanceTypes",
+      "plain": "工作台的类型定义（规定数据结构长什么样）",
+      "kind": "术语"
+    },
+    {
+      "term": "activeSpace",
+      "plain": "备赛空间（原设计的项目上下文：当前无入口、恒为空）",
+      "kind": "状态"
+    },
+    {
+      "term": "currentMemberProject",
+      "plain": "当前登录学生所属的项目",
+      "kind": "状态"
+    },
+    {
+      "term": "activeTeamProjectId",
+      "plain": "当前正在查看的项目编号",
+      "kind": "状态"
+    },
+    {
+      "term": "selectedUniversity",
+      "plain": "AI 助手页自己维护的「当前高校」",
+      "kind": "状态"
+    },
+    {
+      "term": "DEMO_PRESET_ACCOUNTS",
+      "plain": "登录页的预置演示账号（一键免密登入用的那几个）",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_USERS",
+      "plain": "用户管理的示例账号数据",
+      "kind": "常量"
+    },
+    {
+      "term": "mockProjects",
+      "plain": "项目示例数据（demo 里仅 8 条）",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_KNOWLEDGE_BASES",
+      "plain": "校端知识库示例数据",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_PLATFORM_KNOWLEDGE_BASES",
+      "plain": "平台知识库示例数据（admin 端）",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_PLATFORM_MENTORS",
+      "plain": "平台导师示例数据（admin 端）",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_PROJECT_TEAMS",
+      "plain": "团队示例数据（工作台与团队管理两页共用同一份）",
+      "kind": "常量"
+    },
+    {
+      "term": "ALL_PROJECT_DELIVERABLES",
+      "plain": "AI 助手右栏的产物清单（写死的 8 项）",
+      "kind": "常量"
+    },
+    {
+      "term": "ROADSHOW_SLIDES_DATA",
+      "plain": "路演幻灯片数据（资产页那一套）",
+      "kind": "常量"
+    },
+    {
+      "term": "MOCK_ROADSHOW_SLIDES",
+      "plain": "路演幻灯片数据（答辩页那一套，与资产页互不相干）",
+      "kind": "常量"
+    },
+    {
+      "term": "RECENT_DEFENSE_HISTORY",
+      "plain": "答辩历史记录（5 条常量）",
+      "kind": "常量"
+    },
+    {
+      "term": "chapterDiagnosis",
+      "plain": "章节诊断数据（供应给浅度原子卡，当前无人提供）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "moatChecklist",
+      "plain": "壁垒核查表数据（同上，当前无人提供）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "AtomicCallCard",
+      "plain": "浅度原子调用卡（4.2 阶段的诊断卡）",
+      "kind": "组件"
+    },
+    {
+      "term": "mentionedFiles",
+      "plain": "被 @ 引用的项目文件（只用于显示标签，不参与回答）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "chunkCount",
+      "plain": "切片数（文档被切成的检索片段数量）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "hitCount",
+      "plain": "命中数（这些片段被检索命中的次数）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "DeepCallConfirmModal",
+      "plain": "深度调用确认弹窗（永远打不开的那个）",
+      "kind": "组件"
+    },
+    {
+      "term": "SharedWorkspaceDrawer",
+      "plain": "旧版共享工作台抽屉（无入口、打不开）",
+      "kind": "组件"
+    },
+    {
+      "term": "RightWorkspacePanel",
+      "plain": "右栏工作区面板（现在实际在用的那套）",
+      "kind": "组件"
+    },
+    {
+      "term": "isWorkspaceOpen",
+      "plain": "旧抽屉的开关状态（只会被置为关闭）",
+      "kind": "状态"
+    },
+    {
+      "term": "chatCollapsed",
+      "plain": "右栏折叠开关（没有折叠按钮）",
+      "kind": "状态"
+    },
+    {
+      "term": "coachIntent",
+      "plain": "右栏 AI 的阶段意图（恒为 L4）",
+      "kind": "状态"
+    },
+    {
+      "term": "INITIAL_COACH_SESSIONS",
+      "plain": "右栏 AI 的预置会话（导入即废弃）",
+      "kind": "常量"
+    },
+    {
+      "term": "bpUploaded",
+      "plain": "BP 是否已上传的标记（只写不读）",
+      "kind": "状态"
+    },
+    {
+      "term": "trackFilter",
+      "plain": "赛道筛选条件（声明后从未使用）",
+      "kind": "状态"
+    },
+    {
+      "term": "ipReady",
+      "plain": "知识产权就绪数（算出来但没用）",
+      "kind": "状态"
+    },
+    {
+      "term": "scoreChangeDelta",
+      "plain": "提分幅度（专家复核前后分数之差）",
+      "kind": "数据结构"
+    },
+    {
+      "term": "Grounding Citations",
+      "plain": "原文引证（AI 回答时标注依据出自哪份文件）",
+      "kind": "术语"
+    },
+    {
+      "term": "RAG",
+      "plain": "检索增强生成（先查资料再回答的 AI 做法）",
+      "kind": "术语"
+    },
+    {
+      "term": "CAS",
+      "plain": "统一身份认证（学校一次登录通用各系统的方案）",
+      "kind": "术语"
+    },
+    {
+      "term": "OAuth2.0",
+      "plain": "一种通用的第三方授权登录协议",
+      "kind": "术语"
+    },
+    {
+      "term": "selectedTrack",
+      "plain": "初筛页当前选中的赛道（默认高教主赛道-创意组）",
+      "kind": "状态"
+    },
+    {
+      "term": "onNavigateTab",
+      "plain": "切换页面的跳转动作（当前只传页面名、不带上下文）",
+      "kind": "术语"
+    },
+    {
+      "term": "handleOpenAssignMentor",
+      "plain": "打开导师调度页的动作（会丢掉传入的项目）",
+      "kind": "术语"
+    },
+    {
+      "term": "totalTargetProjects",
+      "plain": "任务下发的目标项目数（写死 15/28/82）",
+      "kind": "常量"
+    }
+  ]
+}
