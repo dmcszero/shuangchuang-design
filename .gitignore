@@ -9,5 +9,7 @@ coverage/
 
 # 本仓专属：本体工具链构建产物（ontology/tools 重新生成，无需入库）
 ont_generated/
+__pycache__/
+*.pyc
 
 # 注：temp_repo/ 由上游团队仓跟踪（上游含 39 个受控文件），本仓跟随上游，不再忽略。
