@@ -1,7 +1,7 @@
-# LLM Wiki 结构 Schema v0.5
+# LLM Wiki 结构 Schema v0.6
 
 > 本文是 wiki 结构的**唯一约定源**。任何节点/边/页面的新增与修改以本文为准。
-> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5 为学生端批 1 下钻后的版本号推进，契约未变）
+> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5/v0.6 为批 1/批 2 下钻后的版本号推进，契约未变）
 
 ---
 
@@ -264,8 +264,8 @@ sources:
 | `wiki/module-map.html` · `wiki/site/index.html` | 结构图（本地预览 + 发布副本，内容一致） | ✅ 已落盘 |
 | ~~`wiki/validate_pilot.py`~~ | 试点校验器 | 🗑 **2026-09-14 删除**（09-13 退役后仍硬编码旧基线路径 `shuangchuang-design-SY`，误用风险大于留存价值；副本见 SY 只读镜像与 `RanZhuang/2026-09/AI生成/0914-11-SY-wiki-v2备份/`，或本仓 git 历史 `acebad6`） |
 
-校验结果：**section 8 · page 15（已下钻 6 / 待铺开 9）· node 45 · 边 59（52 implemented / 6 intended / 1 undefined）· issues 24；0 error / 1 warning**
-（唯一 warning = 9 个 page 尚未铺开的汇总提示；本行随每批下钻重算——批 1（学生端 4 页）完成后数值如上）
+校验结果：**section 8 · page 15（已下钻 12 / 待铺开 3）· node 79 · 边 89（80 implemented / 8 intended / 1 undefined）· issues 33；0 error / 8 warning**
+（warning = 3 页待铺开汇总 + 5 条「有去无回」的跳转边（驾驶舱/初筛页的单向导航，属预期）；本行随每批下钻重算——批 2（校管端 6 页）完成后数值如上）
 
 > 其余 13 个视图按**批次规划**铺开（2026-09-14《0914-15-LLM-Wiki框架合流变更方案》§五，学生端优先、逐端推进）：
 >
@@ -289,6 +289,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.6 ✅ | **批 2 校管端下钻完成（6 页 / 34 节点）**：`page-cockpit`（6 节点）· `page-screening`（4）· `page-mentorship`（5）· `page-supervision`（9）· `page-milestones`（4）· `page-mentors-pool`（6，含 admin 端平台导师池）由 `pending` → `drilled`；node 45 → **79**、边 59 → **89**（新增 30 条，含 intended 2：预约导师应创建工单、邀请响应应回传学校端）、issues 24 → **33**（新增 9 条，全部带 category/owner）；`structure.json`：6 页补 `nodeCount` / `nodeScopeNote`，`page-mentors-pool` 的 related_pages 补 page-supervision。**本批口径要点**：①驾驶舱「演示数字 vs 真实派生」同屏矛盾（issue-cockpit-static-metrics）；②初筛全景表固定 17 列且按下标取数，跨赛道必错位（issue-screening-fixed-columns-by-index）；③督导页是全库唯一「跨角色真实写回」闭环（与 page-workbench 共享 workOrders，已补双向边）；④导师池「一页两端」数据完全不互通（issue-mentors-pool-two-ends-not-synced）；⑤里程碑阶段筛选只影响一个数字（issue-milestones-filter-no-effect）。 |
 | 2026-09-14 | v0.5 ✅ | **批 1 学生端下钻完成（4 页 / 27 节点）**：`page-login`（4 节点）· `page-coach`（10）· `page-defense`（7）· `page-assets`（6）由 `pending` → `drilled`，各新增 `pages/<id>.md`；node 18 → **45**、边 23 → **59**（新增 36 条，其中 intended 2：附件不参与推理、4.3 深度调用应跳 page-defense）、issues 9 → **24**（新增 11 条，全部带 category/owner）；`structure.json`：page-defense 的 `relevant_files` 由 7 补到 12（实测另有 DefenseVideoWindow / RoadshowDefenseStage / RoadshowCombinedReportModal / DefenseCharts / defenseTypes），4 页补 `nodeCount` / `nodeScopeNote`（page-assets 的 title 按侧栏文案写作「项目资产管理系统（Git 模式）」）。**口径复核（硬约束 1/3）**：`page-workbench` 补「单项目绑定 → demo 项目切换仅演示、不建『项目切换』节点」、`page-guidance` 补「右栏 AI 教练 = 内嵌辅助栏、不属 1.1」两条口径描述（**未改任何行号引用**）。契约未变，版本号推进仅为标记进度。 |
 | 2026-09-14 | v0.4 ✅ | **框架合流（批 0）**：新增 persona 维度（4 端 `p-*`，§1 正交维度表）+ `placeholders[]` 占位（`ph-*`，只登记不建页）+ page 增 `personas`/`frameworkRef` 字段；edges.json issues 分流（`category`/`owner`，§5.3）+ 新增 4 条产品规则 issue；工具链新增校验 **A8**（persona 引用完整性）与 **E2**（分流字段必填），`gaps` 扩展生成 `wiki/decisions.md`《待拍板清单》；§9 铺开计划改为批 0~4。口径修正：`p-student.defaultPage` 按源码定为 `page-coach`（App.tsx:59/323-324，变更方案原写 page-workbench）、`p-mentor.defaultPage` 为 `page-supervision`（App.tsx:60，方案原写 page-mentorship）——均按「源码为唯一事实源」改正。依据：《0914-15-LLM-Wiki框架合流变更方案》 |
 | 2026-09-14 | v0.3.4 ✅ | 删除退役的 `wiki/validate_pilot.py`（防误跑得假绿；历史副本见 SY 只读镜像与 0914 备份，本仓 git 历史 `acebad6` 亦可取回）；本文件 §9 表格与 `wiki-drilldown` skill 坑条目同步改口 |

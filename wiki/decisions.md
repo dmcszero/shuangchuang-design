@@ -4,7 +4,7 @@
 > 口径：只收 `category = 产品决策` 的条目（issues[] 与带该标记的边），按 severity 排序（high → medium → low）；技术实现 / 数据口径类问题不混入本清单，见 `wiki/gaps.md`。
 > 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。
 >
-> 统计：共 12 条（上司拍板 6 · 工程自决 2 · 待产品定义 4）。
+> 统计：共 13 条（上司拍板 7 · 工程自决 2 · 待产品定义 4）。
 
 ## 汇总表
 
@@ -16,12 +16,13 @@
 | 4 | 右栏 AI 教练有 4 个 state 声明后从未被消费（`issue-guidance-dead-coach-state`） | 右栏 AI 备赛伴学教练（`nd-guidance-coach`） | 上司拍板 | medium |
 | 5 | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）（`issue-guidance-stage-taxonomy-mismatch`） | 全链路指导工作台（`page-guidance`） | 上司拍板 | medium |
 | 6 | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验（`issue-login-sso-placeholder`） | 登录分流（`page-login`） | 待产品定义 | medium |
-| 7 | 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）（`issue-product-guidance-rename-material-workbench`） | 全链路指导工作台（`page-guidance`） | 上司拍板 | medium |
-| 8 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
-| 9 | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构（`issue-coach-spaces-dead`） | 会话历史与新建对话（`nd-coach-sessions`） | 待产品定义 | low |
-| 10 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
-| 11 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
-| 12 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
+| 7 | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）（`issue-mentors-pool-two-ends-not-synced`） | 导师池管理（`page-mentors-pool`） | 上司拍板 | medium |
+| 8 | 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）（`issue-product-guidance-rename-material-workbench`） | 全链路指导工作台（`page-guidance`） | 上司拍板 | medium |
+| 9 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
+| 10 | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构（`issue-coach-spaces-dead`） | 会话历史与新建对话（`nd-coach-sessions`） | 待产品定义 | low |
+| 11 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
+| 12 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
+| 13 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
 
 ## 逐条详情
 
@@ -71,7 +72,15 @@
 - **建议 / 期望**：产品化需明确：接哪套统一身份认证（校内 CAS / OAuth2.0 / 学工号）、四端身份是否由认证结果而非用户自选决定、预置免密卡在非演示环境是否保留。
 - **卡点**：需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。
 
-### 7. 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）
+### 7. 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）
+
+- 来源：`issue-mentors-pool-two-ends-not-synced`（issue）｜位置：导师池管理（`page-mentors-pool`）
+- owner：**上司拍板**｜severity：**medium**
+- **背景**：`page-mentors-pool` 在 admin 端渲染 `PlatformMentorPoolManagement`（自持 `MOCK_PLATFORM_MENTORS`，**无任何 props、改动不出组件**），在校管端渲染 `MentorPoolManagement`（吃 App 的 `mentors` 并 `onUpdateMentors` 写回）。两套数据、两套枚举（`certificationLevel` vs `roleCategory`）、两套可用性语义（`dispatchStatus` vs `availability`）、两个独立导出实现。后果：①平台端「跨校调度工单」（MODAL 3）有出口无落点——没有任何页面接收；②平台特聘专家不会出现在校端的调度页候选里；③校端也看不到平台库。
+- **建议 / 期望**：明确两端关系（平台库是校端库的超集？还是分属两套池、靠「下派/调度」桥接？），并建立对应链路：若为超集则共享数据源；若靠调度桥接，则需在校端或调度页建立「调度工单接收与展示」。
+- **卡点**：属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。
+
+### 8. 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）
 
 - 来源：`issue-product-guidance-rename-material-workbench`（issue）｜位置：全链路指导工作台（`page-guidance`）
 - owner：**上司拍板**｜severity：**medium**
@@ -79,7 +88,7 @@
 - **建议 / 期望**：批 3 完成后：page-guidance title 改为「材料打磨工作台」，页面/节点文档口径同步改写（只改口径描述不改行号引用）；structure.json 该页 frameworkRef 去除改名排期注记。
 - **卡点**：改名动作本身已排期（批 3 后）；但 L1~L6 唯一阶段口径未拍板前，节点文档中涉及阶段的表述维持现状只登记不展开（issue-guidance-stage-taxonomy-mismatch）。
 
-### 8. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
+### 9. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
 
 - 来源：`issue-product-single-project-binding`（issue）｜位置：项目工作台（`page-workbench`）
 - owner：**工程自决**｜severity：**medium**
@@ -87,7 +96,7 @@
 - **建议 / 期望**：学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。
 - **卡点**：规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。
 
-### 9. 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构
+### 10. 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构
 
 - 来源：`issue-coach-spaces-dead`（issue）｜位置：会话历史与新建对话（`nd-coach-sessions`）
 - owner：**待产品定义**｜severity：**low**
@@ -95,21 +104,21 @@
 - **建议 / 期望**：要么给「备赛空间」补上入口（侧栏空间选择器 + 新建空间向导 + 云同步状态），要么按「每个学生只有一个项目」的产品口径整块移除，避免半套概念留在代码里。
 - **卡点**：需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。
 
-### 10. 体检区三块均无空态处理，数据为空时只剩标题
+### 11. 体检区三块均无空态处理，数据为空时只剩标题
 
 - 来源：`issue-diag-region-no-empty-state`（issue）｜位置：逻辑断点与硬伤（`nd-workbench-diag-gaps`）
 - owner：**待产品定义**｜severity：**low**
 - **背景**：实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。
 - **卡点**：需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。
 
-### 11. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
+### 12. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
 
 - 来源：`issue-guidance-unused-modals`（issue）｜位置：版本快照差异比对弹层（`nd-guidance-diff-modal`）
 - owner：**待产品定义**｜severity：**low**
 - **背景**：GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。
 - **卡点**：需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。
 
-### 12. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
+### 13. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
 
 - 来源：`issue-product-framework-incremental-growth`（issue）｜位置：shuangchuang-ai-wiki（`shuangchuang-ai-wiki`）
 - owner：**工程自决**｜severity：**low**

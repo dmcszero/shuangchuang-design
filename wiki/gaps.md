@@ -3,16 +3,18 @@
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
 > 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。
 >
-> 统计：边 59 条（已实现 52 · intended 6 · undefined 1）· issues 24 条。
+> 统计：边 89 条（已实现 80 · intended 8 · undefined 1）· issues 33 条。
 
 ## intended（设计有·未实现）
 
 | 边 | 走向 | type | severity | 卡点 |
 |---|---|---|---|---|
 | `e-guidance-taskbar-2-workbench-todo-writeback` | 任务上下文条 → 动态待办 | `writeback` | high | 待办池状态被困在 ProjectMemberWorkbench 组件内部（useState(WORKBENCH_AI_TODOS)，:71），App 层无访问入口；需要把 aiTodos 提升到 App 层或引入共享状态，才能打通跨页回写。 |
+| `e-mentorship-book-2-workbench-intended` | 智能短板定向匹配与预约 → 项目工作台 | `writeback` | high | handleBookMentor 只 setBookingSuccessMsg + 4 秒后清空；本页没有 onAddNewWorkOrder prop（App 有 handleAddNewWorkOrder 但只传给了 page-supervision），也未传入导师/项目关联字段。 |
 | `e-workbench-diag-gaps-2-workbench-todo` | 逻辑断点与硬伤 → 动态待办 | `writeback` | high | 三处缺失：①LogicGapItem 无稳定 id（src/types.ts:91-97），无法建立「断点 ↔ 待办」一一映射；②定位口径不一致——location 是「BP 第24页《发展规划与财务预测》」（实测 src/data/mockProjects.ts:91），而待办的 chapterRef 是「第10章 财务预测与融资计划」，页面上已有的 chapterIdFromRef 正则（第N章）对前者不匹配，需新增「页→章」映射或统一口径；③待办池 WORKBENCH_AI_TODOS 是模块级静态常量，组件内无 append 入口（与 e-guidance-taskbar-2-workbench-todo-writeback 同一根因：状态层级过低）。 |
 | `e-coach-composer-2-stream-mention-intended` | 消息输入区与能力配置 → 会话消息流 | `writeback` | medium | mentionedFiles / localUploadedFiles 只写进 msg.mentionedFiles 用于渲染 chip 与标记，全仓无检索或注入消费方；本地文件甚至只有文件名与大小（不读内容）。 |
 | `e-coach-deep-2-defense-intended` | 深度调用管道（4.2 / 4.3） → 模拟答辩训练 | `navigate` | medium | 实际只在会话内模拟并回帖结果卡（handleStartDeepCall → 配置卡 → 执行弹窗 → 结果卡）；SceneAICoach 的 onNavigateToScene prop 由 App 注入（src/App.tsx:631）却从未被调用（该 prop 在组件里被解构后无任何使用点）。 |
+| `e-supervision-invitations-2-shell-intended` | 学校指派与导师邀请闭环 → 应用壳层 | `writeback` | medium | invitations 是页面本地 state（初值 mockSchoolInvitations），接受/婉拒只改本地并弹 Toast；本页没有对应上行 prop，App 层无邀请状态与接收方。 |
 | `e-workbench-folder-2-guidance-version-drawer` | 项目文件夹 → 版本历史抽屉 | `navigate` | medium | 两个障碍：①该处为静态文本，无点击处理器，需先加交互；②SceneGuidanceWorkbench 的 drawerOpen 是内部 useState(:93)，没有任何 props 可从外部控制，需先开放入参（如 initialDrawerOpen）。 |
 | `e-workbench-folder-2-guidance-versionline-reuse` | 项目文件夹 → 版本历史抽屉 | `reuse` | medium | 项目工作台版本线是 JSX 内联硬编码数组（:937），不属于任何 mock 文件；需先抽出共享版本常量，再让两侧引用。 |
 
@@ -27,18 +29,24 @@
 | id | 位置 | 状态 | severity | 问题 | 卡点 |
 |---|---|---|---|---|---|
 | `issue-coach-project-context-unbound` | AI 备赛教练 | undefined | high | AI 助手与右栏产物的项目上下文恒为兜底字面量（activeSpace 恒 null） | 需先把项目上下文从 activeSpace 迁到 currentMemberProject（或二者合并），并把散落的兜底字面量统一为项目字段；另需产品确认「备赛空间」概念是否保留（见 issue-coach-spaces-dead）。 |
+| `issue-cockpit-static-metrics` | 数据驾驶舱 | undefined | high | 驾驶舱演示数字与真实数据自相矛盾（同屏内「A 级 5 项」与「15 个金奖种子」并存） | 需要①引入真实聚合逻辑（数据已在 `projects` 与 `tier1Scores` 中）；②确定「工单相关指标」（闭环率/下发数/二次 Check）的数据来源——本页当前拿不到 `workOrders`，需 App 传入；③决定演示态是否保留大数字。 |
 | `issue-defense-report-not-connected` | 答辩复盘报告 | undefined | high | 复盘报告与本次训练数据不连通（交卷只切视图，分数走历史/兜底常量） | 需把 DefensiveSession 的消息/用时/评分提升到 SceneDefenseTraining 层（或引入共享 store），并把 RECENT_DEFENSE_HISTORY 改为可变数据。 |
 | `issue-guidance-snapshot-preview-no-content` | 快照只读预览提示条 | intended | high | 「快照只读预览」不显示快照内容，看到的仍是当前正文 | ①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。 |
 | `issue-product-coach-session-unification` | 右栏 AI 备赛伴学教练 | undefined | high | 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套） | 待上司拍板；该决策同时卡住 issue-guidance-dead-coach-state（右栏 4 个死状态补齐还是删除）。 |
+| `issue-screening-fixed-columns-by-index` | 二级指标全景表 | undefined | high | 二级指标全景表列数固定 17 且按数组下标取数，各赛道指标结构不同必然错位 | 需要一份「赛道 → 一级/二级指标定义」的数据源（`rules2026.ts` 是候选真源，需核对是否含二级项与分值），以及把 `tier2Scores` 从纯数组改为带 id 的结构（或建指标 id ↔ 下标的映射表）。 |
 | `issue-assets-vs-coach-deliverables` | 素材与资产管理 | undefined | medium | 「产物 / 资产」两套体系未统一：AI 产出无归档路径，路演幻灯片两处各 mock | 属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。 |
 | `issue-coach-atomic-card-key-mismatch` | 浅度原子能力调用卡 | undefined | medium | 4.2 浅度原子卡正文永远不渲染（读取的数据键全仓无生产者） | 二选一：①按卡片的键名结构补全生产端数据（推荐——卡片侧字段更完整，是设计意图形态）；②简化卡片为 flaws/advice 结构（会丢字段）。需先确认哪个是设计真源。 |
 | `issue-coach-campus-university-out-of-sync` | AI 备赛教练 | undefined | medium | 登录选定的高校不流向 AI 助手校内智库（coach 自持一套选校，且引用文号硬编码厦大） | 口径与实现都要动：①确定「校内智库以谁为准」（登录校 vs 手动切换）；②把 selectedUniversity 的初值接到 session；③mock 里的机构名与文号需要按校改写。 |
 | `issue-coach-file-mention-not-used` | 消息输入区与能力配置 | undefined | medium | @ 引用项目文件与本地文件上传均不参与推理（无消费方） | 需接入文件解析 + 上下文注入链路（当前 demo 无后端、无文件服务）；实现前该能力属「文案先行」。 |
+| `issue-cockpit-screening-nav-no-context` | 数据驾驶舱 | undefined | medium | 跨页跳转全都不带上下文（驾驶舱/初筛页的「查看更多 / 排期 / 批量调度」到落地页后需重新找） | 需把 `onNavigateTab` 从「只传 tab 名」扩为「tab + 载荷」（或在 App 层维护一份跨页上下文 state），并让各落地页消费；改动面覆盖 App + 4 个页面，建议与批 3 的导航改造一并做。 |
 | `issue-diag-questions-suggestion-hardcoded` | 评委尖锐提问攻防演练 | intended | medium | 评委提问的「建议应对策略」是硬编码单条文案，不随题目变化 | killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。 |
 | `issue-guidance-dead-coach-state` | 右栏 AI 备赛伴学教练 | intended | medium | 右栏 AI 教练有 4 个 state 声明后从未被消费 | 三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。 |
 | `issue-guidance-diff-modal-hardcoded` | 版本快照差异比对弹层 | intended | medium | 版本 diff 弹层正文为写死示例，不随所选版本变化 | 依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。 |
 | `issue-guidance-stage-taxonomy-mismatch` | 全链路指导工作台 | undefined | medium | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5） | 需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。 |
 | `issue-login-sso-placeholder` | 登录分流 | undefined | medium | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验 | 需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。 |
+| `issue-mentors-pool-two-ends-not-synced` | 导师池管理 | undefined | medium | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库） | 属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。 |
+| `issue-mentorship-mock-fanout` | 导师智能调度 | undefined | medium | 任务下发规模 15/28/82 写死并被用作进度条分母，与真实项目数（8）不符 | 需要 App 层在创建时把 `projects` 的梯队统计传下来（或把创建逻辑上移到 App），并决定赛道维度是否纳入任务模型。 |
+| `issue-milestones-filter-no-effect` | L1~L5 阶段流指示卡 | undefined | medium | 里程碑看板阶段卡「点了没反应」：筛选只影响一个数字，看板列不筛选 | 无外部阻塞，属实现缺陷修复；需先定交互（过滤 vs 高亮）——建议高亮（保持管线全景可见）。 |
 | `issue-product-guidance-rename-material-workbench` | 全链路指导工作台 | intended | medium | 产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行） | 改名动作本身已排期（批 3 后）；但 L1~L6 唯一阶段口径未拍板前，节点文档中涉及阶段的表述维持现状只登记不展开（issue-guidance-stage-taxonomy-mismatch）。 |
 | `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
 | `issue-workbench-pending-archive` | 项目文件夹 | intended | medium | 待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记 | FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。 |
@@ -48,7 +56,10 @@
 | `issue-defense-prep-question-count` | 赛前解构与靶向题库 | undefined | low | 赛前解构「已生成 12 题」与实际渲染 4 条不符 | 无外部阻塞，属实现补齐；若要真实生成则依赖 page-defense 的题库数据源重构。 |
 | `issue-diag-region-no-empty-state` | 逻辑断点与硬伤 | undefined | low | 体检区三块均无空态处理，数据为空时只剩标题 | 需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。 |
 | `issue-guidance-unused-modals` | 版本快照差异比对弹层 | undefined | low | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行） | 需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。 |
+| `issue-milestones-static-trend` | 阶段均分跃迁卡 | undefined | low | 阶段均分跃迁四数字全写死，且当前数据结构无法支撑真实计算 | 阶段段数需产品先拍板（L1~L4/L5/L6 之争）；真实计算则依赖历史分数数据源的建立。 |
 | `issue-product-framework-incremental-growth` | shuangchuang-ai-wiki | intended | low | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展 | 无——登记为长期约定，随批 1~3 铺开持续验证其可操作性。 |
+| `issue-screening-default-track-filter` | 智能初筛中心 | undefined | low | 初筛页默认按「高教主赛道-创意组」筛选，首屏只显示部分项目且与驾驶舱数字对不上 | 属产品口径决策（管理端首屏默认看全校还是看主赛道）；定后再改初值或补跳转载荷（与 issue-cockpit-screening-nav-no-context 联动）。 |
+| `issue-supervision-static-metrics` | 督导指标横幅 | undefined | low | 督导指标横幅「AI 复核提分均值 +7.0 分」写死，而真实提分数据可算 | 无外部阻塞，属实现补齐（数据已在 `workOrders` 上）。 |
 | `issue-workbench-material-registry-gap` | 项目文件夹 | undefined | low | 材料注册表的来源映射键集与渲染集不闭合 | 需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。 |
 
 ## 逐条详情
@@ -60,6 +71,14 @@
 - 期望行为：点击后，项目工作台「动态待办」中 taskId 对应的 AI 待办应被标记 completed=true，且返回项目工作台时该勾选状态仍然保持。
 - 设计依据：按钮自身文案「完成并回写待办」src/components/SceneGuidanceWorkbench.tsx:423；其 alert 文案「…并已回写项目工作台·动态待办！」src/components/SceneGuidanceWorkbench.tsx:147
 - **卡点**：待办池状态被困在 ProjectMemberWorkbench 组件内部（useState(WORKBENCH_AI_TODOS)，:71），App 层无访问入口；需要把 aiTodos 提升到 App 层或引入共享状态，才能打通跨页回写。
+
+### `e-mentorship-book-2-workbench-intended`
+
+- 走向：**智能短板定向匹配与预约**（`nd-mentorship-match`）→ **项目工作台**（`page-workbench`）｜type `writeback`｜status **intended**｜severity high
+- 触发：点击推荐专家卡「一键预约排期」
+- 期望行为：预约后应为该导师与该项目的辅导创建一条工单（`SupervisionWorkOrder`），使 `page-supervision` 能看到待处理工单、`page-workbench` 能看到导师派发任务。
+- 设计依据：预约成功文案「已成功为【项目】预约【导师】老师：{时段}。**AI 辅导工单已同步创建！**」src/components/MentorshipDispatch.tsx:89
+- **卡点**：handleBookMentor 只 setBookingSuccessMsg + 4 秒后清空；本页没有 onAddNewWorkOrder prop（App 有 handleAddNewWorkOrder 但只传给了 page-supervision），也未传入导师/项目关联字段。
 
 ### `e-workbench-diag-gaps-2-workbench-todo`
 
@@ -84,6 +103,14 @@
 - 期望行为：应跳到 page-defense（模拟答辩训练）并带入项目与对应模式，而不是在会话里跑一遍 2 秒模拟。
 - 设计依据：用户消息文案「帮我开启全流程模拟答辩，跳转 4.3 模拟评审与多考官极限压力训练」src/components/SceneAICoach.tsx:1076；原子卡按钮「一键升级为 4.3 全流程答辩训练 →」src/components/AtomicCallCard.tsx:271
 - **卡点**：实际只在会话内模拟并回帖结果卡（handleStartDeepCall → 配置卡 → 执行弹窗 → 结果卡）；SceneAICoach 的 onNavigateToScene prop 由 App 注入（src/App.tsx:631）却从未被调用（该 prop 在组件里被解构后无任何使用点）。
+
+### `e-supervision-invitations-2-shell-intended`
+
+- 走向：**学校指派与导师邀请闭环**（`nd-supervision-invitations`）→ **应用壳层**（`shell-app`）｜type `writeback`｜status **intended**｜severity medium
+- 触发：接受指导并入驻 / 婉拒邀请（含理由）
+- 期望行为：邀请响应（接受/婉拒+理由）应回传学校端（`page-mentorship` 的导师调度或学校侧指派记录），使管理端能看到导师是否接单；接受后项目应进入该导师的指导项目库。
+- 设计依据：婉拒成功文案「回执与理由已同步推送至学校双创教学指导处。」src/components/SupervisionClosure.tsx:150；接受文案「已加入您的指导项目库」src/components/SupervisionClosure.tsx:136
+- **卡点**：invitations 是页面本地 state（初值 mockSchoolInvitations），接受/婉拒只改本地并弹 Toast；本页没有对应上行 prop，App 层无邀请状态与接收方。
 
 ### `e-workbench-folder-2-guidance-version-drawer`
 

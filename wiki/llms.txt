@@ -10,22 +10,56 @@
 
 _学院管理层：一眼看清全局态势，定位到需要干预的项目_
 
-- [数据驾驶舱](pages/page-cockpit.md): 学院管理层的全局态势总览：项目分布、评分排名、预警与导出入口。 _(importance: high · 待铺开)_
-- [里程碑看板](pages/page-milestones.md): 项目全生命周期的阶段推进看板（L1~L5 里程碑口径）。 _(importance: medium · 待铺开)_
+- [数据驾驶舱](pages/page-cockpit.md): 学校管理端（`school_admin`）登录后的**默认落地页**（`p-school.defaultPage`）：一条 AI 决策指令 + 五张 KPI 卡 + 一张指标得分率热力图 + 两块速览小盘 + 两个项目级清单（金奖池 / 预警），覆盖「全校态势 → 该补哪块 → 该找谁」三跳。 _(importance: high · 已下钻)_
+  - [AI 决策指令横幅](nodes/page-cockpit/nd-cockpit-banner.md) `nd-cockpit-banner`: 驾驶舱顶部的「本周要干什么」指挥条：用一句话点出全校金奖潜力池规模与当前最突出的失分共性，并在右侧给出两个立即动作（导出复盘汇报 / 导入新批次项目）。 _(bar · high)_
+  - [金奖池 KPI 卡矩阵](nodes/page-cockpit/nd-cockpit-kpi.md) `nd-cockpit-kpi`: 五张关键指标卡横排：项目总量、A 级金奖池、B 级省金池、C/D 基础池、工单督导闭环率——前三类与最后一类可点，直接把管理员带到对应工作台。 _(panel · high)_
+  - [指标得分率热力洞察](nodes/page-cockpit/nd-cockpit-heatmap.md) `nd-cockpit-heatmap`: 把 2026 国赛的**一级/二级评审指标**摊成一张全校得分率热力图：四个一级指标分组内逐项列出二级指标得分率，短板项用琥珀/玫红标出，一眼看出「全校普遍差在哪」。 _(panel · high)_
+  - [赛道分布与辅导转化小盘](nodes/page-cockpit/nd-cockpit-mini.md) `nd-cockpit-mini`: 热力图下方的两块速览小卡：左边是四条赛道报名分布进度条，右边是「辅导 → 提分」的转化三宫格与经验沉淀句——把全校的**结构与过程**摆在一起。 _(panel · medium)_
+  - [A 级金奖潜力项目池](nodes/page-cockpit/nd-cockpit-pool.md) `nd-cockpit-pool`: 右栏的金奖种子榜：按分数顺序列出 A 级项目（默认只显示前 5 条），点任一条打开项目详情抽屉，底部按钮直接把管理员送去导师调度台做批量护航。 _(list · high)_
+  - [异常停滞与合规预警](nodes/page-cockpit/nd-cockpit-warning.md) `nd-cockpit-warning`: 右栏底部的「需要立即干预」清单：把 `healthStatus` 为 `warning` 或 `critical` 的项目连同原因（或兜底文案）列出，点一条直接打开项目详情抽屉——驾驶舱里唯一的**负向**信号面。 _(list · high)_
+- [里程碑看板](pages/page-milestones.md): 学校管理端的「管线视图」：把全校项目按 L1~L5 五个备赛阶段铺成看板列，按健康度染色，配一条阶段均分跃迁线——回答「项目都卡在哪一段、谁快掉队、培育有没有提分」。 _(importance: medium · 已下钻)_
+  - [页头与复盘导出](nodes/page-milestones/nd-milestones-banner.md) `nd-milestones-banner`: 里程碑看板的页头：一句话点明本页三件事（L1~L5 管线监控 / 停滞预警 / 金奖指标复盘），右侧一个动作——生成复盘材料。 _(bar · low)_
+  - [L1~L5 阶段流指示卡](nodes/page-milestones/nd-milestones-stages.md) `nd-milestones-stages`: 五张阶段卡横排（申报与初筛 → 校赛与导师打磨 → 省赛集中封闭营 → 国赛精英训练营 → 金奖答辩冲刺），每张显示该阶段项目数与一句话重点，点击即「筛选」——**但筛选实际只作用于一个数字**。 _(panel · medium)_
+  - [阶段均分跃迁卡](nodes/page-milestones/nd-milestones-trend.md) `nd-milestones-trend`: 四张阶段均分卡（申报初筛 81.2 → 校赛督导后 86.5 → 省赛集训后 90.8 → 国赛冲刺 94.8），配一个「整体均分净增 +7.4 分」徽标——用一条上行的数字线讲「培育有效」。 _(panel · medium)_
+  - [全生命周期看板列](nodes/page-milestones/nd-milestones-board.md) `nd-milestones-board`: 本页的主体：L1~L5 五列看板，每列堆着该阶段的项目卡；卡片按健康度染色（正常白 / 预警琥珀 / 严重玫红），点一张即打开项目详情抽屉——**「哪些项目卡在哪、谁快掉队」的一屏总览**。 _(list · high)_
 
 ## 项目遴选
 
 _赛事管理员：把海量申报项目筛成一份可培育名单_
 
-- [智能初筛中心](pages/page-screening.md): 批量导入项目、按专家规则自动提取要点并给出初筛评分与分级对标。 _(importance: high · 待铺开)_
+- [智能初筛中心](pages/page-screening.md): 学校管理端的项目处置主工作面：用「赛道 / 梯队 / 合规 / 关键词」四维筛选把项目收窄，再在三个互斥视图里看——**二级指标全景表**（谁强在哪）、**综合梯队排名**（谁在前）、**合规拦截看板**（谁有雷）；每个项目都能下钻到详情抽屉或送去排期。 _(importance: high · 已下钻)_
+  - [视图切换与四维筛选](nodes/page-screening/nd-screening-control.md) `nd-screening-control`: 初筛中心的控制台：顶部三个视图 tab 决定「看哪张表」，下面四个筛选器（赛道 / 梯队 / 合规 / 关键词）决定「看哪些项目」——**全页唯一的数据入口**，三张表都吃它筛出来的结果。 _(form · high)_
+  - [二级指标全景表](nodes/page-screening/nd-screening-matrix.md) `nd-screening-matrix`: 初筛的**主视图**：把每个项目摊成一行、把 2026 评审的四个一级指标拆成 17 个二级列，横向拉平对比——「同样的规则下，谁强在哪、谁短在哪」。 _(table · high)_
+  - [综合梯队与金奖对标](nodes/page-screening/nd-screening-ranking.md) `nd-screening-ranking`: 初筛的**排名视图**：一行一项目，列出排名、赛道、综合评分、梯队、金奖特征对标、AI 置信度与指派导师，并在行尾给出「详情 / 排期」两个动作——管理员处置项目的主工作面。 _(table · high)_
+  - [合规与一票否决拦截](nodes/page-screening/nd-screening-compliance.md) `nd-screening-compliance`: 初筛的**风控视图**：逐条列出项目的知识产权权属、全网查重率、AI 代写痕迹与逻辑断层数，命中风险的整条染红并打上「一票否决拦截」徽标。 _(panel · high)_
 
 ## 导师与督导
 
 _管理员派单 → 导师辅导 → 学生交付整改，形成闭环_
 
-- [导师智能调度](pages/page-mentorship.md): 按赛道/专长匹配导师，创建批次任务并跟踪完成情况。 _(importance: high · 待铺开)_
-- [督导闭环中心](pages/page-supervision.md): 导师侧：接收工单、查看学生提交、给出复核结论与提分评估。 _(importance: high · 待铺开)_
-- [导师池管理](pages/page-mentors-pool.md): 导师资源的录入、标签维护与双角色视图（校端 / 平台端）。 _(importance: medium · 待铺开)_
+- [导师智能调度](pages/page-mentorship.md): 学校管理端的「派单台」：选项目 → 让 AI 按短板推荐 Top 3 导师 → 预约排期，同时向整个梯队群发阶段打磨任务并监督提交进度；服务 `school_admin` 与（只读侧）`mentor` 两端，是 `sec-mentorship` 任务链的起点。 _(importance: high · 已下钻)_
+  - [页头与调度动作](nodes/page-mentorship/nd-mentorship-banner.md) `nd-mentorship-banner`: 导师调度台的页头：一句「基于项目短板智能推荐专家 + 面向梯队一键下发任务」交代本页两个职能，右侧两个动作分别通往导师智库维护与新任务下发。 _(bar · medium)_
+  - [智能短板定向匹配与预约](nodes/page-mentorship/nd-mentorship-match.md) `nd-mentorship-match`: 本页的核心工作面：选一个项目 → 看它的 AI 待补强标签 → 得到 Top 3 推荐专家（附推荐理由与匹配度%）→ 一键预约排期——**全库少见的真实匹配算法落地处**。 _(panel · high)_
+  - [导师智库全览与筛选](nodes/page-mentorship/nd-mentorship-directory.md) `nd-mentorship-directory`: 全校 + 校外导师的名册视图：搜索框 + 六个能力标签把名册收窄，卡片展示资历、标签、当前带项负荷与可预约状态——调度时的「挑人底册」。 _(list · medium)_
+  - [常态化培育任务中心](nodes/page-mentorship/nd-mentorship-tasks.md) `nd-mentorship-tasks`: 右栏的批次任务监督台：列出已下发的梯队打磨任务，每条给出目标梯队、要求、提交进度条、截止时间与专家已审数——**本页唯一看得到「闭环进度」的地方**。 _(list · high)_
+  - [新建批次打磨任务弹窗](nodes/page-mentorship/nd-mentorship-taskmodal.md) `nd-mentorship-taskmodal`: 「一键群发」的任务发射台：填标题、选目标梯队、定截止时间、写打磨要求，提交后立刻出现在右栏任务中心——**本页唯一的写操作**。 _(modal · medium)_
+- [督导闭环中心](pages/page-supervision.md): 导师端的**默认落地页**（`p-mentor.defaultPage`）与全库最完整的跨角色闭环：接受学校指派 → 导入辅导会议生成 AI 工单草稿 → 确认推送团队 → 团队整改并提交 → 双版本比对与 AI 提分 → 导师终审归档或退回；**且这条链的数据真的与 `page-workbench`（学生端）共享同一份 `workOrders`**。 _(importance: high · 已下钻)_
+  - [页头与会议导入入口](nodes/page-supervision/nd-supervision-header.md) `nd-supervision-header`: 导师端工作台的页头：标明「当前导师是谁」，用一句话说清本页五件事（材料审阅 / 录音导入 / 工单派发 / 智能提分 / 闭环），右侧只放一个动作——导入辅导会议录音或视频。 _(bar · medium)_
+  - [学校指派与导师邀请闭环](nodes/page-supervision/nd-supervision-invitations.md) `nd-supervision-invitations`: 导师端最上游的一环：学校把项目指派给你时，这里弹出琥珀色邀请区——看项目简述与指派导师组，然后「接受入驻」或「婉拒并附理由」。 _(panel · high)_
+  - [督导指标横幅](nodes/page-supervision/nd-supervision-metrics.md) `nd-supervision-metrics`: 四张督导指标卡：我指导的工单批次、待确认的 AI 草稿、学生修改中的工单、AI 复核提分均值——一半真实统计、一半写死，是导师端「今天有多少活」的速览。 _(panel · medium)_
+  - [辅导工单管线列表](nodes/page-supervision/nd-supervision-pipeline.md) `nd-supervision-pipeline`: 左栏的工单队列：搜索 + 五个状态页签把工单收窄，每条卡显示项目、批次标题、导师组、任务完成进度条与状态徽标——点一条即在右栏展开深度工作区。 _(list · high)_
+  - [工单深度工作区（状态时序 + 四 tab）](nodes/page-supervision/nd-supervision-workbench.md) `nd-supervision-workbench`: 右栏工单详情的外壳：顶部交代「这是谁的工单、导师组有谁、走到哪一步了」（五段状态时序），下方四个 tab 切换处置视角——**全页的中控台**。 _(bar · high)_
+  - [辅导整改任务清单](nodes/page-supervision/nd-supervision-tasks.md) `nd-supervision-tasks`: 工单的第一个 tab，也是状态机的主驱动面：按当前状态给出下一步动作（确认推送 / 模拟接单 / 模拟提交），下方逐条维护整改任务（增删改、勾选完成）——**页面里点得最多的一块**。 _(panel · high)_
+  - [改前改后比对与 AI 提分验收](nodes/page-supervision/nd-supervision-diff.md) `nd-supervision-diff`: 本页的**核心 tab**：把「辅导前 / 整改后」两版材料并排摆出来，配上 AI 算出的分维度提分（Δ）与关键改动清单，并在底部给出终审的两个出口——验收归档或退回重改。 _(panel · high)_
+  - [会议纪要与项目材料](nodes/page-supervision/nd-supervision-sources.md) `nd-supervision-sources`: 工单的另两个 tab（只读）：**会议音视频与 ASR 纪要**（哪次会、说了什么、关键发言时间点）与**项目原始材料与初始诊断**（导师接单时项目长什么样）——给导师「回头看依据」的两个面。 _(panel · medium)_
+  - [导入会议录音生成工单草稿](nodes/page-supervision/nd-supervision-import.md) `nd-supervision-import`: 全页的**起点与唯一创建入口**：选项目 → 选媒体类型 → 填会议名 → 上传文件 →「开始转写并生成 AI 建议工单草稿」，1.8 秒后一条状态为「AI工单草稿」的新工单出现在左栏管线里。 _(modal · high)_
+- [导师池管理](pages/page-mentors-pool.md): 「导师资源的档案库」，**一页两端**：校管端（`school_admin`）维护本校及外聘导师档案并写回全局 `mentors`；admin 超管端（`system_admin`）维护全平台认证专家与跨校调度开关——两端组件、数据结构、写回方式完全不同。 _(importance: medium · 已下钻)_
+  - [校端页头与智库宏指标](nodes/page-mentors-pool/nd-mentorspool-header.md) `nd-mentorspool-header`: 校端导师池的门面：标题 + 「高端专家库（8大专业领域）」徽标 + 一句职责说明，右侧三个动作（导出名册 / 进入调度排期 / 聘任新导师），下方六张**全部真实派生**的宏指标卡。 _(bar · medium)_
+  - [五维筛选与双视图切换](nodes/page-mentors-pool/nd-mentorspool-filters.md) `nd-mentorspool-filters`: 导师库的检索台：关键词 + 四个下拉（类型 / 角色类别 / 可用状态）+ 一排擅长领域胶囊 + 卡片/表格视图切换——把几十位专家收窄成能看的清单。 _(form · medium)_
+  - [导师卡片/表格双视图](nodes/page-mentors-pool/nd-mentorspool-list.md) `nd-mentorspool-list`: 校端导师名册的两种呈现：卡片视图（档案感、看资历与负荷）与表格视图（密集对比、可直接拨号发信），每张卡/每行都通往「完整档案」「编辑」与「解聘」。 _(list · high)_
+  - [聘任与编辑导师弹窗](nodes/page-mentors-pool/nd-mentorspool-edit.md) `nd-mentorspool-edit`: 本页的核心写入口：一个五段式大表单（基础身份 / 联系方式 / 擅长领域 / 意向赛道与容量 / 个人简介），既能聘任新导师也能改现有档案——**23 个表单 state 全在这一个弹窗里**。 _(modal · high)_
+  - [导师履历详情弹窗](nodes/page-mentors-pool/nd-mentorspool-detail.md) `nd-mentorspool-detail`: 点「完整档案」后展开的导师履历：头像与角色标识、荣誉/聘期横幅、可一键复制的即时联络渠道、简介与成就、领域标签、可用时段与战绩指标——「看人」的最后一屏。 _(modal · medium)_
+  - [平台导师池（admin 端）](nodes/page-mentors-pool/nd-platform-mentors-pool.md) `nd-platform-mentors-pool`: 同一个侧栏入口在 **admin 超管端**渲染的另一套界面：平台级「中央总控」导师库，管的是全平台通用认证专家（院士 / 国赛评委组长 / 头部创投 / 首席科学家）与**跨校调度**开关——校端管「谁的专家」，这里管「全平台的专家」。 _(panel · high)_
 
 ## 项目成长
 

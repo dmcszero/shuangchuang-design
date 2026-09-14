@@ -165,13 +165,13 @@ const DATA = {
  "stats": {
   "sections": 8,
   "pages": 15,
-  "drilled": 6,
-  "nodes": 45,
-  "edges": 59,
-  "implemented": 52,
-  "intended": 6,
+  "drilled": 12,
+  "nodes": 79,
+  "edges": 89,
+  "implemented": 80,
+  "intended": 8,
   "undefined": 1,
-  "issues": 24,
+  "issues": 33,
   "orphans": 8
  },
  "sections": [
@@ -270,8 +270,9 @@ const DATA = {
     "page-milestones",
     "page-mentorship"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 6,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：6 节点覆盖 AI 决策横幅/金奖池 KPI/指标热力洞察/赛道与转化小盘/A 级金奖潜力池/异常预警。未下钻为节点的页面级结构：三栏主网格（157-159）、派生计算（31-36）。数据口径要点：仅 A/B/C·D 池计数与预警计数为真实派生，其余数字（82 项 / 15 个 A 级 / +28.5% / 88.5% / 68.4% / 赛道 42·20·12·8）全为写死字面量，与 mock 实际 8 个项目自相矛盾（issue-cockpit-static-metrics）。"
   },
   {
    "id": "page-milestones",
@@ -293,8 +294,9 @@ const DATA = {
     "page-cockpit",
     "page-workbench"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 4,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：4 节点覆盖页头与复盘导出/L1~L5 阶段流卡/阶段均分跃迁卡/全生命周期看板列。未下钻为节点的页面级结构：阶段常量与筛选派生（25-40）。两处口径问题已登记：阶段卡筛选只影响「共显示 N 个项目」而看板列不筛选（issue-milestones-filter-no-effect）；均分跃迁四数字全写死且当前数据结构无历史分数快照（issue-milestones-static-trend）。"
   },
   {
    "id": "page-screening",
@@ -317,8 +319,9 @@ const DATA = {
     "page-cockpit",
     "page-mentorship"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 4,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：4 节点覆盖视图切换与四维筛选/二级指标全景表/综合梯队与金奖对标/合规与一票否决拦截。未下钻为节点的页面级结构：三视图互斥渲染分支（178/388/482）、filteredProjects 派生（37-55）。核心口径问题已登记：全景表列数固定 17 且按数组下标取值，与各赛道真实二级指标数不符（红旅项目第 4 项丢失、产业命题项目「项目分析」整块缺失）——issue-screening-fixed-columns-by-index。"
   },
   {
    "id": "page-mentorship",
@@ -342,8 +345,9 @@ const DATA = {
     "page-supervision",
     "page-screening"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 5,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：5 节点覆盖页头与调度动作/智能短板定向匹配与预约/导师智库全览与筛选/常态化培育任务中心/新建批次任务弹窗。未下钻为节点的页面级结构：三栏网格（163）、Toast（119-128）、推荐算法派生（46-86）。口径要点：本页含全库少见的真实匹配算法（三规则加分+排序），但预约仅 Toast、任务规模 15/28/82 写死（issue-mentorship-mock-fanout）。"
   },
   {
    "id": "page-supervision",
@@ -366,8 +370,9 @@ const DATA = {
     "page-workbench",
     "page-mentorship"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 9,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：9 节点覆盖页头与会议导入入口/学校指派邀请闭环/督导指标横幅/工单管线列表/工单深度工作区外壳/辅导整改任务清单/改前改后比对与 AI 提分验收/会议纪要与项目材料/导入会议生成工单草稿。未下钻为节点的页面级结构：Toast（472-488）、主二栏网格（610）、左栏流程指引（736-750）、其余五个弹窗（婉拒 1583-1624 / 邀请详情 1625-1696 / 任务编辑 1697-1794 / 终审归档 1795-1851 / 退回修改 1852-1896，分别依附于邀请、任务清单与 diff 节点）。本页是全库唯一「跨角色真实写回」闭环（与 page-workbench 共享 workOrders）。"
   },
   {
    "id": "page-mentors-pool",
@@ -389,10 +394,12 @@ const DATA = {
     "src/data/mockPlatformMentors.ts"
    ],
    "related_pages": [
-    "page-mentorship"
+    "page-mentorship",
+    "page-supervision"
    ],
-   "docStatus": "pending",
-   "nodeCount": 0
+   "docStatus": "drilled",
+   "nodeCount": 6,
+   "nodeScopeNote": "2026-09-14 批 2 下钻：6 节点覆盖校端页头与宏指标/五维筛选与双视图/导师卡片表格双视图/聘任编辑弹窗/履历详情弹窗/admin 端平台导师池。未下钻为节点的页面级结构：两端空态与 Toast。**一页两端**：校端（写回 App mentors）与 admin 端（自持 mockPlatformMentors、无 props）是两套独立组件与数据（App.tsx:750-757 分流），下钻与改造均需按端区分。"
   },
   {
    "id": "page-workbench",
@@ -1026,10 +1033,157 @@ const DATA = {
    "severity": "low",
    "category": "技术实现",
    "owner": "工程自决"
+  },
+  {
+   "id": "issue-cockpit-static-metrics",
+   "where": "page-cockpit",
+   "title": "驾驶舱演示数字与真实数据自相矛盾（同屏内「A 级 5 项」与「15 个金奖种子」并存）",
+   "detail": "本页只有三处数字是真实派生（A/B/C·D 池计数、预警计数），其余全是写死字面量：横幅「82 个项目 / 15 个 A 级种子 / 68.4% / 建议本周调度」、KPI 卡「申报项目总数 82 项 / 同比 +28.5% / 工单督导闭环率 88.5%」、热力图四个一级指标全部二级得分率（含「基于 82 个项目加权统计」的说明）、赛道分布「42/20/12/8 项」、辅导转化「工单 68 / 二次Check 52 / 导师 18 位 / 点评 142 条 / 指南 6 册」、均分提升「+7.4 分」。实测 mockProjects 只有 **8 个项目**（A5/B1/C1/D1，warning 1 + critical 2），与「82 项」「15 个 A 级」严重不符，导致同一屏内 KPI 卡显示「A级 5 项」而横幅写「15 个 A 级金奖种子」。",
+   "status": "undefined",
+   "designRef": "驾驶舱横幅 src/components/CockpitDashboard.tsx:46-51；KPI 卡 :86/:147；热力图 :166-170 / :183-303；赛道分布 :307-344",
+   "expected": "全页数字口径统一：要么全部接真实数据（`projects.length` / 按 grade 聚合 / 按 track 聚合 / 按 `tier1Scores` 加权），要么明确标注为演示数据；同一概念（A 级项目数）在页面内只用一个来源。",
+   "blockedBy": "需要①引入真实聚合逻辑（数据已在 `projects` 与 `tier1Scores` 中）；②确定「工单相关指标」（闭环率/下发数/二次 Check）的数据来源——本页当前拿不到 `workOrders`，需 App 传入；③决定演示态是否保留大数字。",
+   "severity": "high",
+   "category": "数据口径",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-cockpit-screening-nav-no-context",
+   "where": "page-cockpit",
+   "title": "跨页跳转全都不带上下文（驾驶舱/初筛页的「查看更多 / 排期 / 批量调度」到落地页后需重新找）",
+   "detail": "三处典型：①驾驶舱 4 张 KPI 卡与「查看初筛全览 / 全部排名」都调 `onNavigateTab('screening')`，初筛页落地时仍用**自己的默认赛道筛选**（高教主赛道-创意组），与出发时的语义（如「A 级金奖池」）无关；②驾驶舱「为 A 级项目批量调度国家级导师」调 `onNavigateTab('mentorship')`，导师调度页项目下拉初值是 `projects[0]`，与「A 级批量」无关；③初筛页排名视图「排期」按钮调 `onOpenAssignMentor(project)`，而 App 的 `handleOpenAssignMentor` **忽略入参**，只关抽屉并切 tab——项目载荷在 App 层被丢弃。",
+   "status": "undefined",
+   "designRef": "App 的跳转 props src/App.tsx:693-695 / :714-716 / :526-529；初筛页默认赛道筛选 src/components/ScreeningHub.tsx:30",
+   "expected": "跳转应携带上下文（目标筛选条件 / 项目 id），落地页据此预置筛选或定位；至少让「排期」能把项目带进导师调度页。",
+   "blockedBy": "需把 `onNavigateTab` 从「只传 tab 名」扩为「tab + 载荷」（或在 App 层维护一份跨页上下文 state），并让各落地页消费；改动面覆盖 App + 4 个页面，建议与批 3 的导航改造一并做。",
+   "severity": "medium",
+   "category": "技术实现",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-screening-fixed-columns-by-index",
+   "where": "nd-screening-matrix",
+   "title": "二级指标全景表列数固定 17 且按数组下标取数，各赛道指标结构不同必然错位",
+   "detail": "表头写死四个一级分组共 17 列（个人成长 5 / 项目创新 3 / 产业价值 4 / 团队协作 5），取数方式是「先按 id 找一级块（产业价值位做了 `industry_value || development_prospect || execution_effect` 三选一兜底），再按下标取 `tier2Scores[i]`」。但 mock 数据的指标结构因赛道而异：红旅赛道项目（proj-002）的「项目创新」实为 **4** 项（第 4 项「模式创新」被静默丢弃）；产业命题赛道项目（proj-007）实为 **5 个一级指标**（个人成长 / 项目创新 / 实现成效 / 项目分析 / 团队协作），其「项目分析」整块无列可显示，且兜底命中的 `execution_effect` 仍挂在名为「产业价值」的列下。下拉选项文案也自认赛道不同（「创意组 4个一级/17个二级」「创业组 4个一级/20个二级」），说明表结构本就应随赛道变化。",
+   "status": "undefined",
+   "designRef": "表头 src/components/ScreeningHub.tsx:206-259；取数 :265-271 / :309-368；赛道选项文案 :121-127",
+   "expected": "指标表由数据驱动：按所选赛道的指标定义（`rules2026.ts` 或指标字典）动态生成列，并按二级指标 id 取数（而非下标），使各赛道项目都能完整、正确地呈现。",
+   "blockedBy": "需要一份「赛道 → 一级/二级指标定义」的数据源（`rules2026.ts` 是候选真源，需核对是否含二级项与分值），以及把 `tier2Scores` 从纯数组改为带 id 的结构（或建指标 id ↔ 下标的映射表）。",
+   "severity": "high",
+   "category": "技术实现",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-screening-default-track-filter",
+   "where": "page-screening",
+   "title": "初筛页默认按「高教主赛道-创意组」筛选，首屏只显示部分项目且与驾驶舱数字对不上",
+   "detail": "`selectedTrack` 初值为 `'higher_education_creative'`，因此初筛页首次打开只显示该赛道项目（mock 8 条中 5 条），而驾驶舱的 KPI 卡显示的是全部项目口径。用户从驾驶舱点「A 级金奖池」进来后，看到的是被赛道筛选过的结果，很容易误判「数据对不上」。",
+   "status": "undefined",
+   "designRef": "初筛页默认筛选 src/components/ScreeningHub.tsx:30；驾驶舱 KPI 卡 src/components/CockpitDashboard.tsx:79-139",
+   "expected": "明确「初筛页默认展示范围」的产品口径：或默认全部赛道（管理端视角更符合「全校全览」），或保留默认赛道但把当前筛选显著提示，并让驾驶舱跳转带上对应赛道。",
+   "blockedBy": "属产品口径决策（管理端首屏默认看全校还是看主赛道）；定后再改初值或补跳转载荷（与 issue-cockpit-screening-nav-no-context 联动）。",
+   "severity": "low",
+   "category": "数据口径",
+   "owner": "待产品定义"
+  },
+  {
+   "id": "issue-mentorship-mock-fanout",
+   "where": "page-mentorship",
+   "title": "任务下发规模 15/28/82 写死并被用作进度条分母，与真实项目数（8）不符",
+   "detail": "新建任务弹窗的目标梯队下拉文案写死「A级 (15项) / B级 (28项) / 全校 (82项)」，`handleCreateCohortTask` 也按同样映射写死 `totalTargetProjects`（15/28/82），而右栏任务卡的提交进度条以该值为分母（`submittedCount / totalTargetProjects`）。真实 `projects` 只有 8 个，因此任何新任务的进度都天然极低；同时 `targetTracks: 'ALL'` 与 `createdAt: '2026-08-27'` 也写死（后者非当前日期）。",
+   "status": "undefined",
+   "designRef": "任务构造 src/components/MentorshipDispatch.tsx:93-108；下拉文案 :432-440；进度计算 :372-397",
+   "expected": "`totalTargetProjects` 由所选梯队的真实项目数计算得出；`createdAt` 取当前时间；`targetTracks` 提供赛道维度配置。",
+   "blockedBy": "需要 App 层在创建时把 `projects` 的梯队统计传下来（或把创建逻辑上移到 App），并决定赛道维度是否纳入任务模型。",
+   "severity": "medium",
+   "category": "数据口径",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-supervision-static-metrics",
+   "where": "nd-supervision-metrics",
+   "title": "督导指标横幅「AI 复核提分均值 +7.0 分」写死，而真实提分数据可算",
+   "detail": "四张指标卡中三张是真实派生（工单总数 / 待确认草稿数 / 在途工单数），第四张「AI 复核提分均值 (Δ)」写死 `+7.0 分`。而 `SupervisionWorkOrder.expertCheck.scoreChangeDelta` 在每次终审归档时都会写入真实值，对已结项工单求均值即可得到真实数字。另：卡三把 `pending_team_accept` 与 `team_in_progress` 合并计数，文案「学生团队修改中」与实际范围（含「已推送未接单」）略有不符。",
+   "status": "undefined",
+   "designRef": "指标卡 src/components/SupervisionClosure.tsx:601-607；真实提分字段写入 :232-249",
+   "expected": "提分均值按已结项工单的 `expertScoreDelta` 实时计算（无数据时显示占位而非 7.0）；卡三文案与统计口径对齐。",
+   "blockedBy": "无外部阻塞，属实现补齐（数据已在 `workOrders` 上）。",
+   "severity": "low",
+   "category": "技术实现",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-mentors-pool-two-ends-not-synced",
+   "where": "page-mentors-pool",
+   "title": "导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）",
+   "detail": "`page-mentors-pool` 在 admin 端渲染 `PlatformMentorPoolManagement`（自持 `MOCK_PLATFORM_MENTORS`，**无任何 props、改动不出组件**），在校管端渲染 `MentorPoolManagement`（吃 App 的 `mentors` 并 `onUpdateMentors` 写回）。两套数据、两套枚举（`certificationLevel` vs `roleCategory`）、两套可用性语义（`dispatchStatus` vs `availability`）、两个独立导出实现。后果：①平台端「跨校调度工单」（MODAL 3）有出口无落点——没有任何页面接收；②平台特聘专家不会出现在校端的调度页候选里；③校端也看不到平台库。",
+   "status": "undefined",
+   "designRef": "两端分流渲染 src/App.tsx:750-757；平台端自持数据 src/components/PlatformMentorPoolManagement.tsx:41-42；跨校调度弹窗 :1381-1491",
+   "expected": "明确两端关系（平台库是校端库的超集？还是分属两套池、靠「下派/调度」桥接？），并建立对应链路：若为超集则共享数据源；若靠调度桥接，则需在校端或调度页建立「调度工单接收与展示」。",
+   "blockedBy": "属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。",
+   "severity": "medium",
+   "category": "产品决策",
+   "owner": "上司拍板"
+  },
+  {
+   "id": "issue-milestones-filter-no-effect",
+   "where": "nd-milestones-stages",
+   "title": "里程碑看板阶段卡「点了没反应」：筛选只影响一个数字，看板列不筛选",
+   "detail": "L1~L5 阶段卡点击后设 `selectedPipelineStage`，但 `filteredProjects` 只在「共显示 N 个项目」这一句里被读取；看板五列各自用**全量** `projects.filter(p => p.currentStage === stage.key)` 取数。因此点卡片时用户**只能看到右上角数字变化**，看板内容毫无反应——这是本页最直接的交互缺陷。",
+   "status": "undefined",
+   "designRef": "筛选派生 src/components/MilestoneKanban.tsx:35-40；看板列取数 :136；唯一消费点 :131-133",
+   "expected": "点阶段卡后看板只展示该阶段（其余列变灰/收起），或明确改为「高亮该列 + 其余淡化」；「共显示 N 个项目」与看板列的数据源保持一致。",
+   "blockedBy": "无外部阻塞，属实现缺陷修复；需先定交互（过滤 vs 高亮）——建议高亮（保持管线全景可见）。",
+   "severity": "medium",
+   "category": "技术实现",
+   "owner": "工程自决"
+  },
+  {
+   "id": "issue-milestones-static-trend",
+   "where": "nd-milestones-trend",
+   "title": "阶段均分跃迁四数字全写死，且当前数据结构无法支撑真实计算",
+   "detail": "四张卡（81.2 / 86.5 / 90.8 / 94.8 分）与徽标「整体均分净增 +7.4 分」全是字面量；本卡不吃任何 props。真实数据里 `ProjectItem` 只有一个当前 `totalScore`，**没有历史分数快照**，因此「阶段均分跃迁」在当前结构下无法真实计算。另：本卡的四段口径（申报/校赛/省赛/国赛）与同页阶段卡的 L1~L5 五段不一致，也与 `page-guidance`（L1~L6）、`page-coach`（L1~L4）不一致。",
+   "status": "undefined",
+   "designRef": "趋势卡 src/components/MilestoneKanban.tsx:102-121；阶段卡 :26-32；全域阶段口径问题见 issue-guidance-stage-taxonomy-mismatch",
+   "expected": "两选一：①接入历史分数（工单 `expertCheck.scoreChangeDelta` 累加或引入阶段快照表）后真实计算；②明确标注为演示数据并保持与阶段卡段数一致。",
+   "blockedBy": "阶段段数需产品先拍板（L1~L4/L5/L6 之争）；真实计算则依赖历史分数数据源的建立。",
+   "severity": "low",
+   "category": "数据口径",
+   "owner": "工程自决"
   }
  ],
  "graph": {
   "columns": [
+   {
+    "id": "col-page-cockpit",
+    "title": "数据驾驶舱",
+    "subtitle": "page-cockpit · 学院管理层的全局态势总览：项目分布、评分排名、预警与导出"
+   },
+   {
+    "id": "col-page-milestones",
+    "title": "里程碑看板",
+    "subtitle": "page-milestones · 项目全生命周期的阶段推进看板（L1~L5 里程碑口径）。"
+   },
+   {
+    "id": "col-page-screening",
+    "title": "智能初筛中心",
+    "subtitle": "page-screening · 批量导入项目、按专家规则自动提取要点并给出初筛评分与分级"
+   },
+   {
+    "id": "col-page-mentorship",
+    "title": "导师智能调度",
+    "subtitle": "page-mentorship · 按赛道/专长匹配导师，创建批次任务并跟踪完成情况。"
+   },
+   {
+    "id": "col-page-supervision",
+    "title": "督导闭环中心",
+    "subtitle": "page-supervision · 导师侧：接收工单、查看学生提交、给出复核结论与提分评估。"
+   },
+   {
+    "id": "col-page-mentors-pool",
+    "title": "导师池管理",
+    "subtitle": "page-mentors-pool · 导师资源的录入、标签维护与双角色视图（校端 / 平台端）"
+   },
    {
     "id": "col-page-workbench",
     "title": "项目工作台",
@@ -1158,7 +1312,7 @@ const DATA = {
     "file": "src/components/SupervisionClosure.tsx",
     "sources": [],
     "note": "导师侧：接收工单、查看学生提交、给出复核结论与提分评估。",
-    "col": "col-external"
+    "col": "col-page-supervision"
    },
    {
     "id": "page-guidance",
@@ -1808,16 +1962,509 @@ const DATA = {
      "src/components/AssetManagementSystem.tsx:1939-2033"
     ],
     "col": "col-page-assets"
+   },
+   {
+    "id": "nd-cockpit-banner",
+    "label": "AI 决策指令横幅",
+    "sub": "nd-cockpit-banner",
+    "kind": "bar",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-cockpit",
+    "factCount": 5,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-cockpit/nd-cockpit-banner.md",
+    "sources": [
+     "src/components/CockpitDashboard.tsx:39-76"
+    ],
+    "col": "col-page-cockpit"
+   },
+   {
+    "id": "modal-report-export",
+    "label": "报告导出",
+    "sub": "modal-report-export",
+    "kind": "modal",
+    "importance": "medium",
+    "tier": "modal",
+    "page": "",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/ReportExportModal.tsx",
+    "sources": [],
+    "col": "col-external"
+   },
+   {
+    "id": "modal-batch-import",
+    "label": "批量导入与自动初筛",
+    "sub": "modal-batch-import",
+    "kind": "modal",
+    "importance": "medium",
+    "tier": "modal",
+    "page": "",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/BatchImportModal.tsx",
+    "sources": [],
+    "col": "col-external"
+   },
+   {
+    "id": "nd-cockpit-kpi",
+    "label": "金奖池 KPI 卡矩阵",
+    "sub": "nd-cockpit-kpi",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-cockpit",
+    "factCount": 7,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-cockpit/nd-cockpit-kpi.md",
+    "sources": [
+     "src/components/CockpitDashboard.tsx:77-156"
+    ],
+    "col": "col-page-cockpit"
+   },
+   {
+    "id": "page-screening",
+    "label": "智能初筛中心",
+    "sub": "page-screening",
+    "kind": "page",
+    "importance": "high",
+    "tier": "page",
+    "page": "page-screening",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/ScreeningHub.tsx",
+    "sources": [],
+    "note": "批量导入项目、按专家规则自动提取要点并给出初筛评分与分级对标。",
+    "col": "col-page-screening"
+   },
+   {
+    "id": "nd-cockpit-heatmap",
+    "label": "指标得分率热力洞察",
+    "sub": "nd-cockpit-heatmap",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-cockpit",
+    "factCount": 6,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-cockpit/nd-cockpit-heatmap.md",
+    "sources": [
+     "src/components/CockpitDashboard.tsx:161-303"
+    ],
+    "col": "col-page-cockpit"
+   },
+   {
+    "id": "nd-cockpit-pool",
+    "label": "A 级金奖潜力项目池",
+    "sub": "nd-cockpit-pool",
+    "kind": "list",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-cockpit",
+    "factCount": 7,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-cockpit/nd-cockpit-pool.md",
+    "sources": [
+     "src/components/CockpitDashboard.tsx:385-440"
+    ],
+    "col": "col-page-cockpit"
+   },
+   {
+    "id": "shell-project-drawer",
+    "label": "shell-project-drawer",
+    "sub": "shell-project-drawer",
+    "kind": "unknown",
+    "importance": "low",
+    "tier": "unknown",
+    "page": "",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "",
+    "sources": [],
+    "col": "col-external"
+   },
+   {
+    "id": "page-mentorship",
+    "label": "导师智能调度",
+    "sub": "page-mentorship",
+    "kind": "page",
+    "importance": "high",
+    "tier": "page",
+    "page": "page-mentorship",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/MentorshipDispatch.tsx",
+    "sources": [],
+    "note": "按赛道/专长匹配导师，创建批次任务并跟踪完成情况。",
+    "col": "col-page-mentorship"
+   },
+   {
+    "id": "nd-cockpit-warning",
+    "label": "异常停滞与合规预警",
+    "sub": "nd-cockpit-warning",
+    "kind": "list",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-cockpit",
+    "factCount": 6,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-cockpit/nd-cockpit-warning.md",
+    "sources": [
+     "src/components/CockpitDashboard.tsx:441-465"
+    ],
+    "col": "col-page-cockpit"
+   },
+   {
+    "id": "nd-screening-matrix",
+    "label": "二级指标全景表",
+    "sub": "nd-screening-matrix",
+    "kind": "table",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-screening",
+    "factCount": 8,
+    "ruleCount": 5,
+    "file": "wiki/nodes/page-screening/nd-screening-matrix.md",
+    "sources": [
+     "src/components/ScreeningHub.tsx:178-386"
+    ],
+    "col": "col-page-screening"
+   },
+   {
+    "id": "nd-screening-ranking",
+    "label": "综合梯队与金奖对标",
+    "sub": "nd-screening-ranking",
+    "kind": "table",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-screening",
+    "factCount": 7,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-screening/nd-screening-ranking.md",
+    "sources": [
+     "src/components/ScreeningHub.tsx:388-480"
+    ],
+    "col": "col-page-screening"
+   },
+   {
+    "id": "nd-screening-compliance",
+    "label": "合规与一票否决拦截",
+    "sub": "nd-screening-compliance",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-screening",
+    "factCount": 7,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-screening/nd-screening-compliance.md",
+    "sources": [
+     "src/components/ScreeningHub.tsx:482-563"
+    ],
+    "col": "col-page-screening"
+   },
+   {
+    "id": "nd-mentorship-banner",
+    "label": "页头与调度动作",
+    "sub": "nd-mentorship-banner",
+    "kind": "bar",
+    "importance": "medium",
+    "tier": "node",
+    "page": "page-mentorship",
+    "factCount": 4,
+    "ruleCount": 3,
+    "file": "wiki/nodes/page-mentorship/nd-mentorship-banner.md",
+    "sources": [
+     "src/components/MentorshipDispatch.tsx:130-162"
+    ],
+    "col": "col-page-mentorship"
+   },
+   {
+    "id": "page-mentors-pool",
+    "label": "导师池管理",
+    "sub": "page-mentors-pool",
+    "kind": "page",
+    "importance": "medium",
+    "tier": "page",
+    "page": "page-mentors-pool",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/MentorPoolManagement.tsx",
+    "sources": [],
+    "note": "导师资源的录入、标签维护与双角色视图（校端 / 平台端）。",
+    "col": "col-page-mentors-pool"
+   },
+   {
+    "id": "nd-mentorship-taskmodal",
+    "label": "新建批次打磨任务弹窗",
+    "sub": "nd-mentorship-taskmodal",
+    "kind": "modal",
+    "importance": "medium",
+    "tier": "node",
+    "page": "page-mentorship",
+    "factCount": 7,
+    "ruleCount": 5,
+    "file": "wiki/nodes/page-mentorship/nd-mentorship-taskmodal.md",
+    "sources": [
+     "src/components/MentorshipDispatch.tsx:408-483"
+    ],
+    "col": "col-page-mentorship"
+   },
+   {
+    "id": "nd-mentorship-tasks",
+    "label": "常态化培育任务中心",
+    "sub": "nd-mentorship-tasks",
+    "kind": "list",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-mentorship",
+    "factCount": 6,
+    "ruleCount": 3,
+    "file": "wiki/nodes/page-mentorship/nd-mentorship-tasks.md",
+    "sources": [
+     "src/components/MentorshipDispatch.tsx:357-405"
+    ],
+    "col": "col-page-mentorship"
+   },
+   {
+    "id": "nd-mentorship-match",
+    "label": "智能短板定向匹配与预约",
+    "sub": "nd-mentorship-match",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-mentorship",
+    "factCount": 8,
+    "ruleCount": 5,
+    "file": "wiki/nodes/page-mentorship/nd-mentorship-match.md",
+    "sources": [
+     "src/components/MentorshipDispatch.tsx:167-280"
+    ],
+    "col": "col-page-mentorship"
+   },
+   {
+    "id": "page-workbench",
+    "label": "项目工作台",
+    "sub": "page-workbench",
+    "kind": "page",
+    "importance": "high",
+    "tier": "page",
+    "page": "page-workbench",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/ProjectMemberWorkbench.tsx",
+    "sources": [],
+    "note": "学员端项目主界面：动态待办、专家工单、AI 对标体检、团队架构、项目文件夹（大事记=文件更改记录）。",
+    "col": "col-page-workbench"
+   },
+   {
+    "id": "nd-supervision-header",
+    "label": "页头与会议导入入口",
+    "sub": "nd-supervision-header",
+    "kind": "bar",
+    "importance": "medium",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 6,
+    "ruleCount": 3,
+    "file": "wiki/nodes/page-supervision/nd-supervision-header.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:442-488"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-import",
+    "label": "导入会议录音生成工单草稿",
+    "sub": "nd-supervision-import",
+    "kind": "modal",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 7,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-supervision/nd-supervision-import.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:1476-1541"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-pipeline",
+    "label": "辅导工单管线列表",
+    "sub": "nd-supervision-pipeline",
+    "kind": "list",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 8,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-supervision/nd-supervision-pipeline.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:612-750"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-workbench",
+    "label": "工单深度工作区（状态时序 + 四 tab）",
+    "sub": "nd-supervision-workbench",
+    "kind": "bar",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 7,
+    "ruleCount": 3,
+    "file": "wiki/nodes/page-supervision/nd-supervision-workbench.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:751-910"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-tasks",
+    "label": "辅导整改任务清单",
+    "sub": "nd-supervision-tasks",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 7,
+    "ruleCount": 5,
+    "file": "wiki/nodes/page-supervision/nd-supervision-tasks.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:911-1116"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-diff",
+    "label": "改前改后比对与 AI 提分验收",
+    "sub": "nd-supervision-diff",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 8,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-supervision/nd-supervision-diff.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:1117-1312"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-sources",
+    "label": "会议纪要与项目材料",
+    "sub": "nd-supervision-sources",
+    "kind": "panel",
+    "importance": "medium",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 5,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-supervision/nd-supervision-sources.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:1313-1475"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-supervision-invitations",
+    "label": "学校指派与导师邀请闭环",
+    "sub": "nd-supervision-invitations",
+    "kind": "panel",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-supervision",
+    "factCount": 8,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-supervision/nd-supervision-invitations.md",
+    "sources": [
+     "src/components/SupervisionClosure.tsx:489-578"
+    ],
+    "col": "col-page-supervision"
+   },
+   {
+    "id": "nd-milestones-banner",
+    "label": "页头与复盘导出",
+    "sub": "nd-milestones-banner",
+    "kind": "bar",
+    "importance": "low",
+    "tier": "node",
+    "page": "page-milestones",
+    "factCount": 4,
+    "ruleCount": 2,
+    "file": "wiki/nodes/page-milestones/nd-milestones-banner.md",
+    "sources": [
+     "src/components/MilestoneKanban.tsx:39-62"
+    ],
+    "col": "col-page-milestones"
+   },
+   {
+    "id": "nd-milestones-board",
+    "label": "全生命周期看板列",
+    "sub": "nd-milestones-board",
+    "kind": "list",
+    "importance": "high",
+    "tier": "node",
+    "page": "page-milestones",
+    "factCount": 8,
+    "ruleCount": 4,
+    "file": "wiki/nodes/page-milestones/nd-milestones-board.md",
+    "sources": [
+     "src/components/MilestoneKanban.tsx:126-189"
+    ],
+    "col": "col-page-milestones"
    }
   ],
   "byCol": {
+   "col-page-cockpit": [
+    "nd-cockpit-banner",
+    "nd-cockpit-pool",
+    "nd-cockpit-warning",
+    "nd-cockpit-heatmap",
+    "nd-cockpit-kpi"
+   ],
+   "col-page-milestones": [
+    "nd-milestones-banner",
+    "nd-milestones-board"
+   ],
+   "col-page-screening": [
+    "nd-screening-compliance",
+    "nd-screening-matrix",
+    "nd-screening-ranking",
+    "page-screening"
+   ],
+   "col-page-mentorship": [
+    "nd-mentorship-banner",
+    "nd-mentorship-tasks",
+    "nd-mentorship-match",
+    "nd-mentorship-taskmodal",
+    "page-mentorship"
+   ],
+   "col-page-supervision": [
+    "nd-supervision-workbench",
+    "nd-supervision-header",
+    "nd-supervision-pipeline",
+    "nd-supervision-sources",
+    "nd-supervision-invitations",
+    "nd-supervision-diff",
+    "nd-supervision-tasks",
+    "nd-supervision-import",
+    "page-supervision"
+   ],
+   "col-page-mentors-pool": [
+    "page-mentors-pool"
+   ],
    "col-page-workbench": [
     "nd-workbench-hero",
     "nd-workbench-wo",
     "nd-workbench-todo",
     "nd-workbench-diag-questions",
     "nd-workbench-diag-gaps",
-    "nd-workbench-folder"
+    "nd-workbench-folder",
+    "page-workbench"
    ],
    "col-page-guidance": [
     "nd-guidance-chapters",
@@ -1867,9 +2514,11 @@ const DATA = {
     "nd-login-form"
    ],
    "col-external": [
+    "modal-batch-import",
+    "modal-report-export",
     "modal-rules-config",
-    "page-supervision",
-    "shell-app"
+    "shell-app",
+    "shell-project-drawer"
    ]
   }
  },
@@ -3416,6 +4065,787 @@ const DATA = {
    "evidenceChain": "",
    "sources": [
     "src/components/AssetManagementSystem.tsx:359-399"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-banner-2-modal-report",
+   "from": "nd-cockpit-banner",
+   "to": "modal-report-export",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击横幅「一键导出复盘汇报」",
+   "payload": "",
+   "logic": "prop onOpenReportExport → App 层 () => setIsReportModalOpen(true) → 渲染 ReportExportModal。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:57-64",
+    "src/App.tsx:690",
+    "src/App.tsx:875-878"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-banner-2-modal-import",
+   "from": "nd-cockpit-banner",
+   "to": "modal-batch-import",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击横幅「导入新批次项目」",
+   "payload": "",
+   "logic": "prop onOpenBatchImport → App 层 () => setIsImportModalOpen(true) → 渲染 BatchImportModal；导入完成后 App 用新数组整体替换 projects。",
+   "note": "与 e-screening-compliance-2-modal-import 指向同一弹层（两个入口）。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:65-71",
+    "src/App.tsx:691",
+    "src/App.tsx:869-873",
+    "src/App.tsx:503-506"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-kpi-2-screening",
+   "from": "nd-cockpit-kpi",
+   "to": "page-screening",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击前四张 KPI 卡（申报项目总数 / A级·国赛金奖池 / B级·省金国银池 / C·D级·基础培育池）",
+   "payload": "",
+   "logic": "四张卡的 onClick 均为 onNavigateTab('screening')；不带任何筛选载荷。",
+   "note": "四张卡合并为一条边（同 from/to、同 logic）；落地到初筛页后仍受该页默认赛道筛选限制，看到的数与卡片数字不一致。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:81",
+    "src/components/CockpitDashboard.tsx:96",
+    "src/components/CockpitDashboard.tsx:113",
+    "src/components/CockpitDashboard.tsx:128",
+    "src/App.tsx:693-695"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-kpi-2-supervision",
+   "from": "nd-cockpit-kpi",
+   "to": "page-supervision",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击第五张 KPI 卡「工单督导闭环率」",
+   "payload": "",
+   "logic": "onClick={() => onNavigateTab('supervision')}。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:143",
+    "src/App.tsx:693-695"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-heatmap-2-screening",
+   "from": "nd-cockpit-heatmap",
+   "to": "page-screening",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击热力图卡右上「查看初筛全览 ›」",
+   "payload": "",
+   "logic": "onClick={() => onNavigateTab('screening')}。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:173-179"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-pool-2-screening",
+   "from": "nd-cockpit-pool",
+   "to": "page-screening",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击金奖池卡右上「全部排名」",
+   "payload": "",
+   "logic": "onClick={() => onNavigateTab('screening')}。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:392-397"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-pool-2-project-drawer",
+   "from": "nd-cockpit-pool",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击 A 级金奖池中的任一项目卡",
+   "payload": "ProjectItem（完整对象）",
+   "logic": "onClick={() => onSelectProject(project)} → App.handleSelectProject：setSelectedProject + setIsDrawerOpen(true) → 渲染 ProjectDetailDrawer。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:405",
+    "src/App.tsx:497-500"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-pool-2-mentorship",
+   "from": "nd-cockpit-pool",
+   "to": "page-mentorship",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击金奖池底部「为 A 级项目批量调度国家级导师」",
+   "payload": "",
+   "logic": "onClick={() => onNavigateTab('mentorship')}；不携带 A 级筛选或项目列表。",
+   "note": "接收端（导师调度页）的项目下拉初值是 projects[0]，与本按钮想表达的「A 级批量」无关。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:431-438"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-cockpit-warning-2-project-drawer",
+   "from": "nd-cockpit-warning",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击预警列表中的任一条",
+   "payload": "ProjectItem",
+   "logic": "onClick={() => onSelectProject(p)} → App.handleSelectProject（同 A 级池）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/CockpitDashboard.tsx:457",
+    "src/App.tsx:497-500"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-screening-matrix-2-project-drawer",
+   "from": "nd-screening-matrix",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击全景表任一行，或行末「下钻诊断 ›」按钮",
+   "payload": "ProjectItem",
+   "logic": "整行 onClick 与按钮 onClick 均调 onSelectProject(project)（按钮带 stopPropagation）→ App.handleSelectProject 开抽屉。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/ScreeningHub.tsx:273-277",
+    "src/components/ScreeningHub.tsx:370-380",
+    "src/App.tsx:497-500"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-screening-ranking-2-project-drawer",
+   "from": "nd-screening-ranking",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击排名表任一行，或行末「详情」按钮",
+   "payload": "ProjectItem",
+   "logic": "行 onClick 与「详情」按钮均调 onSelectProject(project)。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/ScreeningHub.tsx:407-410",
+    "src/components/ScreeningHub.tsx:454-460"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-screening-ranking-2-mentorship",
+   "from": "nd-screening-ranking",
+   "to": "page-mentorship",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击排名表行末「排期」按钮",
+   "payload": "",
+   "logic": "onClick={() => onOpenAssignMentor(project)} → App.handleOpenAssignMentor：**忽略入参**，仅 setIsDrawerOpen(false) + setActiveTab('mentorship')。",
+   "note": "项目载荷在 App 层被丢弃——这是「排期」看起来生效但实际不带项目的原因（见 issue-cockpit-screening-nav-no-context）。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/ScreeningHub.tsx:464-476",
+    "src/App.tsx:526-529"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-screening-compliance-2-project-drawer",
+   "from": "nd-screening-compliance",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击合规卡任一处，或卡内「查看详情」按钮",
+   "payload": "ProjectItem",
+   "logic": "整卡 onClick 与按钮 onClick 均调 onSelectProject(project)（按钮带 stopPropagation）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/ScreeningHub.tsx:508",
+    "src/components/ScreeningHub.tsx:557-563"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-screening-compliance-2-modal-import",
+   "from": "nd-screening-compliance",
+   "to": "modal-batch-import",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击合规看板右上「重新批量扫描」",
+   "payload": "",
+   "logic": "onClick={onOpenBatchImport} → App 打开 BatchImportModal（与驾驶舱「导入新批次项目」同一弹层）。",
+   "note": "按钮语义是「重新扫描合规」，实际打开的是「批量导入」弹层——文案与行为不一致。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/ScreeningHub.tsx:496-501",
+    "src/App.tsx:699"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-mentorship-banner-2-mentors-pool",
+   "from": "nd-mentorship-banner",
+   "to": "page-mentors-pool",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击页头「管理导师智库档案」",
+   "payload": "",
+   "logic": "onClick={onNavigateToMentorPool} → App 层 () => setActiveTab('mentors_pool')（按钮仅在 prop 存在时渲染）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/MentorshipDispatch.tsx:143-153",
+    "src/App.tsx:714-716"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-mentorship-banner-2-taskmodal",
+   "from": "nd-mentorship-banner",
+   "to": "nd-mentorship-taskmodal",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击页头「新建梯队批量打磨任务」",
+   "payload": "",
+   "logic": "setIsTaskModalOpen(true)。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/MentorshipDispatch.tsx:155-161",
+    "src/components/MentorshipDispatch.tsx:408-419"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-mentorship-taskmodal-2-tasks-writeback",
+   "from": "nd-mentorship-taskmodal",
+   "to": "nd-mentorship-tasks",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "弹窗提交「一键群发下发」",
+   "payload": "",
+   "logic": "handleCreateCohortTask → onAddNewCohortTask(newTask) → App.handleAddNewCohortTask：setCohortTasks(prev => [newTask, ...prev])（插到最前）→ 右栏任务中心立即渲染新任务卡。",
+   "note": "totalTargetProjects 与 createdAt 均为写死值（见 issue-mentorship-mock-fanout）。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/MentorshipDispatch.tsx:93-114",
+    "src/App.tsx:519-521"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-mentorship-book-2-workbench-intended",
+   "from": "nd-mentorship-match",
+   "to": "page-workbench",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "intended",
+   "statusLabel": "设计有·未实现",
+   "dash": "7 5",
+   "trigger": "点击推荐专家卡「一键预约排期」",
+   "payload": "",
+   "logic": "",
+   "note": "",
+   "designRef": "预约成功文案「已成功为【项目】预约【导师】老师：{时段}。**AI 辅导工单已同步创建！**」src/components/MentorshipDispatch.tsx:89",
+   "expected": "预约后应为该导师与该项目的辅导创建一条工单（`SupervisionWorkOrder`），使 `page-supervision` 能看到待处理工单、`page-workbench` 能看到导师派发任务。",
+   "blockedBy": "handleBookMentor 只 setBookingSuccessMsg + 4 秒后清空；本页没有 onAddNewWorkOrder prop（App 有 handleAddNewWorkOrder 但只传给了 page-supervision），也未传入导师/项目关联字段。",
+   "issue": "",
+   "severity": "high",
+   "evidenceChain": "",
+   "sources": [],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-header-2-import",
+   "from": "nd-supervision-header",
+   "to": "nd-supervision-import",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击页头「导入辅导会议录音/视频」",
+   "payload": "",
+   "logic": "setIsUploadModalOpen(true) → 渲染 MODAL 1（导入弹窗）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:460-469",
+    "src/components/SupervisionClosure.tsx:1477-1478"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-pipeline-2-workbench",
+   "from": "nd-supervision-pipeline",
+   "to": "nd-supervision-workbench",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击工单管线中的任一工单卡",
+   "payload": "",
+   "logic": "onClick={() => setSelectedOrder(order)} → 右栏工作区按该工单渲染（头部/时序/四 tab）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:676",
+    "src/components/SupervisionClosure.tsx:752-756"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-pipeline-2-import",
+   "from": "nd-supervision-pipeline",
+   "to": "nd-supervision-import",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击列表标题旁「新辅导 +」",
+   "payload": "",
+   "logic": "setIsUploadModalOpen(true)（与页头按钮同一入口）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:627-634"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-workbench-2-tasks-embed",
+   "from": "nd-supervision-workbench",
+   "to": "nd-supervision-tasks",
+   "type": "embed",
+   "typeLabel": "内嵌",
+   "color": "#0d9488",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "切换到「辅导整改任务清单」tab（默认激活）",
+   "payload": "",
+   "logic": "activeWorkspaceTab === 'tasks' 时在工作区下方渲染任务清单区。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:68",
+    "src/components/SupervisionClosure.tsx:911"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-workbench-2-diff-embed",
+   "from": "nd-supervision-workbench",
+   "to": "nd-supervision-diff",
+   "type": "embed",
+   "typeLabel": "内嵌",
+   "color": "#0d9488",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "切换到「改前改后版本比对 & AI提分验收」tab",
+   "payload": "",
+   "logic": "activeWorkspaceTab === 'diff_ai' 时渲染；工单处于 team_submitted 时 tab 上带「新提交」徽标。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:879-893",
+    "src/components/SupervisionClosure.tsx:1117"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-workbench-2-sources-embed",
+   "from": "nd-supervision-workbench",
+   "to": "nd-supervision-sources",
+   "type": "embed",
+   "typeLabel": "内嵌",
+   "color": "#0d9488",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "切换到「会议音视频与ASR纪要」或「项目原始材料与初始诊断」tab",
+   "payload": "",
+   "logic": "activeWorkspaceTab === 'meeting' / 'materials' 时分别渲染两个只读面板。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:894-907",
+    "src/components/SupervisionClosure.tsx:1313",
+    "src/components/SupervisionClosure.tsx:1409"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-tasks-2-workbench-writeback",
+   "from": "nd-supervision-tasks",
+   "to": "page-workbench",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "导师确认推送草稿 / 终审操作（或模拟团队接单·驳回·提交）；任务条目增删改与勾选",
+   "payload": "SupervisionWorkOrder（含 status、tasks[]、studentSubmission、versionDiff 等字段的整体对象）",
+   "logic": "所有写操作经 syncOrder(updated)：setSelectedOrder + onUpdateWorkOrder → App.handleUpdateWorkOrder：setWorkOrders(prev => prev.map(...)) → page-workbench 的「专家辅导与督导工单」按项目过滤同一份 workOrders，因此学生侧立即可见新状态。",
+   "note": "跨角色真实闭环（导师 → 学生）；与既有边 e-workbench-wo-2-supervision-writeback（学生 → 导师）构成双向。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:106-112",
+    "src/components/SupervisionClosure.tsx:154-163",
+    "src/App.tsx:516-518",
+    "src/App.tsx:732-738"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-diff-2-workbench-writeback",
+   "from": "nd-supervision-diff",
+   "to": "page-workbench",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "终审「验收合格 · 归档结项」或「退回继续修改」",
+   "payload": "status: 'closed_completed' | 'need_rework' + expertCheck{checkedDate, approved, finalRemark, scoreChangeDelta} 或 teamRejectionReason",
+   "logic": "handleApproveFinalClose / handleConfirmRework → syncOrder → App.setWorkOrders → 学生端工作台看到「已验收归档」或「导师退回」及意见。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:232-262",
+    "src/components/SupervisionClosure.tsx:1286-1308"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-import-2-pipeline-writeback",
+   "from": "nd-supervision-import",
+   "to": "nd-supervision-pipeline",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "导入弹窗「开始转写并生成 AI 建议工单草稿」",
+   "payload": "SupervisionWorkOrder{status:'draft_ai_suggested', meetingRecord, diagnosticSummary, tasks[](3 条预制), coMentors[]}",
+   "logic": "handleUploadAndGenerateOrder：固定 1800ms 后构造工单 → setSelectedOrder(newOrder)（右栏立即切到新工单）+ onAddNewWorkOrder(newOrder) → App.handleAddNewWorkOrder：setWorkOrders(prev => [newOrder, ...prev])（左栏顶部出现新工单卡）。",
+   "note": "工单内容（导师/时长/转写要点/诊断/任务）全部写死；上传区无真实文件输入。",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/SupervisionClosure.tsx:331-411",
+    "src/App.tsx:520-522",
+    "src/App.tsx:734-736"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-supervision-invitations-2-shell-intended",
+   "from": "nd-supervision-invitations",
+   "to": "shell-app",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "intended",
+   "statusLabel": "设计有·未实现",
+   "dash": "7 5",
+   "trigger": "接受指导并入驻 / 婉拒邀请（含理由）",
+   "payload": "",
+   "logic": "",
+   "note": "",
+   "designRef": "婉拒成功文案「回执与理由已同步推送至学校双创教学指导处。」src/components/SupervisionClosure.tsx:150；接受文案「已加入您的指导项目库」src/components/SupervisionClosure.tsx:136",
+   "expected": "邀请响应（接受/婉拒+理由）应回传学校端（`page-mentorship` 的导师调度或学校侧指派记录），使管理端能看到导师是否接单；接受后项目应进入该导师的指导项目库。",
+   "blockedBy": "invitations 是页面本地 state（初值 mockSchoolInvitations），接受/婉拒只改本地并弹 Toast；本页没有对应上行 prop，App 层无邀请状态与接收方。",
+   "issue": "",
+   "severity": "medium",
+   "evidenceChain": "",
+   "sources": [],
+   "offset": 0.0
+  },
+  {
+   "id": "e-milestones-banner-2-modal-report",
+   "from": "nd-milestones-banner",
+   "to": "modal-report-export",
+   "type": "navigate",
+   "typeLabel": "跳转",
+   "color": "#6366f1",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击页头「生成金奖指标提升复盘材料」",
+   "payload": "",
+   "logic": "prop onOpenReportExport → App 层 () => setIsReportModalOpen(true)（与驾驶舱同一弹层）。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/MilestoneKanban.tsx:50-57",
+    "src/App.tsx:757"
+   ],
+   "offset": 0.0
+  },
+  {
+   "id": "e-milestones-board-2-project-drawer",
+   "from": "nd-milestones-board",
+   "to": "shell-project-drawer",
+   "type": "navigate-with-payload",
+   "typeLabel": "跳转·带参",
+   "color": "#2563eb",
+   "status": "implemented",
+   "statusLabel": "已实现",
+   "dash": "0",
+   "trigger": "点击看板列中的任一项目卡",
+   "payload": "ProjectItem",
+   "logic": "onClick={() => onSelectProject(project)} → App.handleSelectProject 开抽屉。",
+   "note": "",
+   "designRef": "",
+   "expected": "",
+   "blockedBy": "",
+   "issue": "",
+   "severity": "",
+   "evidenceChain": "",
+   "sources": [
+    "src/components/MilestoneKanban.tsx:151",
+    "src/App.tsx:756"
    ],
    "offset": 0.0
   }

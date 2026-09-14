@@ -87,8 +87,9 @@
       "component": "src/components/CockpitDashboard.tsx",
       "relevant_files": ["src/components/CockpitDashboard.tsx", "src/components/RadarChart.tsx", "src/data/mockProjects.ts"],
       "related_pages": ["page-screening", "page-milestones", "page-mentorship"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 6,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：6 节点覆盖 AI 决策横幅/金奖池 KPI/指标热力洞察/赛道与转化小盘/A 级金奖潜力池/异常预警。未下钻为节点的页面级结构：三栏主网格（157-159）、派生计算（31-36）。数据口径要点：仅 A/B/C·D 池计数与预警计数为真实派生，其余数字（82 项 / 15 个 A 级 / +28.5% / 88.5% / 68.4% / 赛道 42·20·12·8）全为写死字面量，与 mock 实际 8 个项目自相矛盾（issue-cockpit-static-metrics）。"
     },
     {
       "id": "page-milestones",
@@ -102,8 +103,9 @@
       "component": "src/components/MilestoneKanban.tsx",
       "relevant_files": ["src/components/MilestoneKanban.tsx", "src/data/mockProjects.ts"],
       "related_pages": ["page-cockpit", "page-workbench"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 4,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：4 节点覆盖页头与复盘导出/L1~L5 阶段流卡/阶段均分跃迁卡/全生命周期看板列。未下钻为节点的页面级结构：阶段常量与筛选派生（25-40）。两处口径问题已登记：阶段卡筛选只影响「共显示 N 个项目」而看板列不筛选（issue-milestones-filter-no-effect）；均分跃迁四数字全写死且当前数据结构无历史分数快照（issue-milestones-static-trend）。"
     },
     {
       "id": "page-screening",
@@ -117,8 +119,9 @@
       "component": "src/components/ScreeningHub.tsx",
       "relevant_files": ["src/components/ScreeningHub.tsx", "src/components/BatchImportModal.tsx", "src/data/rules2026.ts"],
       "related_pages": ["page-cockpit", "page-mentorship"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 4,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：4 节点覆盖视图切换与四维筛选/二级指标全景表/综合梯队与金奖对标/合规与一票否决拦截。未下钻为节点的页面级结构：三视图互斥渲染分支（178/388/482）、filteredProjects 派生（37-55）。核心口径问题已登记：全景表列数固定 17 且按数组下标取值，与各赛道真实二级指标数不符（红旅项目第 4 项丢失、产业命题项目「项目分析」整块缺失）——issue-screening-fixed-columns-by-index。"
     },
     {
       "id": "page-mentorship",
@@ -132,8 +135,9 @@
       "component": "src/components/MentorshipDispatch.tsx",
       "relevant_files": ["src/components/MentorshipDispatch.tsx", "src/data/mockMentors.ts"],
       "related_pages": ["page-mentors-pool", "page-supervision", "page-screening"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 5,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：5 节点覆盖页头与调度动作/智能短板定向匹配与预约/导师智库全览与筛选/常态化培育任务中心/新建批次任务弹窗。未下钻为节点的页面级结构：三栏网格（163）、Toast（119-128）、推荐算法派生（46-86）。口径要点：本页含全库少见的真实匹配算法（三规则加分+排序），但预约仅 Toast、任务规模 15/28/82 写死（issue-mentorship-mock-fanout）。"
     },
     {
       "id": "page-supervision",
@@ -147,8 +151,9 @@
       "component": "src/components/SupervisionClosure.tsx",
       "relevant_files": ["src/components/SupervisionClosure.tsx", "src/data/mockMentors.ts"],
       "related_pages": ["page-workbench", "page-mentorship"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "docStatus": "drilled",
+      "nodeCount": 9,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：9 节点覆盖页头与会议导入入口/学校指派邀请闭环/督导指标横幅/工单管线列表/工单深度工作区外壳/辅导整改任务清单/改前改后比对与 AI 提分验收/会议纪要与项目材料/导入会议生成工单草稿。未下钻为节点的页面级结构：Toast（472-488）、主二栏网格（610）、左栏流程指引（736-750）、其余五个弹窗（婉拒 1583-1624 / 邀请详情 1625-1696 / 任务编辑 1697-1794 / 终审归档 1795-1851 / 退回修改 1852-1896，分别依附于邀请、任务清单与 diff 节点）。本页是全库唯一「跨角色真实写回」闭环（与 page-workbench 共享 workOrders）。"
     },
     {
       "id": "page-mentors-pool",
@@ -161,9 +166,10 @@
       "view": "mentors_pool",
       "component": "src/components/MentorPoolManagement.tsx",
       "relevant_files": ["src/components/MentorPoolManagement.tsx", "src/components/PlatformMentorPoolManagement.tsx", "src/data/mockMentors.ts", "src/data/mockPlatformMentors.ts"],
-      "related_pages": ["page-mentorship"],
-      "docStatus": "pending",
-      "nodeCount": 0
+      "related_pages": ["page-mentorship", "page-supervision"],
+      "docStatus": "drilled",
+      "nodeCount": 6,
+      "nodeScopeNote": "2026-09-14 批 2 下钻：6 节点覆盖校端页头与宏指标/五维筛选与双视图/导师卡片表格双视图/聘任编辑弹窗/履历详情弹窗/admin 端平台导师池。未下钻为节点的页面级结构：两端空态与 Toast。**一页两端**：校端（写回 App mentors）与 admin 端（自持 mockPlatformMentors、无 props）是两套独立组件与数据（App.tsx:750-757 分流），下钻与改造均需按端区分。"
     },
     {
       "id": "page-workbench",
