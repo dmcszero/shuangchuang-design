@@ -1,50 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LLM Wiki 工具链（shuangchuang-design-main）
+"""LLM Wiki 工具链 · shuangchuang-design-SY（schema v0.3）
 
-三个子命令（仅依赖标准库）：
+五个子命令（纯标准库，零第三方依赖）：
 
-    python wiki/gen_wiki_tools.py validate   # 校验 wiki/pages/*.md 与代码真源的一致性
-    python wiki/gen_wiki_tools.py index      # 生成 wiki/llms.txt（llms.txt v2 格式）
-    python wiki/gen_wiki_tools.py map        # 生成 wiki/model-map.html（结构建模可视化，自包含单页）
+    python wiki/gen_wiki_tools.py validate     校验 structure / pages / nodes / edges 一致性
+    python wiki/gen_wiki_tools.py sync-edges   把 edges.json 渲染进各 node 的第 5 节（出入边）
+    python wiki/gen_wiki_tools.py index        生成 wiki/llms.txt（含 node 清单）
+    python wiki/gen_wiki_tools.py map          生成 wiki/module-map.html + wiki/site/index.html
+    python wiki/gen_wiki_tools.py gaps         汇总非 implemented 边与 issues → wiki/gaps.md
 
-可视化（map）说明
------------------
-输入：wiki/structure.json + wiki/pages/*.md（不引入任何外部依赖或 CDN）
-输出：wiki/model-map.html —— 单文件、离线可用、可直接分发
-内容：① 关键指标条 ② 分区×页面邻接结构图（SVG，可点击下钻）
-      ③ 页面详情面板（五节齐备 / 引用统计 / sources / related_pages）
-      ④ 20 页总表
-定位：用于展示结构建模成果与自查结构是否正确；不含任何“问题标注”，只呈现结构与覆盖。
+真源与产物
+----------
+真源（手写，唯一事实来源）：
+    wiki/structure.json          section / page / 壳层 / 弹层 / 孤儿
+    wiki/edges.json              边 + issues
+    wiki/nodes/<page-id>/*.md    节点（frontmatter + 前 4 节）
+    wiki/pages/<page-id>.md      页面（frontmatter + 页面级事实 + 节点地图）
+产物（工具生成，勿手改）：
+    wiki/nodes/**/ 第 5 节「出入边」   ← sync-edges
+    wiki/llms.txt                      ← index
+    wiki/module-map.html · wiki/site/index.html ← map
+    wiki/gaps.md                       ← gaps
 
-校验规则（validate）
---------------------
-A. 结构层
-   A1 structure.json 存在且可解析；pages[].id 唯一
-   A2 sections[].pages 引用的 id 必须都在 pages[] 中定义
-   A3 pages[] 中每页都有对应的 pages/<id>.md（覆盖率 100%）
-   A4 pages/ 下不存在游离的 page-*.md（未在 structure.json 登记）
-
-B. frontmatter 完整性（每页必填）
-   id / title / section / importance / sources / related_pages
-   - id 必须等于文件名
-   - section 必须是 structure.json 的 sections[].id
-   - importance ∈ {high, medium, low}
-   - sources 非空且列出的文件必须真实存在
-   - related_pages 每一项都必须是已登记的 page id（且不得自引用）
-
-C. 正文引用可验证性（本 wiki 的核心价值）
-   C1 五节齐备：一句话定位 / 事实 / 规则与边界 / 常见开发任务 / 与 related_pages 的联动提示
-   C2 正文至少 MIN_SOURCES 条 `Sources: [path:line]()` 引用（防空壳页）
-   C3 每条引用：路径存在（相对仓库根）、行号为 1..文件总行数、区间 start <= end
-   C4 行号口径 = UTF-8 解码行数，与编辑器显示一致
-      （Python: len(Path(p).read_text(encoding='utf-8').splitlines())）
-
-D. 联动一致性（警告级，不阻断）
-   D1 structure.json 里 declared related_pages 与页面 frontmatter 是否一致
-   D2 页面 A 指向 B 但 B 未回指 A（邻接不对称，提示人工确认）
-
-退出码：有 error 时返回 1，否则 0。
+设计原则
+--------
+- 行号口径 = UTF-8 解码行数，1-based，闭区间；引用语法 `Sources: [相对路径:起[-止]]()`，
+  路径相对 `shuangchuang-design-SY/`。
+- node 第 5 节的真源是 `edges.json`。手写会与边表漂移，故由 sync-edges 生成并在 markers
+  （`<!-- EDGES:BEGIN -->` / `<!-- EDGES:END -->`）之间整段覆盖；validate 的 D5 校验二者一致。
+- 文件一律 LF + 末尾换行；本工具读写均显式声明 newline，不随平台漂移。
 """
 
 from __future__ import annotations
@@ -54,42 +39,64 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # --------------------------------------------------------------------------
-# 常量：与 wiki 契约绑定，改这里即改契约
+# 路径常量
 # --------------------------------------------------------------------------
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WIKI_DIR = REPO_ROOT / "wiki"
 PAGES_DIR = WIKI_DIR / "pages"
+NODES_DIR = WIKI_DIR / "nodes"
 STRUCTURE_FILE = WIKI_DIR / "structure.json"
+EDGES_FILE = WIKI_DIR / "edges.json"
 LLMS_TXT = WIKI_DIR / "llms.txt"
-MODEL_MAP = WIKI_DIR / "model-map.html"
-# 可直接发布的静态站点目录：只放 index.html，便于一键发布为在线链接（入口落在 /）
+GAPS_MD = WIKI_DIR / "gaps.md"
+MAP_FILE = WIKI_DIR / "module-map.html"
 SITE_DIR = WIKI_DIR / "site"
 SITE_INDEX = SITE_DIR / "index.html"
 
-REQUIRED_FRONTMATTER = ["id", "title", "section", "importance", "sources", "related_pages"]
+# --------------------------------------------------------------------------
+# 契约常量（改这里即改契约；须与 wiki/schema.md 同步）
+# --------------------------------------------------------------------------
+PAGE_REQUIRED_FM = ["id", "title", "section", "importance", "sources", "related_pages"]
+NODE_REQUIRED_FM = ["id", "title", "page", "kind", "importance", "sources"]
+PAGE_REQUIRED_SECTIONS = ["一句话定位", "事实", "规则与边界", "常见开发任务", "与 related_pages 的联动提示"]
+NODE_REQUIRED_SECTIONS = ["一句话定位", "事实", "规则与边界", "常见开发任务", "出入边"]
+
+VALID_KIND = {"panel", "tab", "nav", "list", "form", "modal", "bar", "drawer", "table"}
 VALID_IMPORTANCE = {"high", "medium", "low"}
-MIN_SOURCES = 5
+VALID_EDGE_TYPE = {"navigate", "navigate-with-payload", "read", "writeback", "reuse", "embed"}
+VALID_EDGE_STATUS = {"implemented", "intended", "undefined"}
+STATUS_REQUIRED = {
+    "implemented": ["sources"],
+    "intended": ["designRef", "expected", "blockedBy"],
+    "undefined": ["issue"],
+}
+NAV_TYPES = {"navigate", "navigate-with-payload"}
 
-# 五节标题（按顺序出现在正文中）
-REQUIRED_SECTIONS = [
-    "一句话定位",
-    "事实",
-    "规则与边界",
-    "常见开发任务",
-    "与 related_pages 的联动提示",
-]
+PAGE_MIN_CITES = 5   # 页面正文最少引用条数（防空壳页）
+NODE_MIN_CITES = 3   # 节点正文最少引用条数
 
-# 正文内联引用：Sources: [path:line]() 或 Sources: [path:start-end]()
-CITATION_RE = re.compile(r"Sources:\s*\[([^\[\]]+?):(\d+)(?:\s*-\s*(\d+))?\]\(\)")
+EDGES_BEGIN = "<!-- EDGES:BEGIN -->"
+EDGES_END = "<!-- EDGES:END -->"
 
-# frontmatter 解析用（仅支持本 wiki 使用的简单 YAML 子集）
 FM_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
+CITATION_RE = re.compile(r"Sources:\s*\[([^\[\]]+?):(\d+)(?:\s*-\s*(\d+))?\]\(\)")
+SRC_ITEM_RE = re.compile(r"^(?P<path>[^:]+):(?P<start>\d+)(?:-(?P<end>\d+))?$")
+
+STATUS_LABEL = {
+    "implemented": "implemented（已实现）",
+    "intended": "intended（设计有·未实现）",
+    "undefined": "undefined（设计本身未定）",
+}
 
 
 # --------------------------------------------------------------------------
-# 基础设施
+# 基础设施（沿用 v1 design-main 的设施，零重写）
 # --------------------------------------------------------------------------
 class Report:
     """收集校验结果并按级别输出。"""
@@ -97,7 +104,7 @@ class Report:
     def __init__(self) -> None:
         self.errors: list[str] = []
         self.warnings: list[str] = []
-        self.stats: dict[str, int] = {}
+        self.stats: dict[str, Any] = {}
 
     def error(self, msg: str) -> None:
         self.errors.append(msg)
@@ -120,60 +127,84 @@ class Report:
             print("\n校验结论：全绿（0 error）")
 
 
-def read_lines(rel_path: str) -> list[str] | None:
-    """按 UTF-8 口径读取文件行；文件不存在返回 None。
+def read_text_lf(rel_or_abs: str | Path) -> str | None:
+    """按原样读取文本（不做换行归一），文件不存在返回 None。"""
+    p = Path(rel_or_abs)
+    if not p.is_absolute():
+        p = REPO_ROOT / p
+    if not p.is_file():
+        return None
+    try:
+        with open(p, "r", encoding="utf-8", newline="") as fh:
+            return fh.read()
+    except UnicodeDecodeError:
+        return None
 
-    行号口径与编辑器一致：本仓全部源文件为 LF + 无 BOM + 末尾带换行，
+
+def write_text_lf(path: Path, text: str) -> None:
+    """写文本，强制 LF + 末尾换行（不随平台漂移）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+
+
+def read_lines(rel_path: str) -> list[str] | None:
+    """按 UTF-8 口径读取源码行；文件不存在返回 None。
+
+    行号口径与编辑器一致：本仓源文件为 LF + 无 BOM + 末尾带换行，
     故 splitlines() 的长度 == 编辑器最后一行行号。
     """
     p = REPO_ROOT / rel_path
     if not p.is_file():
         return None
     try:
-        return p.read_text(encoding="utf-8").splitlines()
+        text = p.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
     except UnicodeDecodeError:
         return None
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    return lines
 
 
-def parse_frontmatter(text: str) -> tuple[dict, str] | None:
-    """极简 YAML 子集解析：支持 `key: value` 与 `key:` 后接 `  - item` 列表。"""
+def parse_frontmatter(text: str) -> dict[str, Any] | None:
+    """极简 YAML 子集：标量 + `  - item` 列表 + `[a, b]` 行内列表。"""
     m = FM_RE.match(text)
     if not m:
         return None
-    data: dict = {}
+    data: dict[str, Any] = {}
     current_key: str | None = None
     for raw in m.group(1).splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
+        line = raw.rstrip()
+        if not line.strip() or line.strip().startswith("#"):
             continue
-        if raw.startswith("  - ") or raw.startswith("- "):
-            if current_key is None:
-                continue
+        if line.lstrip().startswith("- ") and current_key:
             data.setdefault(current_key, [])
             if not isinstance(data[current_key], list):
                 data[current_key] = [data[current_key]]
-            data[current_key].append(raw.strip()[2:].strip().strip("'\""))
+            data[current_key].append(line.strip()[2:].strip().strip('"').strip("'"))
             continue
-        if ":" in raw:
-            key, _, val = raw.partition(":")
-            key = key.strip()
-            val = val.strip()
-            current_key = key
-            if val.startswith("[") and val.endswith("]"):
-                inner = val[1:-1].strip()
-                data[key] = [x.strip().strip("'\"") for x in inner.split(",") if x.strip()] if inner else []
-            elif val:
-                data[key] = val.strip("'\"")
+        if ":" in line:
+            k, _, v = line.partition(":")
+            k, v = k.strip(), v.strip()
+            current_key = k
+            if v == "":
+                data[k] = []
+            elif v.startswith("[") and v.endswith("]"):
+                inner = v[1:-1].strip()
+                data[k] = [x.strip().strip('"').strip("'") for x in inner.split(",") if x.strip()] if inner else []
             else:
-                data[key] = []
-    return data, text[m.end():]
+                data[k] = v.strip('"').strip("'")
+    return data
+
+
+def strip_frontmatter(text: str) -> str:
+    m = FM_RE.match(text)
+    return text[m.end():] if m else text
 
 
 def section_body(body: str, heading: str) -> str:
-    """取出 `## <heading>` 到下一个 `## ` 之间的正文。
-
-    heading 用**前缀匹配**：本 wiki 的小节标题带补充说明（如 `## 事实（每条强制可回溯）`），
-    因此不能要求标题后紧跟行尾。
-    """
+    """取出 `## <heading>` 到下一个 `## ` 之间的正文（前缀匹配，容忍标题带补充说明）。"""
     pattern = re.compile(r"^##[ \t]+" + re.escape(heading) + r".*$", re.MULTILINE)
     m = pattern.search(body)
     if not m:
@@ -183,770 +214,822 @@ def section_body(body: str, heading: str) -> str:
     return rest[: nxt.start()] if nxt else rest
 
 
+def has_section(body: str, heading: str) -> bool:
+    return bool(re.search(r"^##[ \t]+" + re.escape(heading), body, re.MULTILINE))
+
+
+def as_list(v: Any) -> list[str]:
+    if v is None:
+        return []
+    if isinstance(v, list):
+        return [str(x) for x in v]
+    if isinstance(v, str):
+        return [v] if v else []
+    return []
+
+
+# --------------------------------------------------------------------------
+# 载入真源
+# --------------------------------------------------------------------------
+class Node:
+    __slots__ = ("id", "file", "fm", "text", "body", "page")
+
+    def __init__(self, nid: str, file: Path, fm: dict[str, Any], text: str) -> None:
+        self.id = nid
+        self.file = file
+        self.fm = fm
+        self.text = text
+        self.body = strip_frontmatter(text)
+        self.page = str(fm.get("page", ""))
+
+
+class Wiki:
+    """一次性载入三份真源，供五个子命令共用。"""
+
+    def __init__(self) -> None:
+        self.errors: list[str] = []
+        self.structure: dict[str, Any] = {}
+        self.edge_doc: dict[str, Any] = {}
+        self.nodes: dict[str, Node] = {}
+        self.node_order: list[str] = []
+        self.pages: dict[str, dict[str, Any]] = {}
+        self.page_fm: dict[str, dict[str, Any]] = {}
+        self.page_body: dict[str, str] = {}
+        self._load()
+
+    # ---- 载入 ----
+    def _load(self) -> None:
+        if STRUCTURE_FILE.is_file():
+            self.structure = json.loads(STRUCTURE_FILE.read_text(encoding="utf-8"))
+        else:
+            self.errors.append("structure.json 缺失：%s" % STRUCTURE_FILE)
+        if EDGES_FILE.is_file():
+            self.edge_doc = json.loads(EDGES_FILE.read_text(encoding="utf-8"))
+        else:
+            self.errors.append("edges.json 缺失：%s" % EDGES_FILE)
+
+        for p in self.structure.get("pages", []):
+            self.pages[p.get("id", "")] = p
+            f = PAGES_DIR / ("%s.md" % p.get("id"))
+            text = read_text_lf(f)
+            if text is None:
+                continue
+            fm = parse_frontmatter(text)
+            if fm is None:
+                continue
+            self.page_fm[p.get("id", "")] = fm
+            self.page_body[p.get("id", "")] = strip_frontmatter(text)
+
+        if NODES_DIR.is_dir():
+            for page_dir in sorted(NODES_DIR.iterdir()):
+                if not page_dir.is_dir():
+                    continue
+                for f in sorted(page_dir.glob("*.md")):
+                    text = read_text_lf(f)
+                    if text is None:
+                        continue
+                    fm = parse_frontmatter(text)
+                    if fm is None:
+                        self.node_order.append(f.stem)
+                        self.nodes[f.stem] = Node(f.stem, f, {}, text)
+                        continue
+                    nid = str(fm.get("id") or f.stem)
+                    if nid != f.stem:
+                        self.errors.append(
+                            "nodes/%s/%s：frontmatter id=%r 与文件名不一致" % (page_dir.name, f.name, nid)
+                        )
+                    if nid in self.nodes:
+                        self.errors.append("node id 重复：%s" % nid)
+                    self.node_order.append(nid)
+                    self.nodes[nid] = Node(nid, f, fm, text)
+
+    # ---- 索引 ----
+    @property
+    def edges(self) -> list[dict[str, Any]]:
+        return self.edge_doc.get("edges", [])
+
+    @property
+    def issues(self) -> list[dict[str, Any]]:
+        return self.edge_doc.get("issues", [])
+
+    def rel(self, p: Path) -> str:
+        return p.relative_to(REPO_ROOT).as_posix()
+
+    def node_file_rel(self, nid: str) -> str:
+        n = self.nodes.get(nid)
+        return self.rel(n.file) if n else nid
+
+    def label(self, nid: str) -> str:
+        """任意图节点的中文名（node / page / modal / shell 通用）。"""
+        if nid in self.nodes:
+            return str(self.nodes[nid].fm.get("title") or nid)
+        pmap = {m.get("id"): m for m in self.structure.get("modals", [])}
+        if nid in pmap:
+            return str(pmap[nid].get("title") or nid)
+        smap = {s.get("id"): s for s in self.structure.get("shellComponents", [])}
+        if nid in smap:
+            return str(smap[nid].get("title") or nid)
+        if nid in self.pages:
+            return str(self.pages[nid].get("title") or nid)
+        return nid
+
+    def nodes_of_page(self, pid: str) -> list[str]:
+        """按页面 frontmatter 的 `nodes:` 声明顺序返回（缺失项追加在尾部）。"""
+        declared = [n for n in as_list(self.page_fm.get(pid, {}).get("nodes")) if n in self.nodes]
+        rest = [nid for nid in self.node_order if self.nodes[nid].page == pid and nid not in declared]
+        return declared + rest
+
+    def in_edges(self, nid: str) -> list[dict[str, Any]]:
+        return [e for e in self.edges if e.get("to") == nid]
+
+    def out_edges(self, nid: str) -> list[dict[str, Any]]:
+        return [e for e in self.edges if e.get("from") == nid]
+
+    @property
+    def valid_targets(self) -> set[str]:
+        ids = set(self.nodes) | set(self.pages)
+        ids |= {m.get("id") for m in self.structure.get("modals", [])}
+        ids |= {s.get("id") for s in self.structure.get("shellComponents", [])}
+        return ids
+
+
 # --------------------------------------------------------------------------
 # validate
 # --------------------------------------------------------------------------
 def cmd_validate(args: argparse.Namespace) -> int:
+    w = Wiki()
     rep = Report()
+    for e in w.errors:
+        rep.error(e)
 
-    # ---------- A. 结构层 ----------
-    if not STRUCTURE_FILE.is_file():
-        rep.error("structure.json 缺失：%s" % STRUCTURE_FILE)
-        rep.dump()
-        return 1
-    structure = json.loads(STRUCTURE_FILE.read_text(encoding="utf-8"))
-
-    pages = structure.get("pages", [])
-    sections = structure.get("sections", [])
-
-    declared_ids = [p.get("id") for p in pages]
-    dup = {i for i in declared_ids if declared_ids.count(i) > 1}
+    structure, pages, sections = w.structure, w.pages, w.structure.get("sections", [])
+    declared = list(pages)
+    dup = {i for i in declared if declared.count(i) > 1}
     if dup:
-        rep.error("structure.json pages[].id 重复：%s" % sorted(dup))
-    declared_set = set(declared_ids)
-    rep.stats["structure 登记页数"] = len(declared_ids)
-
+        rep.error("[A1] structure.json pages[].id 重复：%s" % sorted(dup))
     section_ids = {s.get("id") for s in sections}
     for s in sections:
         for pid in s.get("pages", []):
-            if pid not in declared_set:
-                rep.error("section %s 引用了未定义的 page id：%s" % (s.get("id"), pid))
+            if pid not in pages:
+                rep.error("[A2] section %s 引用了未定义的 page id：%s" % (s.get("id"), pid))
 
-    # ---------- 逐页校验 ----------
-    fm_index: dict[str, dict] = {}
-    cited_files: set[str] = set()
-    total_cites = 0
-
-    for page in pages:
-        pid = page.get("id")
-        rel = "wiki/pages/%s.md" % pid
-        f = REPO_ROOT / rel
-        if not f.is_file():
-            rep.error("页面缺失：%s" % rel)
+    # ---- A3 页面文件存在（已下钻必须存在=error；待铺开缺失=汇总提示） ----
+    pending: list[str] = []
+    for pid in declared:
+        if pid in w.page_fm:
             continue
-
-        text = f.read_text(encoding="utf-8")
-        parsed = parse_frontmatter(text)
-        if parsed is None:
-            rep.error("%s：缺少 frontmatter（--- ... ---）" % rel)
-            continue
-        fm, body = parsed
-        fm_index[pid] = fm
-
-        # B. frontmatter 完整性
-        for key in REQUIRED_FRONTMATTER:
-            if key not in fm or fm[key] in ("", None, []):
-                rep.error("%s：frontmatter 缺少 `%s`" % (rel, key))
-
-        if fm.get("id") != pid:
-            rep.error("%s：frontmatter id(%r) 与文件名(%r) 不一致" % (rel, fm.get("id"), pid))
-        if fm.get("section") not in section_ids:
-            rep.error("%s：section(%r) 不在 structure.json sections 中" % (rel, fm.get("section")))
-        if fm.get("importance") not in VALID_IMPORTANCE:
-            rep.error("%s：importance(%r) 必须是 %s 之一" % (rel, fm.get("importance"), sorted(VALID_IMPORTANCE)))
-
-        srcs = fm.get("sources") or []
-        if not isinstance(srcs, list) or not srcs:
-            rep.error("%s：sources 必须是非空列表" % rel)
+        status = pages[pid].get("docStatus", "pending")
+        if status == "drilled":
+            rep.error("[A3] %s 标记 docStatus=drilled 但页面文件缺失：wiki/pages/%s.md" % (pid, pid))
         else:
-            for s in srcs:
-                if read_lines(s) is None:
-                    rep.error("%s：sources 列出的文件不存在 -> %s" % (rel, s))
+            pending.append(pid)
+    if pending:
+        rep.warn(
+            "[A3] %d 个 page 尚未铺开（docStatus=pending，无 pages/<id>.md）：%s"
+            % (len(pending), "、".join(pending))
+        )
 
-        rel_pages = fm.get("related_pages") or []
-        if not isinstance(rel_pages, list) or not rel_pages:
-            rep.error("%s：related_pages 必须是非空列表" % rel)
-        else:
-            for rp in rel_pages:
-                if rp not in declared_set:
-                    rep.error("%s：related_pages 指向未登记的 page -> %s" % (rel, rp))
-                if rp == pid:
-                    rep.error("%s：related_pages 不应自引用" % rel)
-
-        # C1. 五节齐备
-        for name in REQUIRED_SECTIONS:
-            if not re.search(r"^##\s+" + re.escape(name), body, re.MULTILINE):
-                rep.error("%s：正文缺少必备小节 `## %s`" % (rel, name))
-
-        # C2/C3. 内联引用
-        cites = CITATION_RE.findall(body)
-        total_cites += len(cites)
-        if len(cites) < MIN_SOURCES:
-            rep.error("%s：可用 Sources 引用仅 %d 条，低于下限 %d" % (rel, len(cites), MIN_SOURCES))
-        for path_s, start_s, end_s in cites:
-            path_s = path_s.strip()
-            cited_files.add(path_s)
-            lines = read_lines(path_s)
-            if lines is None:
-                rep.error("%s：引用文件不存在 -> %s" % (rel, path_s))
-                continue
-            total = len(lines)
-            start = int(start_s)
-            end = int(end_s) if end_s else start
-            if start < 1 or start > total:
-                rep.error("%s：引用行号越界 %s:%d（文件共 %d 行）" % (rel, path_s, start, total))
-            if end < 1 or end > total:
-                rep.error("%s：引用行号越界 %s:%d（文件共 %d 行）" % (rel, path_s, end, total))
-            if start > end:
-                rep.error("%s：引用区间起止颠倒 %s:%d-%d" % (rel, path_s, start, end))
-
-    # A4. 游离页面
+    # ---- A4 游离页面 ----
     if PAGES_DIR.is_dir():
         for f in sorted(PAGES_DIR.glob("*.md")):
-            if f.stem.startswith("page-") and f.stem not in declared_set:
-                rep.error("游离页面（未在 structure.json 登记）：wiki/pages/%s" % f.name)
+            if f.stem.startswith("page-") and f.stem not in pages:
+                rep.error("[A4] 游离页面（未在 structure.json 登记）：wiki/pages/%s" % f.name)
 
-    rep.stats["已生成页面数"] = len(fm_index)
-    rep.stats["正文引用条数（出现次数）"] = total_cites
-    rep.stats["正文引用去重源文件数"] = len(cited_files)
+    # ---- 逐页校验 B / C ----
+    page_cites: dict[str, int] = {}
+    for pid in declared:
+        fm = w.page_fm.get(pid)
+        if fm is None:
+            continue
+        rel = "wiki/pages/%s.md" % pid
+        for key in PAGE_REQUIRED_FM:
+            if not fm.get(key):
+                rep.error("[B1] %s：frontmatter 缺少 `%s`" % (rel, key))
+        if fm.get("id") != pid:
+            rep.error("[B1] %s：frontmatter id(%r) 与文件名不一致" % (rel, fm.get("id")))
+        if fm.get("section") not in section_ids:
+            rep.error("[B2] %s：section(%r) 不在 structure.json sections 中" % (rel, fm.get("section")))
+        if fm.get("importance") not in VALID_IMPORTANCE:
+            rep.error("[B3] %s：importance(%r) 不在枚举内" % (rel, fm.get("importance")))
+        for rp in as_list(fm.get("related_pages")):
+            if rp not in pages:
+                rep.error("[B4] %s：related_pages 指向未登记的 page -> %s" % (rel, rp))
+            if rp == pid:
+                rep.error("[B4] %s：related_pages 不应自引用" % rel)
+        for s in as_list(fm.get("sources")):
+            if not SRC_ITEM_RE.match(s):
+                rep.error("[C5] %s：frontmatter sources 格式非法 %r（应为 路径:行号）" % (rel, s))
+                continue
+            _check_src(rep, rel, s)
 
-    # ---------- D. 联动一致性（警告级） ----------
-    declared_related: dict[str, set] = {}
-    for page in pages:
-        declared_related.setdefault(page.get("id"), set(page.get("related_pages", [])))
-    for pid, fm in fm_index.items():
-        fm_rel = set(fm.get("related_pages") or [])
-        dec_rel = declared_related.get(pid, set())
-        if fm_rel != dec_rel:
-            rep.warn(
-                "structure.json 与页面 frontmatter 的 related_pages 不一致 %s："
-                "structure=%s page=%s" % (pid, sorted(dec_rel), sorted(fm_rel))
-            )
-    for pid, fm in fm_index.items():
-        for rp in set(fm.get("related_pages") or []):
-            back = set((fm_index.get(rp) or {}).get("related_pages") or [])
-            if pid not in back:
-                rep.warn("邻接不对称：%s -> %s 但 %s 未回指（确认是否有意为之）" % (pid, rp, rp))
+        body = w.page_body.get(pid, "")
+        for name in PAGE_REQUIRED_SECTIONS:
+            if not has_section(body, name):
+                rep.error("[C1] %s：正文缺少必备小节 `## %s`" % (rel, name))
+        cites = CITATION_RE.findall(body)
+        page_cites[pid] = len(cites)
+        if len(cites) < PAGE_MIN_CITES:
+            rep.error("[C2] %s：可用 Sources 引用仅 %d 条，低于下限 %d" % (rel, len(cites), PAGE_MIN_CITES))
+        _check_citations(rep, rel, cites)
+
+    # ---- 节点校验 A5~A7 / B1 B5 / C1 C2 C5 ----
+    seen_node_ids: set[str] = set()
+    node_cites: dict[str, int] = {}
+    for nid in w.node_order:
+        n = w.nodes[nid]
+        rel = w.rel(n.file)
+        if nid in seen_node_ids:
+            rep.error("[A6] node id 重复：%s" % nid)
+        seen_node_ids.add(nid)
+        if not n.fm:
+            rep.error("[B1] %s：缺少 frontmatter" % rel)
+            continue
+        for key in NODE_REQUIRED_FM:
+            if not n.fm.get(key):
+                rep.error("[B1] %s：frontmatter 缺少 `%s`" % (rel, key))
+        if nid != n.file.stem:
+            rep.error("[A6] %s：node id(%r) 不等于文件名(%r)" % (rel, nid, n.file.stem))
+        if n.page and n.page not in pages:
+            rep.error("[A5] %s：page=%r 不在 structure.json 中" % (rel, n.page))
+        if n.page in pages and n.file.parent.name != n.page:
+            rep.error("[A5] %s：所在目录(%s)与 frontmatter page(%s) 不一致" % (rel, n.file.parent.name, n.page))
+        if n.fm.get("kind") not in VALID_KIND:
+            rep.error("[B5] %s：kind=%r 不在枚举内" % (rel, n.fm.get("kind")))
+        if n.fm.get("importance") not in VALID_IMPORTANCE:
+            rep.error("[B5] %s：importance=%r 不在枚举内" % (rel, n.fm.get("importance")))
+
+        for name in NODE_REQUIRED_SECTIONS:
+            if not has_section(n.body, name):
+                rep.error("[C1] %s：正文缺少必备小节 `## %s`" % (rel, name))
+        cites = CITATION_RE.findall(n.body)
+        node_cites[nid] = len(cites)
+        if len(cites) < NODE_MIN_CITES:
+            rep.error("[C2] %s：可用 Sources 引用仅 %d 条，低于下限 %d" % (rel, len(cites), NODE_MIN_CITES))
+        _check_citations(rep, rel, cites)
+        for s in as_list(n.fm.get("sources")):
+            if not SRC_ITEM_RE.match(s):
+                rep.error("[C5] %s：frontmatter sources 格式非法 %r" % (rel, s))
+                continue
+            _check_src(rep, rel, s)
+
+    # ---- A7 已下钻页面的节点覆盖 ----
+    for p in pages.values():
+        pid = p.get("id", "")
+        owned = w.nodes_of_page(pid)
+        status = p.get("docStatus", "pending")
+        decl_n = p.get("nodeCount")
+        if status == "drilled" and not owned:
+            rep.error("[A7] %s 标记 docStatus=drilled 但没有任何 node" % pid)
+        if status != "drilled" and owned:
+            rep.error("[A7] %s 有 %d 个 node 但 docStatus=%r（应为 drilled）" % (pid, len(owned), status))
+        if isinstance(decl_n, int) and decl_n != len(owned):
+            rep.warn("[A7] %s 在 structure.json 记 nodeCount=%d，实际 %d" % (pid, decl_n, len(owned)))
+
+    # ---- D1 / D2 / D3 / C5（边） ----
+    valid_targets = w.valid_targets
+    seen_edge_ids: set[str] = set()
+    seen_pair_trigger: dict[tuple[str, str], set[str]] = {}
+    for e in w.edges:
+        eid = e.get("id", "<no-id>")
+        if eid in seen_edge_ids:
+            rep.error("[D2] edge id 重复：%s" % eid)
+        seen_edge_ids.add(eid)
+        for end in ("from", "to"):
+            tgt = e.get(end)
+            if tgt not in valid_targets:
+                rep.error("[D1] %s：%s=%r 既不是 node，也不在 page / modal / shell 中" % (eid, end, tgt))
+        ttype = e.get("type")
+        if ttype not in VALID_EDGE_TYPE:
+            rep.error("[D3] %s：type=%r 不在枚举内" % (eid, ttype))
+        status = e.get("status")
+        if status not in VALID_EDGE_STATUS:
+            rep.error("[D3] %s：status=%r 不在枚举内" % (eid, status))
+        else:
+            for field in STATUS_REQUIRED[status]:
+                v = e.get(field)
+                if not v or (isinstance(v, list) and not v):
+                    rep.error("[D3] %s：status=%s 必须提供 `%s`" % (eid, status, field))
+        for src in as_list(e.get("sources")):
+            if not SRC_ITEM_RE.match(src):
+                rep.error("[C5] edge %s：sources 格式非法 %r" % (eid, src))
+                continue
+            _check_src(rep, "edge %s" % eid, src)
+
+        key = (e.get("from", ""), e.get("to", ""))
+        trig = str(e.get("trigger", ""))
+        seen = seen_pair_trigger.setdefault(key, set())
+        if trig in seen:
+            rep.error("[D2] 平行边 %s -> %s 的 trigger 重复：%r" % (key[0], key[1], trig))
+        seen.add(trig)
+
+    # ---- D4 有去无回（仅对「已实现 + 跨页面跳转」提示；同页跳转有 tab 栏兜底，弹层有关闭按钮） ----
+    def owner_page(nid: str) -> str | None:
+        if nid in w.nodes:
+            return w.nodes[nid].page or None
+        if nid in w.pages:
+            return nid
+        return None  # modal / shell：不是页面，不参与跨页判定
+
+    for e in w.edges:
+        if e.get("type") not in NAV_TYPES or e.get("status") != "implemented":
+            continue
+        frm, to = e.get("from"), e.get("to")
+        pf, pt = owner_page(frm), owner_page(to)
+        if pf is None or pt is None or pf == pt:
+            continue
+        back = [x for x in w.edges if x.get("from") == to and x.get("to") == frm]
+        if not back:
+            rep.warn("[D4] 有去无回：%s（%s）-> %s（%s）无反向入口（确认是否有意为之）" % (frm, pf, to, pt))
+
+    # ---- D5 第 5 节与 edges.json 一致（需先跑 sync-edges） ----
+    for nid in w.node_order:
+        n = w.nodes[nid]
+        if not n.fm:
+            continue
+        rel = w.rel(n.file)
+        if EDGES_BEGIN not in n.text or EDGES_END not in n.text:
+            rep.error("[D5] %s：缺少 EDGES 标记区块（%s / %s）" % (rel, EDGES_BEGIN, EDGES_END))
+            continue
+        current = _extract_edges_block(n.text)
+        expected = render_edges_block(w, nid)
+        if current.strip() != expected.strip():
+            rep.error("[D5] %s：第 5 节与 edges.json 不一致 —— 运行 `python wiki/gen_wiki_tools.py sync-edges`" % rel)
+
+    # ---- E1 缺口汇总（报告区，不阻断） ----
+    gaps = [e for e in w.edges if e.get("status") != "implemented"]
+    rep.stats["section 数"] = len(sections)
+    rep.stats["page 数"] = len(declared)
+    rep.stats["已下钻 page"] = sum(1 for p in pages.values() if p.get("docStatus") == "drilled")
+    rep.stats["待铺开 page"] = len(pending)
+    rep.stats["node 数"] = len(w.nodes)
+    rep.stats["edge 数"] = len(w.edges)
+    rep.stats["issues 数"] = len(w.issues)
+    rep.stats["已实现边"] = len(w.edges) - len(gaps)
+    rep.stats["缺口边（非 implemented）"] = len(gaps)
+    rep.stats["正文可验证引用（页+节）"] = sum(page_cites.values()) + sum(node_cites.values())
+    sev_rank = {"high": 0, "medium": 1, "low": 2}
+    gap_lines = [
+        "  %s %-46s %-22s severity=%s\n      %s"
+        % (
+            {"intended": "○", "undefined": "?"}.get(e.get("status", ""), "·"),
+            str(e.get("id")),
+            "%s → %s" % (e.get("from"), e.get("to")),
+            e.get("severity", "n/a"),
+            _gap_reason(e),
+        )
+        for e in sorted(
+            gaps, key=lambda x: (sev_rank.get(str(x.get("severity")), 9), str(x.get("id")))
+        )
+    ]
 
     print("== validate：%s ==" % WIKI_DIR)
     rep.dump()
+    print("\n[GAPS] 缺口 %d 条（○ intended / ? undefined；详情见 wiki/gaps.md）：" % len(gaps))
+    for line in gap_lines:
+        print(line)
     return 1 if rep.errors else 0
+
+
+def _check_src(rep: Report, owner: str, item: str) -> None:
+    m = SRC_ITEM_RE.match(item)
+    if not m:
+        return
+    lines = read_lines(m.group("path"))
+    if lines is None:
+        rep.error("[C5] %s：sources 指向的文件不存在 -> %s" % (owner, m.group("path")))
+        return
+    total = len(lines)
+    start = int(m.group("start"))
+    end = int(m.group("end") or m.group("start"))
+    if start > end:
+        rep.error("[C5] %s：%s:%d-%d 区间起止颠倒" % (owner, m.group("path"), start, end))
+    if start < 1 or start > total or end < 1 or end > total:
+        rep.error(
+            "[C5] %s：%s:%d-%d 行号越界（文件共 %d 行）" % (owner, m.group("path"), start, end, total)
+        )
+
+
+def _check_citations(rep: Report, owner: str, cites: list[tuple[str, str, str]]) -> None:
+    for path_s, start_s, end_s in cites:
+        path_s = path_s.strip()
+        lines = read_lines(path_s)
+        if lines is None:
+            rep.error("[C3] %s：正文引用文件不存在 -> %s" % (owner, path_s))
+            continue
+        total = len(lines)
+        start = int(start_s)
+        end = int(end_s) if end_s else start
+        if start < 1 or start > total:
+            rep.error("[C3] %s：引用行号越界 %s:%d（文件共 %d 行）" % (owner, path_s, start, total))
+        if end < 1 or end > total:
+            rep.error("[C3] %s：引用行号越界 %s:%d（文件共 %d 行）" % (owner, path_s, end, total))
+        if start > end:
+            rep.error("[C3] %s：引用区间起止颠倒 %s:%d-%d" % (owner, path_s, start, end))
+
+
+def _gap_reason(e: dict[str, Any]) -> str:
+    if e.get("status") == "undefined":
+        return str(e.get("issue", ""))[:120]
+    return str(e.get("blockedBy", ""))[:120]
+
+
+# --------------------------------------------------------------------------
+# sync-edges
+# --------------------------------------------------------------------------
+def _extract_edges_block(text: str) -> str:
+    b = text.find(EDGES_BEGIN)
+    e = text.find(EDGES_END)
+    if b == -1 or e == -1 or e < b:
+        return ""
+    return text[b: e + len(EDGES_END)]
+
+
+def _render_edge(w: Wiki, e: dict[str, Any], direction: str) -> str:
+    eid = e.get("id", "")
+    other = e.get("from") if direction == "in" else e.get("to")
+    arrow = "←" if direction == "in" else "→"
+    status = e.get("status", "")
+    lines = [
+        "- **`%s`** %s `%s`（%s）｜`%s` · **%s**%s"
+        % (
+            eid,
+            arrow,
+            other,
+            w.label(other),
+            e.get("type", ""),
+            STATUS_LABEL.get(status, status),
+            "｜severity: %s" % e.get("severity") if e.get("severity") else "",
+        )
+    ]
+    if e.get("trigger"):
+        lines.append("  - 触发：%s" % e["trigger"])
+    if e.get("payload"):
+        lines.append("  - 载荷：`%s`" % e["payload"])
+    if e.get("logic"):
+        lines.append("  - 逻辑：%s" % e["logic"])
+    if status == "implemented":
+        for s in as_list(e.get("sources")):
+            lines.append("  - 出处：`%s`" % s)
+    if e.get("designRef"):
+        lines.append("  - 设计依据：%s" % e["designRef"])
+    if e.get("expected"):
+        lines.append("  - 期望行为：%s" % e["expected"])
+    if e.get("blockedBy"):
+        lines.append("  - **卡点**：%s" % e["blockedBy"])
+    if e.get("issue"):
+        lines.append("  - **待确认**：%s" % e["issue"])
+    if e.get("note"):
+        lines.append("  - 备注：%s" % e["note"])
+    return "\n".join(lines)
+
+
+def render_edges_block(w: Wiki, nid: str) -> str:
+    inc = w.in_edges(nid)
+    out = w.out_edges(nid)
+    parts = [
+        EDGES_BEGIN,
+        "> 本节的**真源是 `wiki/edges.json`**，由 `python wiki/gen_wiki_tools.py sync-edges` 整段渲染，"
+        "手写会被覆盖。要改边请改边表后重跑该命令。",
+        "",
+        "**入边 %d 条**" % len(inc),
+        "",
+    ]
+    parts.append("\n".join(_render_edge(w, e, "in") for e in inc) if inc else "（无）")
+    parts += ["", "**出边 %d 条**" % len(out), ""]
+    parts.append("\n".join(_render_edge(w, e, "out") for e in out) if out else "（无）")
+    parts.append(EDGES_END)
+    return "\n".join(parts)
+
+
+def replace_edges_block(text: str, block: str) -> str:
+    b = text.find(EDGES_BEGIN)
+    e = text.find(EDGES_END)
+    if b != -1 and e != -1 and e > b:
+        return text[:b] + block + text[e + len(EDGES_END):]
+    return text.rstrip("\n") + "\n\n" + block + "\n"
+
+
+def cmd_sync_edges(args: argparse.Namespace) -> int:
+    w = Wiki()
+    changed: list[str] = []
+    unchanged = 0
+    for nid in w.node_order:
+        n = w.nodes[nid]
+        if not n.fm:
+            continue
+        block = render_edges_block(w, nid)
+        new_text = replace_edges_block(n.text, block)
+        if not new_text.endswith("\n"):
+            new_text += "\n"
+        if new_text != n.text:
+            if args.check:
+                changed.append(w.rel(n.file))
+                continue
+            write_text_lf(n.file, new_text)
+            changed.append(w.rel(n.file))
+        else:
+            unchanged += 1
+
+    print("== sync-edges ==")
+    if args.check:
+        if changed:
+            print("  待更新 %d 个 node：" % len(changed))
+            for c in changed:
+                print("    - %s" % c)
+            return 1
+        print("  全部 node 第 5 节已与 edges.json 一致（%d 个）" % unchanged)
+        return 0
+    print("  已更新 %d 个 node，%d 个无需变更" % (len(changed), unchanged))
+    for c in changed:
+        print("    - %s" % c)
+    print("  边 %d 条 · issues %d 条" % (len(w.edges), len(w.issues)))
+    return 0
 
 
 # --------------------------------------------------------------------------
 # index
 # --------------------------------------------------------------------------
+def _one_liner(body: str) -> str:
+    chunk = section_body(body, "一句话定位")
+    for line in chunk.splitlines():
+        s = line.strip()
+        if s:
+            return re.sub(r"\s+", " ", s)
+    return ""
+
+
 def cmd_index(args: argparse.Namespace) -> int:
-    if not STRUCTURE_FILE.is_file():
+    w = Wiki()
+    if not w.structure:
         print("[ERROR] structure.json 缺失，无法生成索引", file=sys.stderr)
         return 1
-    structure = json.loads(STRUCTURE_FILE.read_text(encoding="utf-8"))
-    pages = structure.get("pages", [])
-    sections = structure.get("sections", [])
-    by_id = {p.get("id"): p for p in pages}
-
     out: list[str] = []
-    out.append("# %s" % structure.get("title", "Wiki"))
+    out.append("# %s" % w.structure.get("title", "Wiki"))
     out.append("")
-    out.append("> %s" % structure.get("description", ""))
+    out.append("> %s" % w.structure.get("description", ""))
     out.append(">")
     out.append(
-        "> 读法：结构真源在 `structure.json`，页面在 `pages/<page_id>.md`；"
-        "每页「事实」节每条均带 `Sources: [路径:行号]()`，可回代码逐条核对。"
+        "> 结构真源 `wiki/structure.json`，边真源 `wiki/edges.json`，"
+        "页面 `wiki/pages/<page-id>.md`，节点 `wiki/nodes/<page-id>/<node-id>.md`。"
     )
     out.append(
         "> 行号口径：UTF-8 解码行数（与编辑器显示一致）。"
-        "重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标页 + 其 related_pages 即可，不必全读。"
+        "重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标节点 + 其 related_pages / 出入边即可，不必全读。"
+    )
+    out.append(
+        "> 边状态：implemented（代码已实现）｜intended（设计有·代码没有）｜undefined（设计本身未定）。"
+        "非 implemented 的边见 `wiki/gaps.md`。"
     )
     out.append("")
 
-    for sec in sections:
-        ids = [i for i in sec.get("pages", []) if i in by_id]
-        if not ids:
+    for sec in w.structure.get("sections", []):
+        pids = [p for p in sec.get("pages", []) if p in w.pages]
+        if not pids:
             continue
         out.append("## %s" % sec.get("title", sec.get("id")))
         out.append("")
-        for pid in ids:
-            page = by_id[pid]
+        if sec.get("userView"):
+            out.append("_%s_" % sec["userView"])
+            out.append("")
+        for pid in pids:
+            page = w.pages[pid]
             rel = "pages/%s.md" % pid
-            one_liner = _extract_one_liner(pid) or page.get("description", "")
-            one_liner = re.sub(r"\s+", " ", one_liner).strip()
-            if len(one_liner) > 160:
-                one_liner = one_liner[:157] + "..."
+            one = _one_liner(w.page_body.get(pid, "")) or page.get("description", "")
+            if len(one) > 200:
+                one = one[:197] + "..."
+            status = page.get("docStatus", "pending")
+            flag = "已下钻" if status == "drilled" else "待铺开"
             out.append(
-                "- [%s](%s): %s _(importance: %s)_"
-                % (page.get("title", pid), rel, one_liner, page.get("importance", "medium"))
+                "- [%s](%s): %s _(importance: %s · %s)_"
+                % (page.get("title", pid), rel, one, page.get("importance", "medium"), flag)
             )
+            for nid in w.nodes_of_page(pid):
+                n = w.nodes[nid]
+                nrel = "nodes/%s/%s.md" % (pid, nid)
+                none = _one_liner(n.body)
+                if len(none) > 160:
+                    none = none[:157] + "..."
+                out.append(
+                    "  - [%s](%s) `%s`: %s _(%s · %s)_"
+                    % (
+                        n.fm.get("title", nid),
+                        nrel,
+                        nid,
+                        none,
+                        n.fm.get("kind", ""),
+                        n.fm.get("importance", "medium"),
+                    )
+                )
         out.append("")
 
     out.append("## 使用约定")
     out.append("")
     out.append(
-        "- 改代码前：先读目标模块页 + 其 `related_pages`（邻接页用于防联动漏改），"
-        "页面「规则与边界」节是开发硬约束。"
+        "- 改代码前：先读目标节点页 + 其所在页面页 + 边的对端节点（防联动漏改）；"
+        "页面「规则与边界」节与节点「规则与边界」节是开发硬约束。"
     )
+    out.append("- 「事实」节每条均带行号引用；与代码不一致时**以代码为准并回写**，再重跑校验。")
     out.append(
-        "- 页面「事实」节每条均带行号引用，与代码不一致时**以代码为准并回写页面**。"
+        "- 校验与重建：`python wiki/gen_wiki_tools.py validate|sync-edges|index|map|gaps`。"
     )
-    out.append("- 校验与重建：`python wiki/gen_wiki_tools.py validate` / `index`。")
     out.append("")
 
-    LLMS_TXT.write_text("\n".join(out), encoding="utf-8")
+    write_text_lf(LLMS_TXT, "\n".join(out))
+    n_nodes = len(w.nodes)
     print("== index ==")
     print("  已生成：%s" % LLMS_TXT)
-    print("  章节数：%d，页面数：%d" % (len(sections), len(by_id)))
-    return 0
-
-
-def _extract_one_liner(pid: str) -> str:
-    """从页面「## 一句话定位」节提取一句话，用于 llms.txt 摘要。"""
-    f = PAGES_DIR / ("%s.md" % pid)
-    if not f.is_file():
-        return ""
-    text = f.read_text(encoding="utf-8")
-    parsed = parse_frontmatter(text)
-    body = parsed[1] if parsed else text
-    chunk = section_body(body, "一句话定位")
-    for line in chunk.splitlines():
-        s = line.strip()
-        if s:
-            return s
-    return ""
-
-
-HTML_TEMPLATE = r"""<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>结构建模图 · 双创赛事智能体 demo Wiki</title>
-<style>
-:root{
-  --bg:#f4f6fa; --card:#ffffff; --line:#e4e9f0; --soft:#eef2f7;
-  --ink:#0f172a; --ink2:#334155; --muted:#64748b; --muted2:#94a3b8;
-  --brand:#4f46e5; --brand2:#0284c7;
-  --high:#4f46e5; --medium:#0891b2; --low:#94a3b8;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font:14px/1.65 "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:1660px;margin:0 auto;padding:30px 26px 64px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
-  box-shadow:0 1px 2px rgba(15,23,42,.04);margin-bottom:20px}
-.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
-  padding:16px 22px 12px;border-bottom:1px solid var(--soft);flex-wrap:wrap}
-.card-h h2{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px}
-.card-h .hint{font-size:12px;color:var(--muted2)}
-.card-b{padding:20px 22px}
-
-/* header */
-header.top{margin-bottom:22px}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;
-  letter-spacing:.6px;color:var(--brand);background:#eef2ff;border:1px solid #dfe3ff;
-  padding:4px 11px;border-radius:999px;text-transform:uppercase}
-header.top h1{margin:14px 0 6px;font-size:27px;line-height:1.3;letter-spacing:-.4px}
-header.top p.sub{margin:0;color:var(--muted);font-size:13.5px;max-width:1040px}
-.kpis{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
-.kpi{flex:1 1 168px;background:#fff;border:1px solid var(--line);border-radius:14px;
-  padding:13px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
-.kpi .n{font-size:24px;font-weight:750;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums}
-.kpi .l{font-size:11.5px;color:var(--muted);margin-top:3px}
-.kpi.k-brand .n{color:var(--brand)} .kpi.k-brand2 .n{color:var(--brand2)}
-.kpi.k-high .n{color:var(--high)} .kpi.k-mid .n{color:var(--medium)}
-
-/* graph */
-.svgwrap{padding:14px 10px 6px;overflow-x:auto}
-svg#graph{display:block;width:100%;height:auto;min-width:1180px}
-.legend{display:flex;flex-wrap:wrap;gap:20px;padding:6px 22px 18px;font-size:12px;color:var(--muted)}
-.legend b{color:var(--ink2);font-weight:600}
-.lg{display:inline-flex;align-items:center;gap:7px}
-.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
-.node{cursor:pointer}
-.node .box{fill:#fff;stroke:#dfe5ee;stroke-width:1.2;transition:fill .12s,stroke .12s}
-.node:hover .box{fill:#f7f9ff;stroke:#c7d2fe}
-.node .lbl{font-size:11px;fill:#1e293b;font-weight:600}
-.node.sel .box{fill:#eef2ff;stroke:#4f46e5;stroke-width:2}
-.node.sel .lbl{fill:#3730a3}
-.node.rel .box{fill:#f0f9ff;stroke:#38bdf8;stroke-width:1.6}
-.edge{fill:none;stroke:#aab8cf;stroke-width:1.3;transition:stroke .12s,stroke-width .12s}
-.edge.on{stroke:#4f46e5;stroke-width:2.2}
-.edge.dim{stroke:#e8eef6;stroke-width:1}
-.secbg{fill:#f7f9fc;stroke:#e9eff7;stroke-width:1;rx:12}
-.sechdr{font-size:11.5px;font-weight:700;fill:#3f4d63}
-.secline{stroke:#dfe7f1;stroke-width:1}
-h3.sec{font-size:11.5px;font-weight:700;color:var(--muted2);letter-spacing:.7px;margin:0}
-
-/* grid */
-.grid2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:1180px){.grid2{grid-template-columns:minmax(0,1fr)}}
-
-/* detail */
-.d-title{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.d-title h2{margin:0;font-size:19px;letter-spacing:-.2px}
-.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.b-high{background:#eef2ff;color:#4338ca;border:1px solid #dfe3ff}
-.b-medium{background:#ecfeff;color:#0e7490;border:1px solid #cffafe}
-.b-low{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
-.b-sec{background:#f8fafc;color:#475569;border:1px solid #e8edf4;font-family:ui-monospace,Menlo,monospace;font-weight:600}
-.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.oneliner{margin:14px 0 0;padding:12px 15px;background:#f8fafc;border:1px solid var(--soft);
-  border-left:3px solid var(--brand);border-radius:10px;color:var(--ink2);font-size:13.5px}
-.subh{font-size:11.5px;font-weight:700;color:var(--muted2);letter-spacing:.7px;
-  margin:20px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--soft)}
-.chk{display:flex;flex-wrap:wrap;gap:8px}
-.chk span{font-size:12px;padding:4px 10px;border-radius:8px;background:#ecfdf5;
-  color:#047857;border:1px solid #d1fae5;font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{font-size:12px;padding:5px 11px;border-radius:9px;background:#f8fafc;
-  border:1px solid var(--line);color:var(--ink2);cursor:pointer;transition:all .12s}
-.chip:hover{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
-.srclist{max-height:216px;overflow:auto;border:1px solid var(--soft);border-radius:10px;background:#fcfdfe}
-.srclist div{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#475569;
-  padding:5px 12px;border-bottom:1px solid #f1f5f9}
-.srclist div:last-child{border-bottom:0}
-.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-.nums div{background:#f8fafc;border:1px solid var(--soft);border-radius:10px;padding:10px 12px}
-.nums .n{font-size:19px;font-weight:750;font-variant-numeric:tabular-nums}
-.nums .l{font-size:11px;color:var(--muted)}
-
-/* stats bars */
-.bar{margin-bottom:11px}
-.bar .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:4px}
-.bar .lbl span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
-.bar .t{height:7px;background:#f1f5f9;border-radius:999px;overflow:hidden}
-.bar .f{height:100%;border-radius:999px;background:linear-gradient(90deg,#6366f1,#0ea5e9)}
-.bar.mono .lbl span:first-child{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
-
-/* table */
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{position:sticky;top:0;background:#fafbfd;text-align:left;font-size:11.5px;font-weight:700;
-  color:var(--muted);letter-spacing:.4px;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
-tbody td{padding:10px 14px;border-bottom:1px solid var(--soft);vertical-align:middle}
-tbody tr{cursor:pointer;transition:background .1s}
-tbody tr:hover{background:#f8fafc}
-tbody tr.sel{background:#eef2ff}
-td.id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--muted)}
-td.n{font-variant-numeric:tabular-nums;color:var(--ink2)}
-.tblwrap{overflow:auto;max-height:660px}
-footer{margin-top:26px;color:var(--muted2);font-size:12px;line-height:1.9}
-footer code{background:#eef2f7;padding:1.5px 6px;border-radius:5px;
-  font-family:ui-monospace,Menlo,Consolas,monospace;color:#475569}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header class="top">
-    <div class="eyebrow">LLM Wiki · 结构建模</div>
-    <h1>双创赛事智能体 demo 系统 Wiki</h1>
-    <p class="sub" id="subtitle"></p>
-    <div class="kpis" id="kpis"></div>
-  </header>
-
-  <section class="card">
-    <div class="card-h">
-      <h2>分区 × 页面 结构图</h2>
-      <span class="hint">点击任一节点下钻该页详情 · 连线方向为 related_pages（邻接导航，用于防联动漏改）</span>
-    </div>
-    <div class="svgwrap"><svg id="graph" role="img" aria-label="结构建模邻接图"></svg></div>
-    <div class="legend">
-      <span class="lg"><b>重要度</b></span>
-      <span class="lg"><i class="dot" style="background:var(--high)"></i>high（进入上下文预算优先）</span>
-      <span class="lg"><i class="dot" style="background:var(--medium)"></i>medium</span>
-      <span class="lg"><i class="dot" style="background:var(--low)"></i>low（按需查阅）</span>
-      <span class="lg"><b>连线</b>&nbsp;A → B 表示「改 A 时需连带核对 B」</span>
-    </div>
-  </section>
-
-  <div class="grid2">
-    <section class="card">
-      <div class="card-h"><h2>页面详情</h2><span class="hint" id="d-hint">默认显示阅读指引，点击图中节点或下方表格行切换</span></div>
-      <div class="card-b" id="detail"></div>
-    </section>
-    <section class="card">
-      <div class="card-h"><h2>结构统计</h2><span class="hint">全部由 structure.json 与页面 frontmatter 实时推导</span></div>
-      <div class="card-b">
-        <h3 class="sec">分区页数分布</h3>
-        <div id="st-sec" style="margin-top:10px"></div>
-        <h3 class="sec" style="margin-top:20px">重要度分布</h3>
-        <div id="st-imp" style="margin-top:10px"></div>
-        <h3 class="sec" style="margin-top:20px">引用条数 Top 8 页面</h3>
-        <div id="st-cit" style="margin-top:10px"></div>
-        <h3 class="sec" style="margin-top:20px">被最多页面共用的源文件 Top 6</h3>
-        <div id="st-src" style="margin-top:10px"></div>
-      </div>
-    </section>
-  </div>
-
-  <section class="card">
-    <div class="card-h"><h2>20 页总表</h2><span class="hint">点击行下钻 · 五节齐备表示该页固定结构完整</span></div>
-    <div class="tblwrap"><table>
-      <thead><tr>
-        <th>#</th><th>页面</th><th>page_id</th><th>分区</th><th>重要度</th>
-        <th>事实条数</th><th>引用条数</th><th>引用源文件</th><th>邻接页</th>
-      </tr></thead>
-      <tbody id="tbody"></tbody>
-    </table></div>
-  </section>
-
-  <footer>
-    结构真源 <code>wiki/structure.json</code> · 页面 <code>wiki/pages/&lt;page_id&gt;.md</code> ·
-    索引 <code>wiki/llms.txt</code> · 本图由 <code>python wiki/gen_wiki_tools.py map</code> 生成<br />
-    行号口径为 UTF-8 解码行数（与编辑器显示一致）；页面「事实」节每条均带 <code>Sources: [路径:行号]()</code>，可回代码逐条核对。
-  </footer>
-</div>
-
-<script>
-const DATA = __WIKI_DATA__;
-const IMP = { high: 'high', medium: 'medium', low: 'low' };
-const byId = {};
-DATA.pages.forEach(function (p) { byId[p.id] = p; });
-
-/* ---------- header ---------- */
-document.getElementById('subtitle').textContent = DATA.description;
-(function () {
-  const imps = { high: 0, medium: 0, low: 0 };
-  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
-  const items = [
-    ['分区', DATA.sections.length, ''],
-    ['页面', DATA.pages.length, 'k-brand'],
-    ['可验证引用', DATA.totals.citations, 'k-brand2'],
-    ['覆盖源文件', DATA.totals.sourceFiles, ''],
-    ['high / medium / low', imps.high + ' / ' + imps.medium + ' / ' + imps.low, 'k-high']
-  ];
-  document.getElementById('kpis').innerHTML = items.map(function (it) {
-    return '<div class="kpi ' + it[2] + '"><div class="n">' + it[1] + '</div><div class="l">' + it[0] + '</div></div>';
-  }).join('');
-})();
-
-/* ---------- graph ---------- */
-const NW = 210, NH = 44, GAPX = 24, GAPY = 17, PADX = 16, TOP = 58, BOT = 28;
-const MAXLBL = 16;
-function shortLabel(s) {
-  let t = String(s).split('（')[0].split('(')[0].trim();
-  if (t.length > MAXLBL) t = t.slice(0, MAXLBL - 1) + '\u2026';
-  return t;
-}
-function esc(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
-
-const cols = DATA.sections.map(function (s) {
-  return { id: s.id, title: s.title, ids: s.pages.filter(function (i) { return byId[i]; }) };
-});
-const maxRows = Math.max.apply(null, cols.map(function (c) { return c.ids.length; }));
-const W = PADX * 2 + cols.length * NW + (cols.length - 1) * GAPX;
-const H = TOP + maxRows * (NH + GAPY) + BOT;
-const POS = {};
-cols.forEach(function (c, i) {
-  c.ids.forEach(function (pid, j) {
-    POS[pid] = { x: PADX + i * (NW + GAPX), y: TOP + j * (NH + GAPY), col: i };
-  });
-});
-
-const svg = document.getElementById('graph');
-svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-const NS = 'http://www.w3.org/2000/svg';
-function el(n, a) {
-  const e = document.createElementNS(NS, n);
-  for (const k in a) e.setAttribute(k, a[k]);
-  return e;
-}
-let defs = el('defs', {});
-defs.innerHTML = '<marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
-  + '<path d="M 0 0 L 10 5 L 0 10 z" fill="#93a4bf"></path></marker>'
-  + '<marker id="arwOn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
-  + '<path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"></path></marker>';
-svg.appendChild(defs);
-
-const gBg = el('g', {}), gEdge = el('g', {}), gNode = el('g', {});
-svg.appendChild(gBg); svg.appendChild(gEdge); svg.appendChild(gNode);
-
-cols.forEach(function (c, i) {
-  const x = PADX + i * (NW + GAPX);
-  gBg.appendChild(el('rect', { class: 'secbg', x: x - 8, y: 12, width: NW + 16, height: H - 28, rx: 12, fill: i % 2 ? '#f6f9fc' : '#fbfcfe' }));
-  gBg.appendChild(el('line', { class: 'secline', x1: x - 8, y1: 45, x2: x + NW + 8, y2: 45 }));
-  const t = el('text', { class: 'sechdr', x: x, y: 34 });
-  t.textContent = shortLabel(c.title);
-  const tt = el('title', {}); tt.textContent = c.title;
-  t.appendChild(tt);
-  gBg.appendChild(t);
-});
-
-const edgeMap = {};
-DATA.pages.forEach(function (p) {
-  (p.related_pages || []).forEach(function (rp) {
-    if (!POS[p.id] || !POS[rp]) return;
-    const a = POS[p.id], b = POS[rp];
-    const sy = a.y + NH / 2, ty = b.y + NH / 2;
-    const fwd = b.x >= a.x;
-    const sx = fwd ? a.x + NW : a.x;
-    const tx = fwd ? b.x : b.x + NW;
-    const dx = Math.max(46, Math.abs(tx - sx) * 0.42);
-    const bow = ((hash(p.id + rp) % 9) - 4) * 3.2;
-    const d = 'M ' + sx + ' ' + sy + ' C ' + (sx + (fwd ? dx : -dx)) + ' ' + (sy + bow)
-      + ', ' + (tx + (fwd ? -dx : dx)) + ' ' + (ty + bow) + ', ' + tx + ' ' + ty;
-    const pth = el('path', { class: 'edge', d: d, 'marker-end': 'url(#arw)' });
-    gEdge.appendChild(pth);
-    (edgeMap[p.id] = edgeMap[p.id] || []).push(pth);
-  });
-});
-
-DATA.pages.forEach(function (p) {
-  const pos = POS[p.id];
-  if (!pos) return;
-  const g = el('g', { class: 'node', 'data-id': p.id });
-  g.appendChild(el('rect', { class: 'box', x: pos.x, y: pos.y, width: NW, height: NH, rx: 10 }));
-  g.appendChild(el('circle', { cx: pos.x + 14, cy: pos.y + NH / 2, r: 4, fill: DATA.impColor[p.importance] }));
-  const t = el('text', { class: 'lbl', x: pos.x + 27, y: pos.y + NH / 2 + 4 });
-  t.textContent = shortLabel(p.title);
-  const tt = el('title', {});
-  tt.textContent = p.title + '\n' + p.id + '\n引用 ' + p.citations + ' 条 · 源文件 ' + p.citedFiles + ' 个';
-  t.appendChild(tt);
-  g.appendChild(t);
-  g.addEventListener('click', function () { select(p.id, true); });
-  gNode.appendChild(g);
-});
-
-/* ---------- detail ---------- */
-const SEC_NAMES = DATA.sectionNames;
-function lineList(arr, empty) {
-  if (!arr || !arr.length) return '<div style="color:#94a3b8;font-size:12px">' + empty + '</div>';
-  return arr.map(function (s) { return '<div>' + esc(s) + '</div>'; }).join('');
-}
-function renderOverview() {
-  const imps = { high: 0, medium: 0, low: 0 };
-  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
-  return ''
-    + '<div class="d-title"><h2>怎么读这张图</h2></div>'
-    + '<div class="oneliner">结构层是 7 个分区 + 20 个页面；每个页面固定五节，其中「事实」节每条都带行号引用，可回到源码逐条核对。'
-    + '连线表示页面之间的邻接关系 —— 改一个模块时，沿连线读完相邻页即可避免漏改。</div>'
-    + '<div class="nums">'
-    + '<div><div class="n">' + DATA.sections.length + '</div><div class="l">分区</div></div>'
-    + '<div><div class="n">' + DATA.pages.length + '</div><div class="l">页面</div></div>'
-    + '<div><div class="n">' + DATA.totals.citations + '</div><div class="l">可验证引用</div></div>'
-    + '</div>'
-    + '<div class="subh">入口顺序</div>'
-    + '<div style="font-size:13px;color:#334155">'
-    + '① 先读 <b>llms.txt</b> 建立全局印象 → ② 按任务挑 1 个目标页 → ③ 顺该页 related_pages 邻接页核对联动 → ④ 需要对上游依据时按 importance 决定是否展开数据页。'
-    + '</div>'
-    + '<div class="subh">分区概览</div>'
-    + '<div class="chips">' + DATA.sections.map(function (s) {
-        return '<span class="chip" style="cursor:default">' + esc(s.title) + ' · ' + s.pages.length + ' 页</span>';
-      }).join('') + '</div>'
-    + '<div class="subh">重要度分布</div>'
-    + '<div style="font-size:13px;color:#334155">high ' + imps.high + ' 页（默认纳入开发上下文）· medium ' + imps.medium + ' 页（按任务加载）· low ' + imps.low + ' 页（仅重构/改名时查）</div>';
-}
-function renderDetail(id) {
-  const p = byId[id];
-  if (!p) return renderOverview();
-  const secTitle = (DATA.sections.filter(function (s) { return s.id === p.section; })[0] || {}).title || p.section;
-  const rel = (p.related_pages || []).map(function (rp) {
-    const t = byId[rp] ? byId[rp].title : rp;
-    return '<span class="chip" data-go="' + rp + '">' + esc(shortLabel(t)) + ' <span style="color:#94a3b8">' + esc(rp) + '</span></span>';
-  }).join('');
-  const chk = SEC_NAMES.map(function (n) {
-    const ok = p.sections[n];
-    return ok ? '<span>' + esc(n) + ' \u2713</span>'
-      : '<span style="background:#fff7ed;color:#c2410c;border-color:#fed7aa">' + esc(n) + ' 缺</span>';
-  }).join('');
-  return ''
-    + '<div class="d-title"><h2>' + esc(p.title) + '</h2>'
-    + '<span class="badge b-' + p.importance + '">' + p.importance + '</span>'
-    + '<span class="badge b-sec">' + esc(p.id) + '</span></div>'
-    + '<div class="meta"><span class="badge b-sec">' + esc(secTitle) + '</span></div>'
-    + '<p class="oneliner">' + esc(p.oneLiner) + '</p>'
-    + '<div class="nums">'
-    + '<div><div class="n">' + p.factItems + '</div><div class="l">编号事实条数</div></div>'
-    + '<div><div class="n">' + p.citations + '</div><div class="l">可验证引用条数</div></div>'
-    + '<div><div class="n">' + p.citedFiles + '</div><div class="l">引用源文件数</div></div>'
-    + '</div>'
-    + '<div class="subh">固定五节</div><div class="chk">' + chk + '</div>'
-    + '<div class="subh">依据的源文件（frontmatter sources）</div>'
-    + '<div class="srclist">' + lineList(p.sources, '无') + '</div>'
-    + '<div class="subh">邻接页面 related_pages（点此跳转）</div><div class="chips">' + (rel || '<span style="color:#94a3b8;font-size:12px">无</span>') + '</div>'
-    + '<div class="subh">页面说明（structure.json）</div>'
-    + '<div style="font-size:13px;color:#334155">' + esc(p.description) + '</div>';
-}
-
-/* ---------- table ---------- */
-document.getElementById('tbody').innerHTML = DATA.pages.map(function (p, i) {
-  const secTitle = (DATA.sections.filter(function (s) { return s.id === p.section; })[0] || {}).title || p.section;
-  return '<tr data-id="' + p.id + '">'
-    + '<td class="n">' + (i + 1) + '</td>'
-    + '<td><b>' + esc(p.title) + '</b></td>'
-    + '<td class="id">' + esc(p.id) + '</td>'
-    + '<td style="color:#475569">' + esc(shortLabel(secTitle)) + '</td>'
-    + '<td><span class="badge b-' + p.importance + '">' + p.importance + '</span></td>'
-    + '<td class="n">' + p.factItems + '</td>'
-    + '<td class="n">' + p.citations + '</td>'
-    + '<td class="n">' + p.citedFiles + '</td>'
-    + '<td class="n">' + (p.related_pages || []).length + '</td>'
-    + '</tr>';
-}).join('');
-
-/* ---------- stats ---------- */
-function bars(host, rows, mono) {
-  const max = Math.max.apply(null, rows.map(function (r) { return r[1]; })) || 1;
-  document.getElementById(host).innerHTML = rows.map(function (r) {
-    return '<div class="bar' + (mono ? ' mono' : '') + '"><div class="lbl"><span>' + esc(r[0]) + '</span><span>' + r[1] + '</span></div>'
-      + '<div class="t"><div class="f" style="width:' + Math.max(3, Math.round(r[1] / max * 100)) + '%"></div></div></div>';
-  }).join('');
-}
-bars('st-sec', cols.map(function (c) { return [shortLabel(c.title), c.ids.length]; }));
-bars('st-imp', (function () {
-  const imps = { high: 0, medium: 0, low: 0 };
-  DATA.pages.forEach(function (p) { if (imps[p.importance] !== undefined) imps[p.importance]++; });
-  return [['high', imps.high], ['medium', imps.medium], ['low', imps.low]];
-})());
-bars('st-cit', DATA.pages.slice().sort(function (a, b) { return b.citations - a.citations; })
-  .slice(0, 8).map(function (p) { return [shortLabel(p.title), p.citations]; }));
-bars('st-src', Object.keys(DATA.sourceIndex).map(function (k) {
-  return [k, DATA.sourceIndex[k].length];
-}).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6), true);
-
-/* ---------- selection ---------- */
-let sel = null;
-function select(id, fromGraph) {
-  sel = id;
-  const p = byId[id];
-  document.getElementById('detail').innerHTML = renderDetail(id);
-  document.getElementById('d-hint').textContent = fromGraph ? '已从结构图下钻' : '已从总表下钻';
-  document.querySelectorAll('#tbody tr').forEach(function (tr) {
-    tr.classList.toggle('sel', tr.getAttribute('data-id') === id);
-  });
-  const relSet = {};
-  (p.related_pages || []).forEach(function (r) { relSet[r] = 1; });
-  DATA.pages.forEach(function (q) {
-    if ((q.related_pages || []).indexOf(id) >= 0) relSet[q.id] = 1;
-  });
-  document.querySelectorAll('.node').forEach(function (g) {
-    const nid = g.getAttribute('data-id');
-    g.classList.toggle('sel', nid === id);
-    g.classList.toggle('rel', nid !== id && !!relSet[nid]);
-  });
-  const onIds = {}; onIds[id] = 1;
-  for (const k in relSet) onIds[k] = 1;
-  for (const k in edgeMap) {
-    const on = !!onIds[k];
-    edgeMap[k].forEach(function (pth) {
-      pth.classList.toggle('on', on);
-      pth.classList.toggle('dim', !on);
-      pth.setAttribute('marker-end', on ? 'url(#arwOn)' : 'url(#arw)');
-    });
-  }
-}
-document.getElementById('tbody').addEventListener('click', function (e) {
-  const tr = e.target.closest('tr');
-  if (tr) select(tr.getAttribute('data-id'), false);
-});
-document.getElementById('detail').addEventListener('click', function (e) {
-  const c = e.target.closest('[data-go]');
-  if (c) select(c.getAttribute('data-go'), true);
-});
-renderOverview();
-document.getElementById('detail').innerHTML = renderOverview();
-</script>
-</body>
-</html>
-"""
-
-
-def cmd_map(args: argparse.Namespace) -> int:
-    """生成结构建模可视化（自包含单页 HTML，无外部依赖）。"""
-    if not STRUCTURE_FILE.is_file():
-        print("[ERROR] structure.json 缺失，无法生成可视化", file=sys.stderr)
-        return 1
-    structure = json.loads(STRUCTURE_FILE.read_text(encoding="utf-8"))
-
-    pages_meta: list[dict] = []
-    source_index: dict[str, list[str]] = {}
-    missing: list[str] = []
-
-    for page in structure.get("pages", []):
-        pid = page.get("id")
-        f = PAGES_DIR / ("%s.md" % pid)
-        if not f.is_file():
-            missing.append(pid)
-            continue
-        text = f.read_text(encoding="utf-8")
-        parsed = parse_frontmatter(text)
-        fm, body = parsed if parsed else ({}, text)
-
-        cites = CITATION_RE.findall(body)
-        cited_files = sorted({c[0].strip() for c in cites})
-        for sf in cited_files:
-            source_index.setdefault(sf, [])
-            if pid not in source_index[sf]:
-                source_index[sf].append(pid)
-
-        facts_body = section_body(body, "事实")
-        pages_meta.append(
-            {
-                "id": pid,
-                "title": page.get("title", pid),
-                "description": page.get("description", ""),
-                "section": fm.get("section") or page.get("section", ""),
-                "importance": fm.get("importance") or page.get("importance", "medium"),
-                "oneLiner": _extract_one_liner(pid) or page.get("description", ""),
-                "sources": fm.get("sources") or [],
-                "related_pages": fm.get("related_pages") or [],
-                "citations": len(cites),
-                "citedFiles": len(cited_files),
-                "sections": {n: bool(section_body(body, n).strip()) for n in REQUIRED_SECTIONS},
-                "factItems": len(re.findall(r"^\s*\d+(?:\.\d+)?\.\s", facts_body, re.MULTILINE)),
-            }
-        )
-
-    payload = {
-        "title": structure.get("title", "Wiki"),
-        "description": structure.get("description", ""),
-        "coldStart": structure.get("coldStart", ""),
-        "lineNumberConvention": structure.get("lineNumberConvention", ""),
-        "sections": [
-            {"id": s.get("id"), "title": s.get("title", s.get("id")), "pages": s.get("pages", [])}
-            for s in structure.get("sections", [])
-        ],
-        "pages": pages_meta,
-        "sectionNames": REQUIRED_SECTIONS,
-        "impColor": {"high": "#4f46e5", "medium": "#0891b2", "low": "#94a3b8"},
-        "sourceIndex": source_index,
-        "totals": {
-            "citations": sum(p["citations"] for p in pages_meta),
-            "sourceFiles": len(source_index),
-            "pages": len(pages_meta),
-        },
-    }
-
-    data_js = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    html = HTML_TEMPLATE.replace("__WIKI_DATA__", data_js)
-
-    # 同一份内容写两处：仓库内的正式产物 + 可发布的静态站点入口（入口落在 / ，便于直接分享）
-    MODEL_MAP.write_text(html, encoding="utf-8")
-    SITE_DIR.mkdir(parents=True, exist_ok=True)
-    SITE_INDEX.write_text(html, encoding="utf-8")
-
-    print("== map ==")
-    print("  已生成：%s" % MODEL_MAP)
-    print("  已生成：%s（可直接发布的站点入口）" % SITE_INDEX)
     print(
-        "  分区 %d · 页面 %d · 引用 %d 条 · 覆盖源文件 %d 个"
+        "  section %d · page %d（已下钻 %d）· node %d"
         % (
-            len(payload["sections"]),
-            len(pages_meta),
-            payload["totals"]["citations"],
-            payload["totals"]["sourceFiles"],
+            len(w.structure.get("sections", [])),
+            len(w.pages),
+            sum(1 for p in w.pages.values() if p.get("docStatus") == "drilled"),
+            n_nodes,
         )
     )
-    if missing:
-        print("  [WARN] 以下页面缺文件，未纳入可视化：%s" % ", ".join(missing))
     return 0
 
 
+# --------------------------------------------------------------------------
+# map
+# --------------------------------------------------------------------------
+def cmd_map(args: argparse.Namespace) -> int:
+    """生成结构图。HTML 模板与图布局由同目录 build_map.py 承担（单一模板源）。"""
+    sys.path.insert(0, str(WIKI_DIR))
+    try:
+        import build_map  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        print("[ERROR] 无法导入 build_map.py：%s" % exc, file=sys.stderr)
+        return 1
+    if not hasattr(build_map, "main"):
+        print("[ERROR] build_map.py 未提供 main()", file=sys.stderr)
+        return 1
+    return build_map.main()
+
+
+# --------------------------------------------------------------------------
+# gaps
+# --------------------------------------------------------------------------
+def cmd_gaps(args: argparse.Namespace) -> int:
+    w = Wiki()
+    gaps = [e for e in w.edges if e.get("status") != "implemented"]
+    undefined = [e for e in gaps if e.get("status") == "undefined"]
+    intended = [e for e in gaps if e.get("status") == "intended"]
+    sev_rank = {"high": 0, "medium": 1, "low": 2}
+    intended.sort(key=lambda e: (sev_rank.get(str(e.get("severity")), 9), str(e.get("id"))))
+    undefined.sort(key=lambda e: (sev_rank.get(str(e.get("severity")), 9), str(e.get("id"))))
+
+    out: list[str] = []
+    out.append("# 缺口清单（gaps）")
+    out.append("")
+    out.append("> 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。")
+    out.append(
+        "> 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。"
+        "`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。"
+    )
+    out.append(">")
+    out.append(
+        "> 统计：边 %d 条（已实现 %d · intended %d · undefined %d）· issues %d 条。"
+        % (len(w.edges), len(w.edges) - len(gaps), len(intended), len(undefined), len(w.issues))
+    )
+    out.append("")
+
+    def edge_row(e: dict[str, Any]) -> str:
+        frm, to = e.get("from"), e.get("to")
+        reason = e.get("blockedBy") or e.get("issue") or ""
+        return (
+            "| `%s` | %s → %s | `%s` | %s | %s |"
+            % (
+                e.get("id"),
+                w.label(frm),
+                w.label(to),
+                e.get("type", ""),
+                e.get("severity", ""),
+                reason.replace("|", "\\|"),
+            )
+        )
+
+    if intended:
+        out.append("## intended（设计有·未实现）")
+        out.append("")
+        out.append("| 边 | 走向 | type | severity | 卡点 |")
+        out.append("|---|---|---|---|---|")
+        for e in intended:
+            out.append(edge_row(e))
+        out.append("")
+
+    if undefined:
+        out.append("## undefined（待产品拍板）")
+        out.append("")
+        out.append("| 边 | 走向 | type | severity | 待确认问题 |")
+        out.append("|---|---|---|---|---|")
+        for e in undefined:
+            out.append(edge_row(e))
+        out.append("")
+
+    if w.issues:
+        out.append("## issues（节点内缺口，未落成边）")
+        out.append("")
+        out.append("| id | 位置 | 状态 | severity | 问题 | 卡点 |")
+        out.append("|---|---|---|---|---|---|")
+        for i in sorted(w.issues, key=lambda x: (sev_rank.get(str(x.get("severity")), 9), str(x.get("id")))):
+            out.append(
+                "| `%s` | %s | %s | %s | %s | %s |"
+                % (
+                    i.get("id"),
+                    w.label(i.get("where", "")),
+                    i.get("status", ""),
+                    i.get("severity", ""),
+                    str(i.get("title", "")).replace("|", "\\|"),
+                    str(i.get("blockedBy", "")).replace("|", "\\|"),
+                )
+            )
+        out.append("")
+
+    # ---- 根因聚合：找出写了同一根因的缺口（blockedBy 完全一致） ----
+    by_cause: dict[str, list[str]] = {}
+    for e in gaps:
+        cause = str(e.get("blockedBy") or "")
+        if cause:
+            by_cause.setdefault(cause, []).append(str(e.get("id")))
+    shared = {c: ids for c, ids in by_cause.items() if len(ids) > 1}
+    if shared:
+        out.append("## 同一根因的多条缺口")
+        out.append("")
+        for cause, ids in shared.items():
+            out.append("- %s：`%s`" % ("、".join("`%s`" % i for i in ids), cause))
+        out.append("")
+
+    # ---- 逐条详情 ----
+    out.append("## 逐条详情")
+    out.append("")
+    for e in intended + undefined:
+        frm, to = e.get("from"), e.get("to")
+        out.append("### `%s`" % e.get("id"))
+        out.append("")
+        out.append(
+            "- 走向：**%s**（`%s`）→ **%s**（`%s`）｜type `%s`｜status **%s**｜severity %s"
+            % (
+                w.label(frm),
+                frm,
+                w.label(to),
+                to,
+                e.get("type", ""),
+                e.get("status", ""),
+                e.get("severity", "n/a"),
+            )
+        )
+        if e.get("trigger"):
+            out.append("- 触发：%s" % e["trigger"])
+        if e.get("expected"):
+            out.append("- 期望行为：%s" % e["expected"])
+        if e.get("designRef"):
+            out.append("- 设计依据：%s" % e["designRef"])
+        if e.get("blockedBy"):
+            out.append("- **卡点**：%s" % e["blockedBy"])
+        if e.get("issue"):
+            out.append("- **待确认**：%s" % e["issue"])
+        srcs = as_list(e.get("sources"))
+        if srcs:
+            out.append("- 出处：%s" % "、".join("`%s`" % s for s in srcs))
+        out.append("")
+
+    write_text_lf(GAPS_MD, "\n".join(out))
+    print("== gaps ==")
+    print("  已生成：%s" % GAPS_MD)
+    print(
+        "  缺口边 %d 条（intended %d / undefined %d）· issues %d 条"
+        % (len(gaps), len(intended), len(undefined), len(w.issues))
+    )
+    return 0
+
+
+# --------------------------------------------------------------------------
+# 入口
+# --------------------------------------------------------------------------
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="gen_wiki_tools.py",
-        description="LLM Wiki 工具链：validate（引用校验） / index（llms.txt 生成） / map（结构可视化）",
+        description="LLM Wiki 工具链：validate / sync-edges / index / map / gaps",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
-    p_val = sub.add_parser("validate", help="校验 pages 与代码真源一致性")
-    p_val.set_defaults(func=cmd_validate)
-    p_idx = sub.add_parser("index", help="生成 wiki/llms.txt（llms.txt v2 格式）")
-    p_idx.set_defaults(func=cmd_index)
-    p_map = sub.add_parser("map", help="生成 wiki/model-map.html（结构建模可视化，自包含单页）")
-    p_map.set_defaults(func=cmd_map)
+
+    p = sub.add_parser("validate", help="校验 structure / pages / nodes / edges 一致性")
+    p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("sync-edges", help="把 edges.json 渲染进各 node 的第 5 节（出入边）")
+    p.add_argument("--check", action="store_true", help="只检查是否有待更新，不写文件（有差异则退出码 1）")
+    p.set_defaults(func=cmd_sync_edges)
+
+    p = sub.add_parser("index", help="生成 wiki/llms.txt（含 node 清单）")
+    p.set_defaults(func=cmd_index)
+
+    p = sub.add_parser("map", help="生成 wiki/module-map.html + wiki/site/index.html")
+    p.set_defaults(func=cmd_map)
+
+    p = sub.add_parser("gaps", help="汇总非 implemented 边与 issues → wiki/gaps.md")
+    p.set_defaults(func=cmd_gaps)
+
     args = parser.parse_args()
     return args.func(args)
 

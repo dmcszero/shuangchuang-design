@@ -1,0 +1,259 @@
+# LLM Wiki 结构 Schema v0.2（冻结候选）
+
+> 本文是 wiki 结构的**唯一约定源**。任何节点/边/页面的新增与修改以本文为准。
+> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」）
+
+---
+
+## 0. 基线与口径
+
+| 项 | 值 | 说明 |
+|---|---|---|
+| **真源仓** | `shuangchuang-design-SY` | 2026-09-11 起；**所有建模以此为准**（团队最新版本） |
+| **旧基线** | `shuangchuang-design-main/wiki/` | 冻结为 **v1**，不再更新；仅供 v2 对照 |
+| **行号口径** | UTF-8 解码行数，1-based，闭区间 | `路径:起[-止]` |
+| **路径口径** | 相对 `shuangchuang-design-SY/` | 例：`src/App.tsx` |
+| **引用语法** | `Sources: [路径:行号]()` | 复用既有 `CITATION_RE` 契约，不新增格式 |
+
+**为什么换仓**：v1 的 `Sources` 指向 design-main 行号，SY 已推进若干版本，行号不可互认。结构必须与源码同仓同版本，否则"可回溯"是假的。
+
+---
+
+## 1. 四层模型
+
+| 层 | 名称 | 载体 | 粒度判据 | 预期量级 |
+|---|---|---|---|---|
+| L1 | **section** 一级模块 | `structure.json` → `sections[]` | 用户视角的**连续任务域**（不是功能的机械分组） | 5~8 |
+| L2 | **page** 页面/视图 | `pages/<id>.md` | `App.tsx` 的一个 tab 或一个独立视图 | ~15 |
+| L3 | **node** 可见交互单元 | `nodes/<page-id>/<id>.md` | **用户能指认、能点**的功能块 | 5~12 / page |
+| L4 | **edge** 边 | `edges.json` | 两个 node 间的**有向、带语义**关系 | — |
+
+层级表达：
+```
+section ──(membership)──▶ page ──(page 字段)──▶ node
+                                                    │
+                                              edge ─┴─▶ node / page
+```
+
+> `section → page` 的归属写在 `structure.json` 的 section 成员里；`page → node` 的归属写在 node 的 `page` 字段里。二者都不需要额外的边。
+
+---
+
+## 2. 命名规范
+
+| 对象 | 规则 | 示例 |
+|---|---|---|
+| section | `sec-<domain>` | `sec-growth` |
+| page | `page-<view>` | `page-workbench` |
+| node | `nd-<page缩写>-<unit>` | `nd-workbench-todo` |
+| edge | `e-<from简>-2-<to简>[-<区分词>]` | `e-workbench-todo-2-guidance-ai` |
+
+- 全小写，单词间用 `-`
+- node 的 `id` **必须等于文件名**（去掉 `.md`）
+- 同一 `from → to` 允许多条平行边，但 **id 与 trigger 必须不同**
+
+---
+
+## 3. node frontmatter
+
+```yaml
+---
+id: nd-workbench-todo
+title: 动态待办
+page: page-workbench
+kind: panel
+importance: high
+sources:
+  - src/components/ProjectMemberWorkbench.tsx:274-435
+---
+```
+
+| 字段 | 必填 | 取值 | 说明 |
+|---|---|---|---|
+| `id` | ✅ | `nd-*` | = 文件名 |
+| `title` | ✅ | 中文短语 | 与页面上的可见名称一致 |
+| `page` | ✅ | `page-*` | 父页面，必须在 `structure.json` 中存在 |
+| `kind` | ✅ | 枚举（见下） | 交互单元形态 |
+| `importance` | ✅ | `high`\|`medium`\|`low` | 对齐 page 口径 |
+| `sources` | ✅ | `路径:行号` 列表 | ≥ 1 条；`intended` 节点（若需）可为空但须说明 |
+
+**kind 枚举**：`panel`（内容面板）/ `tab`（子导航项）/ `nav`（导航条）/ `list`（列表）/ `form`（表单/提交区）/ `modal`（弹层）/ `bar`（横条）/ `drawer`（抽屉）/ `table`（表格）
+
+---
+
+## 4. node 正文五节（与 page 同构）
+
+```markdown
+## 一句话定位
+## 事实（每条强制可回溯）
+## 规则与边界（AI 开发硬约束）
+## 常见开发任务（AI Coding 入口）
+## 出入边（incoming / outgoing）
+```
+
+- 前 4 节与 page 完全同构，复用既有 `REQUIRED_SECTIONS` 前缀匹配逻辑。
+- 第 5 节 **由工具链生成**（`gen_wiki_tools.py sync-edges`），标记区块如下，手写内容会被覆盖：
+
+```markdown
+<!-- EDGES:BEGIN -->
+（工具链生成，勿手写）
+<!-- EDGES:END -->
+```
+
+> 设计理由：`edges.json` 是边的真源。若第 5 节也手写，两份必然漂移；生成可保证一致。
+
+---
+
+## 5. edge schema
+
+```json
+{
+  "id": "e-workbench-todo-2-guidance-ai",
+  "from": "nd-workbench-todo",
+  "to": "nd-guidance-taskbar",
+  "type": "navigate-with-payload",
+  "trigger": "点击 AI 诊断待办项的「去执行」",
+  "payload": "GuidanceTaskContext{taskId, title, source:'ai', sourceLabel:'AI 诊断生成', chapterId}",
+  "logic": "App.handleExecuteTodo → setGuidanceTaskContext(ctx) + setActiveTab('guidance_workbench')；接收端按 prefiledTaskIdRef 去重后追加 AI 引导消息",
+  "status": "implemented",
+  "sources": [
+    "src/components/ProjectMemberWorkbench.tsx:86-94",
+    "src/App.tsx:537-540"
+  ]
+}
+```
+
+### 5.1 `type` 枚举
+
+| type | 语义 | 方向 | 典型 |
+|---|---|---|---|
+| `navigate` | 纯视图/页切换，无载荷 | 单向 | tab 切换、按钮跳页 |
+| `navigate-with-payload` | 跨视图跳转 + 传上下文 | 单向 | 工作台「去执行」 |
+| `read` | 读对方数据（props / state / 接口） | 单向 | 子组件接收父级数据 |
+| `writeback` | 写回对方状态 | 单向 | 提交整改、完成任务回写 |
+| `reuse` | 共用组件 / mock / 类型 / 常量 | 单向（可对称） | 共用 `mockProjects` |
+| `embed` | 内嵌渲染对方（父子） | 单向 | 抽屉内嵌详情 |
+
+### 5.2 `status` 枚举 ★核心
+
+| status | 含义 | **必填字段** |
+|---|---|---|
+| `implemented` | 代码已实现 | `sources`（行号必须可验证） |
+| `intended` | 设计要求存在，代码没有 / 只做了一半 | `designRef` + `expected` + `blockedBy` |
+| `undefined` | 设计本身也没说清 | `issue`（待确认问题原文） |
+
+`intended` 三问（强制填写，缺一不可）：
+
+| 字段 | 问什么 | 例 |
+|---|---|---|
+| `designRef` | **从哪来**（设计依据的可引用标识） | `源码文案 ProjectMemberWorkbench.tsx:951` |
+| `expected` | **期望行为**是什么 | 点「完整版本历史」→ 切到工作台并打开版本抽屉 |
+| `blockedBy` | **卡在哪** | 该处为纯文本 div，无 onClick / 无回传链路 |
+
+---
+
+## 6. 校验规则（在 v1 的 A~D 上扩展）
+
+| 组 | 编号 | 规则 | 级别 |
+|---|---|---|---|
+| A 结构 | A1~A4 | 沿用 v1（section/page 完整性） | error |
+| | **A5** | node 的 `page` 必须存在于 `structure.json` | error |
+| | **A6** | node 的 `id` 唯一且 = 文件名 | error |
+| | **A7** | `docStatus: "drilled"` 的 page 必须至少 1 个 node | error |
+| B frontmatter | B1~B4 | 沿用 v1，字段集换成 node 必填集 | error |
+| | **B5** | `kind` ∈ 枚举 | error |
+| C 引用 | C1~C4 | 沿用 v1 | error |
+| | **C5** | `edge.sources` 行号 ≤ 目标文件实际行数 | error |
+| D 边 | **D1** | `from` / `to` 必须存在（**node / page / modal / shell**） | error |
+| | **D2** | 平行边 id 与 trigger 不重复 | error |
+| | **D3** | `status` 与必填字段矩阵一致（见 5.2） | error |
+| | **D4** | `navigate*` 边应存在反向 UI 入口 | **warning**（有去无回） |
+| | **D5** | node 第 5 节与 `edges.json` 一致 | error |
+| E 缺口 | **E1** | 汇总所有非 `implemented` 边 | 报告 |
+
+---
+
+## 7. node 粒度判定（三问）
+
+对候选交互单元问：
+
+1. **用户能否指认它？**（屏幕上有一块可命名的区域 / 一个 tab / 一个按钮组）
+2. **它是否有自己的状态或载荷？**（有 `useState` / props / 入参 / 条件渲染）
+3. **它是否至少被一条边连接？**（入边或出边）
+
+| 判定 | 动作 |
+|---|---|
+| 三问全 ✅ | 建 node |
+| 仅 1 ✅ | 不建，写进父 node 的「事实」 |
+| 仅 2 ✅ | 不建（内部实现细节，不是交互单元） |
+
+**反例（不建 node）**：纯样式容器、单条静态文案、单独图标、纯布局网格。
+
+**自检**：一个 page 拆出的 node 若 > 12 个，说明粒度切碎了——回到"用户能不能指认"重切。
+
+---
+
+## 8. 与工具链的对接
+
+复用 v1 `gen_wiki_tools.py` 已有设施，零重写：
+
+| 既有设施 | 复用方式 |
+|---|---|
+| `parse_frontmatter()` | 直接解析 node frontmatter（极简 YAML 子集已够） |
+| `section_body()` | 前缀匹配，兼容五节标题带补充说明 |
+| `CITATION_RE` | 校验 node 事实引用与 edge.sources |
+| `read_lines()` | 行号口径统一入口 |
+| `Report` 类 | 错误/警告收集 |
+
+新增子命令：
+
+| 命令 | 作用 | 产出 |
+|---|---|---|
+| `validate` | 扩展 A5~A7 / B5 / C5 / D1~D5 | 控制台报告 + 非零退出码 |
+| `sync-edges` | 把 `edges.json` 渲染进各 node 第 5 节 | 覆盖 `<!-- EDGES:BEGIN/END -->` |
+| `index` | 生成 `llms.txt`（含 node 清单） | `wiki/llms.txt` |
+| `map` | 生成结构图（node 为点，边带 type/status 着色） | `wiki/module-map.html` + `wiki/site/index.html` |
+| `gaps` ★ | 汇总非 `implemented` 边，按 `blockedBy` 聚合 | `wiki/gaps.md` |
+
+> `map` 的 HTML 模板与图布局由同目录 `build_map.py` 单独承担（单一模板源），`gen_wiki_tools.py map` 只做入口转发——避免 40 KB 模板双份漂移。产物文件名以实际落盘为准：`module-map.html`（发布副本 `site/index.html`，入口落在 `/`）。
+
+---
+
+## 9. 试点范围与完成情况（第 1~3 步）
+
+| 产出 | 范围 | 状态 |
+|---|---|---|
+| `wiki/schema.md` | 全量 schema（本文件） | ✅ 已落盘 |
+| `wiki/structure.json` | 8 个 section（**已确认**）+ 15 个 page + 壳层/弹层/孤儿清单 | ✅ 已落盘 |
+| `wiki/nodes/page-workbench/*.md` | 「项目工作台」**8 个节点**（完整；体检区按业务归宿拆 3 个） | ✅ 已落盘 |
+| `wiki/nodes/page-guidance/*.md` | 「全链路指导工作台」**完整 10 节点**（2026-09-13 补全） | ✅ 已落盘 |
+| `wiki/pages/page-workbench.md` · `page-guidance.md` | v2 薄页面（页面级事实 + 节点地图） | ✅ 已落盘 |
+| `wiki/edges.json` | 11 条边（6 implemented / 4 intended / 1 undefined）+ 4 条 issues | ✅ 已落盘 |
+| `wiki/gen_wiki_tools.py` | **正式工具链**：`validate` / `sync-edges` / `index` / `map` / `gaps` 五命令（纯标准库） | ✅ 已落盘并跑通 |
+| `wiki/llms.txt` · `wiki/gaps.md` | 由 `index` / `gaps` 生成的产物 | ✅ 已落盘 |
+| `wiki/module-map.html` · `wiki/site/index.html` | 结构图（本地预览 + 发布副本，内容一致） | ✅ 已落盘 |
+| `wiki/validate_pilot.py` | 试点校验器 | ⛔ 已被 `gen_wiki_tools.py validate` 取代（保留作历史留存，勿再使用） |
+
+校验结果：**section 8 · page 15（已下钻 2 / 待铺开 13）· node 18 · 边 23（18 implemented / 4 intended / 1 undefined）· issues 9；0 error / 1 warning**
+（唯一 warning = 13 个 page 尚未铺开的汇总提示）。
+
+> 其余 13 个视图的页面与节点排在**第 4 步**，待粒度验收通过后铺开。
+> 铺开范围（按 `structure.json` 顺序）：`page-cockpit` / `page-milestones` / `page-screening` /
+> `page-mentorship` / `page-supervision` / `page-mentors-pool` / `page-coach` / `page-defense` /
+> `page-assets` / `page-knowledge-base` / `page-users` / `page-teams` / `page-login`。
+> 每铺开一批需重跑 `sync-edges` → `validate` → `index` → `map` → `gaps`。
+>
+> `build_map.py` 的图布局已改为**按已下钻页面自动分列**（不再是写死的三列），后续新增页面无需改生成器。
+
+---
+
+## 10. 变更记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-09-13 | v0.3.2 ✅ | **第 4 步首批完成**：`page-guidance` 由 2 个最小节点补全为 **10 节点**（顶栏 / 任务条 / 快照提示条 / 章节速达条 / BP 打磨区 / 诊断报告 / 评分详情 / AI 教练 / 版本抽屉 / diff 弹层）；边 11 → **23**（新增 12 条本页内边），issues 4 → **9**（新增 5 条：死弹层组件 / 教练死状态 / 快照预览不换内容 / diff 正文硬编码 / 三套阶段口径）；`build_map.py` 图布局改为按页面自动分列；D4 规则收窄为「跨页且已实现的跳转边」 |
+| 2026-09-13 | v0.3.1 ✅ | **第 3 步完成**：正式工具链 `gen_wiki_tools.py`（`validate` / `sync-edges` / `index` / `map` / `gaps`）落盘并跑通，校验 0 error / 2 warning；新增产物 `llms.txt` / `gaps.md`；10 个 node 的第 5 节改为工具生成（含 up/down 边详情）；`map` 产物名与实现对齐为 `module-map.html`；`validate_pilot.py` 退役 |
+| 2026-09-11 | v0.3 ✅ | **转冻结**（粒度与 section 验收通过）；体检区按业务归宿拆为 3 节点；新增 2 条边（逻辑断点→动态待办 `intended`、评委提问→答辩训练 `undefined`） |
+| 2026-09-11 | v0.2 ✅ | 试点校验通过（8 节点 / 10 边 / 3 issues，0 error） |
+| 2026-09-11 | v0.2 | 基线切换至 SY；新增 node/edge 两层；新增 `intended` 三问与 `gaps` 命令；第 5 节改为工具链生成 |
+| 2026-09-10 | v0.1 | 两段式（structure.json + pages）；sources 行号契约；A~D 校验（design-main 基线） |

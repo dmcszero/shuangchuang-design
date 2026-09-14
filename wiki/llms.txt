@@ -1,53 +1,86 @@
-# 双创赛事智能体 demo（shuangchuang-design-main）系统 Wiki
+# 双创赛事智能体 · 结构知识库
 
-> 面向 AI Coding 的可验证叙事知识库：以 2026-09-10 代码实测为唯一真源，覆盖 4 角色×13 视图、学生端四大功能模块、管理端工作台、AI 能力装配、业务数据模型与跨模块闭环。每页事实强制 Sources 行号引用。
+> 面向 AI Coding 的可验证结构图谱：以 SY 版原型源码为唯一事实来源，按 section → page → node 三层拆分，边（edge）记录节点间的跳转/传参/读写/复用关系，并标注实现状态。
 >
-> 读法：结构真源在 `structure.json`，页面在 `pages/<page_id>.md`；每页「事实」节每条均带 `Sources: [路径:行号]()`，可回代码逐条核对。
-> 行号口径：UTF-8 解码行数（与编辑器显示一致）。重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标页 + 其 related_pages 即可，不必全读。
+> 结构真源 `wiki/structure.json`，边真源 `wiki/edges.json`，页面 `wiki/pages/<page-id>.md`，节点 `wiki/nodes/<page-id>/<node-id>.md`。
+> 行号口径：UTF-8 解码行数（与编辑器显示一致）。重要度 high / medium / low 用于控制上下文预算 —— 按需加载目标节点 + 其 related_pages / 出入边即可，不必全读。
+> 边状态：implemented（代码已实现）｜intended（设计有·代码没有）｜undefined（设计本身未定）。非 implemented 的边见 `wiki/gaps.md`。
 
-## 系统总览与骨架
+## 管理驾驶舱
 
-- [系统总览与四端门户](pages/page-system-overview.md): 「赛事打磨平台」是 2026 中国国际大学生创新大赛的校级培育决策平台，入口是一个四端（项目组成员 / 学校管理端 / 导师端 / Admin 端）统一登录网关，登录态落 localStorage，登录后按角色落到各自的默认首页。 _(importance: high)_
-- [应用骨架与全局布局](pages/page-app-shell.md): `App.tsx` 是整个 demo 的唯一壳层：一个三列结构（左 `Sidebar` / 中主内容区 / 右侧独立工作区）+ 顶栏 `TopHeader`，中间按 13 个 `TabType` 做条件渲染分发，右侧独立工作区只在 `coach` 下挂载并支持拖拽调宽与全屏。 _(importance: high)_
-- [角色×视图导航矩阵](pages/page-roles-navigation.md): 侧栏 `getNavGroups()` 用 `if (session.role === ...)` 硬编码了四套导航组，顶栏 `tabTitleMap` 用一张 `Record<TabType, {title, subtitle}>` 提供 13 个视图的标题与副题——这两处合起来就是「角色 → 可见视图 → 页... _(importance: high)_
-- [遗留与孤儿组件盘点](pages/page-legacy-code.md): `src/` 下有 7 个源文件**未被任何其它文件 import**（对全库 `from '...'` 语句扫描得出），属于早前版本留下的死代码——它们仍参与 TS 编译（`npm run lint` 会扫），但不在运行时链路上，**只记录、不信赖，开发时不要在其上叠加新功能**。 _(importance: low)_
+_学院管理层：一眼看清全局态势，定位到需要干预的项目_
 
-## 学生端功能（team_member）
+- [数据驾驶舱](pages/page-cockpit.md): 学院管理层的全局态势总览：项目分布、评分排名、预警与导出入口。 _(importance: high · 待铺开)_
+- [里程碑看板](pages/page-milestones.md): 项目全生命周期的阶段推进看板（L1~L5 里程碑口径）。 _(importance: medium · 待铺开)_
 
-- [新建对话（金牌AI教练）](pages/page-coach.md): 学生端主模块，也是全库最大的单体组件（**2902 行**，UTF-8 行数口径）：一个会话式 AI 教练，内部同时承载空间/会话管理、专家-技能-连接器装配、多类咨询动作、富卡消息流、ReAct 实时过程渲染，以及 **4.1 ↔ 4.2/4.3 的深度调用与浅度调用协议**——会话历史与深/浅调用都是它的子功... _(importance: high)_
-- [项目工作台（my_project）](pages/page-workbench.md): 学生端首页（`my_project`），一个五子 tab 的聚合工作台：**动态待办（AI 诊断 + 专家工单双来源统一池）/ 专家辅导与督导工单 / AI 对标体检与短板 / 团队架构与合规审查 / 项目文件夹**——它是"任务入口"而非"任务执行地"，点「去执行」才会携载荷跳到全链路指导工作台。 _(importance: high)_
-- [全链路指导工作台（guidance_workbench）](pages/page-guidance.md): BP 打磨主阵地（**1086 行**，沉浸式满屏页）：顶栏放项目标签 + L1~L6 阶段 stepper + 四个快捷动作（保存快照 / 标为里程碑 / 版本对比 / 版本历史），中栏是三 tab（BP 12 章 / 全维诊断 / 六维评分），右栏是 AI 教练单主体；它是**全库唯一能接收跨页任务载荷（`G... _(importance: high)_
-- [模拟评审与答辩训练（defense_training）](pages/page-defense.md): 一个**四屏有限状态机**（selector → prep → session → report）的答辩实训模块：5 种训练模式 × 可配置评委席（单/多评委、3 级风格、轮次、单题时限），结束后产出六维雷达报告与逐轮复盘。 _(importance: high)_
-- [备赛捷径与当前参赛项目（全局部件）](pages/page-sidebar-widgets.md): 侧栏底部有两个**真·全局件**：**备赛捷径区**（2026 官方评审细则的全局入口，学生端与学校管理端共用，管理端另有两个额外入口）与**当前参赛项目切换器**（学生专属，切项目后全端联动）。两者物理上都在 `Sidebar.tsx` 里，但业务归属是"全局能力"，不是导航项。 _(importance: medium)_
+## 项目遴选
 
-## 管理端工作台（school_admin）
+_赛事管理员：把海量申报项目筛成一份可培育名单_
 
-- [备赛数据驾驶舱（cockpit）](pages/page-cockpit.md): 学校管理端的默认落地页（`school_admin` 登录后进这里）与决策枢纽：一个 AI 决策横幅 + 五张 KPI 池卡 + 一级指标二级得分率热力 + 5 个迷你看板（赛道分布 / 辅导转化）+ A 级潜力池列表 + 异常停滞与合规预警。**全页数据只读、无写操作，所有下钻都是跳转到别的 tab 或打开项目... _(importance: high)_
-- [智能对标初筛与排名（screening）](pages/page-screening.md): 管理端的 2026 细则对标初筛页：**三个视图模式**（二级指标矩阵 / 综合梯队与金奖对标 / 合规一票否决拦截）× **四维筛选**（赛道 / 梯队 / 合规 / 关键词），点击任一行通过 `ProjectDetailDrawer` 下钻到六 tab 详情。 _(importance: high)_
-- [常态化辅导与调度（mentorship）](pages/page-mentorship.md): 管理端的导师调度台：左侧是「AI 短板定向匹配器 + Top 3 推荐 + 全量导师库」，右侧是「批次梯队任务下发中心」——**匹配算法是前端规则加权（80 基线 + 10/8/7 三项加分），不是模型打分**。 _(importance: medium)_
-- [辅导资产沉淀与督导（supervision）](pages/page-supervision.md): 工单流转闭环页，也是**导师端（`mentor`）的唯一落地页**：辅导录音 → AI 结构化转写 → 生成整改工单 → 学生交付 → 专家复核提分，四步全在一个右侧详情区里呈现；左侧另有校本避坑指南资产库。 _(importance: medium)_
-- [重点项目全流程看板（milestones）](pages/page-milestones.md): 五金阶段管线看板（**L1~L5**，与教练模块的 L1~L4、指导工作台的 L1~L6 都不同）：顶部是 5 张可点击的阶段卡（点击即筛选）、中部是各阶段均分跃迁曲线、下部是按健康度着色的项目卡片看板列，右上角可导出复盘材料。 _(importance: medium)_
-- [用户与团队架构管理](pages/page-org-mgmt.md): 管理端的组织治理双页：`users_management` 是**五角色用户表**（启停 / 重置密码 / 新增用户），`teams_management` 是**团队架构与合规审查**（三合规体检 + 成员明细 + 催办）。 _(importance: medium)_
+- [智能初筛中心](pages/page-screening.md): 批量导入项目、按专家规则自动提取要点并给出初筛评分与分级对标。 _(importance: high · 待铺开)_
 
-## 资源智库（校内/平台双版本）
+## 导师与督导
 
-- [导师库与知识库（校内/平台双版本）](pages/page-pools-kb.md): 同一个 `TabType` 按角色渲染**两套完全不同的组件与数据**：`mentors_pool` 与 `knowledge_base` 对 `school_admin` 走校内版（`MentorPoolManagement` / `KnowledgeBaseManagement`），对 `system_adm... _(importance: medium)_
+_管理员派单 → 导师辅导 → 学生交付整改，形成闭环_
 
-## AI 能力装配
+- [导师智能调度](pages/page-mentorship.md): 按赛道/专长匹配导师，创建批次任务并跟踪完成情况。 _(importance: high · 待铺开)_
+- [督导闭环中心](pages/page-supervision.md): 导师侧：接收工单、查看学生提交、给出复核结论与提分评估。 _(importance: high · 待铺开)_
+- [导师池管理](pages/page-mentors-pool.md): 导师资源的录入、标签维护与双角色视图（校端 / 平台端）。 _(importance: medium · 待铺开)_
 
-- [AI 能力装配层（专家/技能/连接器）](pages/page-ai-agents.md): 静态装配模型层：**5 位专家智能体 × 8 项教练技能 × 5 个 MCP 连接器**，三类**各自独立配置、不做强制关联**；真正渲染装配 UI 的是 `ChatComposer` 的三个弹出菜单，而选中态的持有者是 `SceneAICoach`。 _(importance: medium)_
+## 项目成长
 
-## 业务数据与生命周期
+_学生团队：从「我该改什么」到「改完交付并留痕」_
 
-- [业务数据模型全景](pages/page-data-model.md): `src/types.ts`（513 行）定义全部业务实体，并在 **239 行处用注释分界**为"管理平台域"与"shuangchuang-AI 域"；此外 guidance / defense / workbench 三个子目录各带自己的类型文件。**最需要注意的不是字段本身，而是同一个业务概念存在多套并存模... _(importance: high)_
-- [L1~L6 生命周期与版本体系](pages/page-lifecycle-versions.md): 本页做两件事：① **把三套并存的阶段口径摊平对照**（教练 L1~L4 / 里程碑 L1~L5 / 指导工作台 L1~L6），如实记录 demo 的口径不一致；② 说明版本体系——**快照 / 里程碑 / 回滚 / diff 全量只在指导工作台做**，项目文件夹的版本线是只读镜像。 _(importance: high)_
+- [项目工作台](pages/page-workbench.md): 学员端（team_member）的项目主界面：一个项目头部横幅 + 五个子 tab，覆盖「今天要改什么 → 找谁要的材料 → 离金奖差多少 → 团队合不合规 → 改完的版本留没留痕」这条完整的学生侧任务链。 _(importance: high · 已下钻)_
+  - [项目识别头](nodes/page-workbench/nd-workbench-hero.md) `nd-workbench-hero`: 项目工作台顶部的项目身份横幅：一眼交代「这是哪个项目、谁在做、对标金奖还差多少」，并提供通往官方打分细则的唯一入口。 _(bar · medium)_
+  - [动态待办](nodes/page-workbench/nd-workbench-todo.md) `nd-workbench-todo`: 项目工作台的第一个子 tab，把「AI 评分诊断生成的待办」与「后台专家下发的建议工单」汇成**一个统一池**，每条待办右侧带「去执行」按钮，点击即携带任务上下文跳到全链路指导工作台。 _(panel · high)_
+  - [专家辅导与督导工单](nodes/page-workbench/nd-workbench-wo.md) `nd-workbench-wo`: 项目工作台的第二个子 tab，承载「导师下发的整改要求 → 学生提交整改成果 → 导师二次复核打分」的完整闭环，是学生侧唯一能看见专家原始诊断意见与复核对分的地方。 _(panel · high)_
+  - [一级指标得分卡](nodes/page-workbench/nd-workbench-diag-scores.md) `nd-workbench-diag-scores`: 「AI 对标体检」tab 的上半区，用四张卡把项目的五个一级指标得分摊开，回答「我现在几分、离满分差多少」。 _(panel · medium)_
+  - [逻辑断点与硬伤](nodes/page-workbench/nd-workbench-diag-gaps.md) `nd-workbench-diag-gaps`: 「AI 对标体检」tab 下半区左侧：逐条列出项目论证链上的断裂点与硬伤，每条带位置、描述与 AI 改进建议。**它是「动态待办」的上游来源**——按产品口径，检测出断点即应自动落成一条待办。 _(panel · high)_
+  - [评委尖锐提问攻防演练](nodes/page-workbench/nd-workbench-diag-questions.md) `nd-workbench-diag-questions`: 「AI 对标体检」tab 下半区右侧：预演 2026 国赛现场评委最可能抛出的尖锐问题，供团队提前备好攻防。**它的性质是「演练」，不是「待办」**——区块标题本身就是证据。 _(panel · high)_
+  - [团队架构与合规审查](nodes/page-workbench/nd-workbench-team.md) `nd-workbench-team`: 项目工作台的第四个子 tab，用一张表回答「这个团队够不够格参赛」：成员学历梯度、跨学科分工、专利/IP 权属、以及校级秘书的合规审核状态与批注。 _(table · medium)_
+  - [项目文件夹](nodes/page-workbench/nd-workbench-folder.md) `nd-workbench-folder`: 项目工作台的第五个子 tab，用四个区块回答「这个项目的材料到底有哪些、谁改的、形成哪一版」：待归档区（会话产物入库）、材料注册表（含来源标签）、主文档版本线、大事记（=文件更改记录）。 _(panel · high)_
+- [全链路指导工作台](pages/page-guidance.md): 沉浸式备赛主工作台：中栏用三个 tab（BP 正文 / 诊断 / 评分）打磨商业计划书，右栏挂 AI 教练，顶栏管阶段与版本；它同时是**项目工作台「动态待办」跳转的接收方**，也是全库唯一一处「诊断 → AI 改写 → 落回正文」的闭环发生地。 _(importance: high · 已下钻)_
+  - [全局引导顶栏](nodes/page-guidance/nd-guidance-topbar.md) `nd-guidance-topbar`: 工作台最上方的固定顶栏：左侧交代「这是哪个项目、走到哪一阶段」，右侧提供**版本生命周期的四个动作**（保存快照 / 标为里程碑 / 版本对比 / 版本历史）。它是本页所有版本类操作的唯一发起处。 _(bar · high)_
+  - [任务上下文条](nodes/page-guidance/nd-guidance-taskbar.md) `nd-guidance-taskbar`: 全链路指导工作台里那条琥珀色横幅——它是**从项目工作台「去执行」跳进来后唯一的落地凭证**：显示正在执行哪条待办、来自哪、能否定位到章节，并提供「跳转关联章节」与「完成并回写待办」两个动作。 _(bar · high)_
+  - [快照只读预览提示条](nodes/page-guidance/nd-guidance-snapshot-banner.md) `nd-guidance-snapshot-banner`: 当用户在版本抽屉里点开某个历史快照时，页面顶部压出一条深色提示条：「你正在看的不是当前版本」，并提供唯一的退出口「返回当前编辑」。它是**只读预览态**的开关与标识。 _(bar · medium)_
+  - [BP 章节速达条](nodes/page-guidance/nd-guidance-chapters.md) `nd-guidance-chapters`: BP tab 下沿的 12 章横向跳转条（「章节速达:」）。它是**跨页跳转能力的最终落点**——「已为你定位到第 N 章」这句话能否兑现，取决于本节点的高亮是否真的跟着 `activeChapterId` 走。 _(nav · medium)_
+  - [BP 章节打磨区](nodes/page-guidance/nd-guidance-bp.md) `nd-guidance-bp`: 工作台中栏的「商业计划书（BP 12章）」tab 主体：在**排版预览**与**Markdown 源码编辑**两种形态间切换，可一键让 AI 针对当前章节提分，也是 AI 生成内容的**唯一落纸位置**。 _(panel · high)_
+  - [全维诊断报告](nodes/page-guidance/nd-guidance-diag.md) `nd-guidance-diag`: 工作台中栏的「全维诊断报告」tab：先用一张卡回答「你的项目属于哪一类创新」，再用左右两张卡分别回答「评委最容易问死你的三处在哪」与「下一步最该做什么」。**这是本页把「诊断」翻译成「动作」的地方**——两张卡各自带一条去往别处的出口。 _(panel · high)_
+  - [六维评分详情](nodes/page-guidance/nd-guidance-score.md) `nd-guidance-score`: 工作台中栏的「六维评分详情」tab：把当前版本的总分、六个维度的得分条、以及六条评审采分点的「当前分 / 上限 / 增量」摊开，回答「这 91 分是怎么来的、还可以从哪几条上加分」。**纯展示，无任何交互。** _(panel · medium)_
+  - [右栏 AI 备赛伴学教练](nodes/page-guidance/nd-guidance-coach.md) `nd-guidance-coach`: 工作台右栏的常驻对话区：BP 章节头与诊断卡把「问题」推进来，它输出「评委视角的推演」，当推演结果是可落纸的段落时，再通过「一键应用至计划书对应章节」把结果推回中栏。**它是本页三条入边、一条回写边的交汇点。** _(panel · high)_
+  - [版本历史抽屉](nodes/page-guidance/nd-guidance-version-drawer.md) `nd-guidance-version-drawer`: 全链路指导工作台右缘的版本抽屉，回答「这份 BP 有过哪些版本、谁在什么时候改了哪一版」：选中可只读预览、两版可对比 diff、可回滚、可存快照。它是项目工作台「项目文件夹」里那条版本线的**设计归宿**。 _(drawer · high)_
+  - [版本快照差异比对弹层](nodes/page-guidance/nd-guidance-diff-modal.md) `nd-guidance-diff-modal`: 从工作台顶栏或版本抽屉弹出的全屏比对弹层，让人选两个版本看「总分变化了多少、改了什么」。**唯一动态的是总分差，正文比对是写死的示例。** _(modal · medium)_
 
-## 跨模块联动与闭环
+## 智能陪练
 
-- [跨模块联动与闭环](pages/page-cross-link.md): 全库一共只有 **4 条真实的跨模块联动链**（其余"联动"都是同页内跳转）：① 动态待办「去执行」携载荷跳工作台（**全库唯一带载荷的跨模块链**）② 切当前参赛项目全端联动 ③ 教练产物 → 右侧独立工作区 / 项目文件夹待归档 ④ 工单状态 App 级提升（学生提交 → 导师复核）。本页把四条链的每一跳都标... _(importance: high)_
+_学生：随时问、随时练，答辩前把问题问遍_
+
+- [AI 备赛教练](pages/page-coach.md): 会话式备赛主体：任务选择、专家智能体调用、ReAct 过程可视化、诊断报告生成，右侧产物与审核区。 _(importance: high · 待铺开)_
+- [模拟答辩训练](pages/page-defense.md): 四阶段答辩演练：选模式 → 备赛准备 → 路演展示 → 问答对抗 → 报告复盘，含录像回放与评分。 _(importance: high · 待铺开)_
+
+## 素材与知识
+
+_全角色：取现成素材、查知识与评审规则_
+
+- [素材与资产管理](pages/page-assets.md): 备赛素材的生成与管理：PPT/文档/图像/视频资产的产出、版本与复用。 _(importance: medium · 待铺开)_
+- [知识库管理](pages/page-knowledge-base.md): 知识源接入、连接器状态与检索配置的双角色视图（校端 / 平台端）。 _(importance: medium · 待铺开)_
+
+## 平台治理
+
+_系统管理员：管人、管团队、管平台侧配置_
+
+- [用户管理](pages/page-users.md): 系统管理员的用户账号维护、角色分配与状态管理。 _(importance: medium · 待铺开)_
+- [团队管理](pages/page-teams.md): 项目团队的组织架构、成员构成与合规审查状态。 _(importance: medium · 待铺开)_
+
+## 入口
+
+_未登录用户：登录并按角色分流到各自默认工作区_
+
+- [登录分流](pages/page-login.md): 4 端登录入口，按角色（学员/导师/校管理员/系统管理员）分流到默认工作区。 _(importance: medium · 待铺开)_
 
 ## 使用约定
 
-- 改代码前：先读目标模块页 + 其 `related_pages`（邻接页用于防联动漏改），页面「规则与边界」节是开发硬约束。
-- 页面「事实」节每条均带行号引用，与代码不一致时**以代码为准并回写页面**。
-- 校验与重建：`python wiki/gen_wiki_tools.py validate` / `index`。
+- 改代码前：先读目标节点页 + 其所在页面页 + 边的对端节点（防联动漏改）；页面「规则与边界」节与节点「规则与边界」节是开发硬约束。
+- 「事实」节每条均带行号引用；与代码不一致时**以代码为准并回写**，再重跑校验。
+- 校验与重建：`python wiki/gen_wiki_tools.py validate|sync-edges|index|map|gaps`。

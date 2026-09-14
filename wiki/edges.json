@@ -1,0 +1,455 @@
+{
+  "schemaVersion": "0.3",
+  "generatedAt": "2026-09-11",
+  "baseline": "shuangchuang-design-SY",
+  "description": "节点间的有向关系真源。type 表达语义，status 表达实现状态。implemented 边必须带可验证 sources；intended 边必须带 designRef/expected/blockedBy；undefined 边必须带 issue。",
+  "typeEnum": ["navigate", "navigate-with-payload", "read", "writeback", "reuse", "embed"],
+  "statusEnum": ["implemented", "intended", "undefined"],
+  "edges": [
+    {
+      "id": "e-workbench-todo-2-guidance-ai",
+      "from": "nd-workbench-todo",
+      "to": "nd-guidance-taskbar",
+      "type": "navigate-with-payload",
+      "trigger": "点击 AI 诊断待办项右侧「去执行」按钮",
+      "payload": "GuidanceTaskContext{taskId, title, source:'ai', sourceLabel:'AI 诊断生成', chapterId}",
+      "logic": "ProjectMemberWorkbench.executeAiTodo 构造载荷 → prop onExecuteTodo → App.handleExecuteTodo: setGuidanceTaskContext(ctx) + setActiveTab('guidance_workbench')。接收端 SceneGuidanceWorkbench 的 effect 用 prefiledTaskIdRef 去重后：有 chapterId 则 setActiveChapterId + setCenterTab('bp')，并追加一条带 3 条建议回复的 AI 引导消息。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:86-94",
+        "src/components/ProjectMemberWorkbench.tsx:368-378",
+        "src/App.tsx:537-540",
+        "src/components/SceneGuidanceWorkbench.tsx:119-133"
+      ],
+      "note": "全库唯一一条带业务载荷的跨模块跳转链路，且章节定位能力有效（chapterRef 含「第N章」时）。"
+    },
+    {
+      "id": "e-workbench-todo-2-guidance-wo",
+      "from": "nd-workbench-todo",
+      "to": "nd-guidance-taskbar",
+      "type": "navigate-with-payload",
+      "trigger": "点击专家工单任务右侧「去执行」按钮",
+      "payload": "GuidanceTaskContext{taskId:'<orderId>:<taskId>', title, source:'workorder', sourceLabel:'专家工单 · <导师名>', chapterId: undefined}",
+      "logic": "ProjectMemberWorkbench.executeWorkOrderTask 构造载荷（taskId 用冒号拼接工单号与任务号）→ prop onExecuteTodo → App.handleExecuteTodo。因 chapterId 恒为 undefined：接收端不切章节、任务条不渲染「跳转关联章节」按钮，仅追加 AI 引导消息。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:96-104",
+        "src/components/ProjectMemberWorkbench.tsx:416-426",
+        "src/App.tsx:537-540"
+      ],
+      "note": "与 e-workbench-todo-2-guidance-ai 构成平行边（同 from/to、不同 id 与 trigger）。两条边能力不对等，是本节点最易踩的不对称。"
+    },
+    {
+      "id": "e-workbench-hero-2-modal-rules",
+      "from": "nd-workbench-hero",
+      "to": "modal-rules-config",
+      "type": "navigate",
+      "trigger": "点击「查看2026官方打分细则」按钮",
+      "logic": "prop onOpenRulesConfig → App 层 () => setIsRulesModalOpen(true) → 渲染 RulesConfigModal。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:199-205",
+        "src/App.tsx:696",
+        "src/App.tsx:869-872"
+      ]
+    },
+    {
+      "id": "e-workbench-wo-2-supervision-writeback",
+      "from": "nd-workbench-wo",
+      "to": "page-supervision",
+      "type": "writeback",
+      "trigger": "勾选工单任务完成 / 提交整改成果",
+      "logic": "handleToggleTaskDone 与 handleSubmitDeliverable 均调用 prop onUpdateWorkOrder → App.handleUpdateWorkOrder: setWorkOrders。page-supervision（督导闭环中心）消费同一份 workOrders，导师侧因此能看到学生提交态（student_submitted）。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:142-151",
+        "src/components/ProjectMemberWorkbench.tsx:113-140",
+        "src/App.tsx:522-524",
+        "src/App.tsx:732-738"
+      ],
+      "note": "to 为 page 级（page-supervision 尚未下钻节点）。跨角色回写闭环，是全库少数真正双向的数据流。"
+    },
+    {
+      "id": "e-workbench-todo-2-workbench-wo-read",
+      "from": "nd-workbench-todo",
+      "to": "nd-workbench-wo",
+      "type": "read",
+      "trigger": "（无触发，数据共享）",
+      "logic": "动态待办 tab 的工单来源直接 flatMap 展开 projectOrders[].tasks；同一份 projectOrders 也驱动工单 tab 的列表与详情。两个节点共享同一数据源，无复制。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:64",
+        "src/components/ProjectMemberWorkbench.tsx:276"
+      ]
+    },
+    {
+      "id": "e-workbench-todo-2-guidance-contract-reuse",
+      "from": "nd-workbench-todo",
+      "to": "page-guidance",
+      "type": "reuse",
+      "trigger": "（无触发，类型契约共享）",
+      "logic": "两端共用 src/components/guidance/guidanceTypes.ts 的 GuidanceTaskContext 接口作为跨模块载荷契约；发送端构造、接收端消费，字段变更需双侧同步。",
+      "status": "implemented",
+      "sources": [
+        "src/components/ProjectMemberWorkbench.tsx:34",
+        "src/components/ProjectMemberWorkbench.tsx:52",
+        "src/components/SceneGuidanceWorkbench.tsx:55",
+        "src/components/guidance/guidanceTypes.ts:188-194"
+      ]
+    },
+    {
+      "id": "e-guidance-taskbar-2-workbench-todo-writeback",
+      "from": "nd-guidance-taskbar",
+      "to": "nd-workbench-todo",
+      "type": "writeback",
+      "trigger": "点击任务上下文条「完成并回写待办」按钮",
+      "logic": "handleCompleteTask → onTaskCompleted(taskId) → App.handleTaskCompleted，而该方法体只有 setGuidanceTaskContext(null)（关闭任务条）。项目工作台的 aiTodos 是 ProjectMemberWorkbench 内部 useState，App 层没有它的 setter，因此待办状态实际未被修改。",
+      "status": "intended",
+      "designRef": "按钮自身文案「完成并回写待办」src/components/SceneGuidanceWorkbench.tsx:423；其 alert 文案「…并已回写项目工作台·动态待办！」src/components/SceneGuidanceWorkbench.tsx:147",
+      "expected": "点击后，项目工作台「动态待办」中 taskId 对应的 AI 待办应被标记 completed=true，且返回项目工作台时该勾选状态仍然保持。",
+      "blockedBy": "待办池状态被困在 ProjectMemberWorkbench 组件内部（useState(WORKBENCH_AI_TODOS)，:71），App 层无访问入口；需要把 aiTodos 提升到 App 层或引入共享状态，才能打通跨页回写。",
+      "sources": [],
+      "severity": "high",
+      "evidenceChain": "UI 承诺（按钮+alert 文案）→ 实际行为（仅关闭任务条）→ 根因（状态归属层级过低）"
+    },
+    {
+      "id": "e-workbench-folder-2-guidance-version-drawer",
+      "from": "nd-workbench-folder",
+      "to": "nd-guidance-version-drawer",
+      "type": "navigate",
+      "trigger": "点击项目文件夹主文档版本线下方的「完整版本历史 / diff 对比 / 回滚」提示语",
+      "logic": "当前无任何实现——该处是纯文本 <div>，没有 onClick，也不会调用任何 prop。",
+      "status": "intended",
+      "designRef": "源码文案明确写好了目标位置：「完整版本历史 / diff 对比 / 回滚 → 全链路指导工作台顶栏『版本历史』抽屉」src/components/ProjectMemberWorkbench.tsx:950-952",
+      "expected": "点击后跳到全链路指导工作台，并自动打开其右缘版本历史抽屉（drawerOpen=true）。",
+      "blockedBy": "两个障碍：①该处为静态文本，无点击处理器，需先加交互；②SceneGuidanceWorkbench 的 drawerOpen 是内部 useState(:93)，没有任何 props 可从外部控制，需先开放入参（如 initialDrawerOpen）。",
+      "sources": [],
+      "severity": "medium",
+      "evidenceChain": "设计意图（文案写明目标）→ 实现缺口（纯文本 + 无外部入参）"
+    },
+    {
+      "id": "e-workbench-folder-2-guidance-versionline-reuse",
+      "from": "nd-workbench-folder",
+      "to": "nd-guidance-version-drawer",
+      "type": "reuse",
+      "trigger": "（无触发，宣称数据同源）",
+      "logic": "项目文件夹的「主文档版本线」文案声明「与全链路指导工作台快照同源」，但两侧实际各自 mock：项目侧是 JSX 内硬编码字面量数组，工作台侧读 guidanceMockData.SAMPLE_VERSIONS，无共享常量。",
+      "status": "intended",
+      "designRef": "文案「版本线（与全链路指导工作台快照同源）」src/components/ProjectMemberWorkbench.tsx:936",
+      "expected": "两处版本线读同一份数据源（同一常量或同一接口），版本号序列天然一致。",
+      "blockedBy": "项目工作台版本线是 JSX 内联硬编码数组（:937），不属于任何 mock 文件；需先抽出共享版本常量，再让两侧引用。",
+      "sources": [],
+      "severity": "medium",
+      "evidenceChain": "文案承诺同源 → 实际两份独立 mock → 版本号序列已不一致（项目侧 4 项含里程碑、工作台侧为 SAMPLE_VERSIONS）"
+    },
+    {
+      "id": "e-workbench-diag-gaps-2-workbench-todo",
+      "from": "nd-workbench-diag-gaps",
+      "to": "nd-workbench-todo",
+      "type": "writeback",
+      "trigger": "AI 对标体检测出新的逻辑断点（系统自动生成，非用户点击触发）",
+      "payload": "GuidanceTodoItem{id, title:gap.title, stage:'L4', completed:false, priority, assignee, dueDate, chapterRef:<由 gap.location 换算>} 并带 source:'ai'",
+      "logic": "完整链：**逻辑断点 →（自动生成）动态待办 →（点「去执行」）全链路指导工作台并定位章节**。本边为第一跳：每条 LogicGapItem 应落成动态待办中一条 source='ai' 的待办；第二跳已实现，见 e-workbench-todo-2-guidance-ai。处理入口统一收敛在动态待办，体检区不直接跳转。",
+      "status": "intended",
+      "designRef": "产品口径（0911 #2.2）：「短板中的逻辑断点应该跟动态待办绑定，可以认为检测出逻辑断点后就会自动地在动态待办中新增一条相应待办。后续也是通过动态待办去处理。所以应该是逻辑断点--动态待办--相应模块」",
+      "expected": "体检产出 N 条逻辑断点时，动态待办中同步出现 N 条 AI 来源待办；点其「去执行」可跳到工作台对应章节；断点消除后该待办可关闭。",
+      "blockedBy": "三处缺失：①LogicGapItem 无稳定 id（src/types.ts:91-97），无法建立「断点 ↔ 待办」一一映射；②定位口径不一致——location 是「BP 第24页《发展规划与财务预测》」（实测 src/data/mockProjects.ts:91），而待办的 chapterRef 是「第10章 财务预测与融资计划」，页面上已有的 chapterIdFromRef 正则（第N章）对前者不匹配，需新增「页→章」映射或统一口径；③待办池 WORKBENCH_AI_TODOS 是模块级静态常量，组件内无 append 入口（与 e-guidance-taskbar-2-workbench-todo-writeback 同一根因：状态层级过低）。",
+      "sources": [],
+      "severity": "high",
+      "evidenceChain": "产品口径（断点绑定待办）→ 数据层字段同为待办形态（title/stage/priority/assignee/dueDate/chapterRef 齐备）→ 受阻于 id 缺失 + 定位口径不一致 + 待办池不可写"
+    },
+    {
+      "id": "e-workbench-diag-questions-2-defense",
+      "from": "nd-workbench-diag-questions",
+      "to": "page-defense",
+      "type": "navigate-with-payload",
+      "trigger": "（候选）点击某条评委提问 → 进入模拟答辩训练并带入该题",
+      "logic": "当前无实现。产品口径已确定「评委提问不走动态待办体系」，但去向未定，本边为候选路径之一。",
+      "status": "undefined",
+      "issue": "评委提问不走动态待办，那走哪？**建议（待拍板）：接「模拟答辩训练」的问答对抗阶段，把它当题库用。** 三条理由：①该区块源码标题本身就写着「评委尖锐提问攻防演练」（src/components/ProjectMemberWorkbench.tsx:751），业务定位本就是演练而非任务；②提问没有终态——待办可勾掉，提问要反复练，与答辩训练的重复演练语义一致；③page-defense 已有问答对抗阶段，天然是它的下游。备选路径：单题「去练」直达 AI 教练并预填该问题（更轻，但缺少针对单题的演练结构）。接洽前必须先解的前置：killerQuestions 是 string[]（src/types.ts:124），载不动题目 id / 应对要点 / 佐证材料 / 时长；且 defenseConstants 的题库与本区块各自 mock，无共享。",
+      "sources": [],
+      "severity": "high"
+    },
+    {
+      "id": "e-guidance-topbar-2-version-drawer-navigate",
+      "from": "nd-guidance-topbar",
+      "to": "nd-guidance-version-drawer",
+      "type": "navigate",
+      "trigger": "点击顶栏「版本历史」按钮",
+      "logic": "顶栏按钮 onClick={toggleDrawer} → setDrawerOpen(prev => !prev)；抽屉为绝对定位右缘面板（z-40），以 translate-x-0 / translate-x-full 切换显隐；同时渲染 z-30 遮罩（点击遮罩也走 toggleDrawer）。按钮自身在 drawerOpen 时反色。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:386-397",
+        "src/components/SceneGuidanceWorkbench.tsx:267",
+        "src/components/SceneGuidanceWorkbench.tsx:964-973"
+      ],
+      "note": "与 e-guidance-topbar-2-version-drawer-writeback 构成平行边（同 from/to、不同 trigger）：本条管「开抽屉」，那条管「往抽屉里加数据」。"
+    },
+    {
+      "id": "e-guidance-topbar-2-version-drawer-writeback",
+      "from": "nd-guidance-topbar",
+      "to": "nd-guidance-version-drawer",
+      "type": "writeback",
+      "trigger": "点击顶栏「保存快照」或「标为里程碑」按钮",
+      "payload": "ProjectVersion{versionId, versionType:'snapshot'|'milestone', label, source:'manual'|'milestone', total, commitMsg, branchName:'main'}",
+      "logic": "handleSaveSnapshot 生成 v2.0.${versions.length} 并 setVersions([newVer, ...versions]) + setCurrentVersionId；handleMarkMilestone 生成固定 v2.1.0-M 做同样两件事。抽屉直接 map 该 versions 数组渲染时间轴，因此写入即时可见。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:346-375",
+        "src/components/SceneGuidanceWorkbench.tsx:152-188",
+        "src/components/SceneGuidanceWorkbench.tsx:1013"
+      ],
+      "note": "两条路径产出的 total 均硬编码（91 / 92），不读真实评分。"
+    },
+    {
+      "id": "e-guidance-topbar-2-diff-modal",
+      "from": "nd-guidance-topbar",
+      "to": "nd-guidance-diff-modal",
+      "type": "navigate",
+      "trigger": "点击顶栏「版本对比」按钮",
+      "logic": "onClick={() => setDiffModalOpen(true)} → 页面底部渲染 <GuidanceVersionDiffModal isOpen={diffModalOpen} …>，弹层内部 if (!isOpen) return null。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:377-384",
+        "src/components/SceneGuidanceWorkbench.tsx:108-109",
+        "src/components/SceneGuidanceWorkbench.tsx:1084-1089"
+      ]
+    },
+    {
+      "id": "e-guidance-version-drawer-2-diff-modal",
+      "from": "nd-guidance-version-drawer",
+      "to": "nd-guidance-diff-modal",
+      "type": "navigate",
+      "trigger": "点抽屉工具区「对比所选两版」，或某版本行内的「与当前对比」",
+      "logic": "两处均调用 setDiffModalOpen(true)。注意：行内「与当前对比」用 e.stopPropagation() 阻止触发行级预览，但**并不会把该版本设为对比目标**——弹层的 baseVerId/compareVerId 由自身 state 独立初始化（versions[1] 与 currentVersionId）。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:995-1001",
+        "src/components/SceneGuidanceWorkbench.tsx:1056-1062",
+        "src/components/guidance/GuidanceModals.tsx:36-37"
+      ],
+      "note": "「与当前对比」的按钮语义与弹层实际行为不符，是易踩的交互缺口。"
+    },
+    {
+      "id": "e-guidance-version-drawer-2-snapshot-banner",
+      "from": "nd-guidance-version-drawer",
+      "to": "nd-guidance-snapshot-banner",
+      "type": "writeback",
+      "trigger": "点击版本抽屉中的某一版本行",
+      "payload": "viewingVersionId: string | null（点当前版本行则置 null）",
+      "logic": "行 onClick → handlePreviewVersion(ver)：若 ver.versionId === currentVersionId 则清空 viewingVersionId（切换语义），否则 setViewingVersionId(ver.versionId)。该状态同时驱动顶部深色提示条的显隐、BP 区编辑按钮 disabled、源码编辑框 readOnly 与 BP 区只读分支。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:270-276",
+        "src/components/SceneGuidanceWorkbench.tsx:1019",
+        "src/components/SceneGuidanceWorkbench.tsx:436-455"
+      ],
+      "note": "「只读预览」不换内容——渲染源仍是 bpContent，ProjectVersion.content 字段存在但四个 mock 版本都没填。"
+    },
+    {
+      "id": "e-guidance-taskbar-2-guidance-bp",
+      "from": "nd-guidance-taskbar",
+      "to": "nd-guidance-bp",
+      "type": "navigate-with-payload",
+      "trigger": "点任务条「→ 跳转关联章节」，或挂载时收到带 chapterId 的任务上下文",
+      "payload": "activeChapterId = taskContext.chapterId + centerTab = 'bp'",
+      "logic": "两条路径：①useEffect（taskContext 变化时）在有 chapterId 的情况下 setActiveChapterId(taskContext.chapterId) + setCenterTab('bp')；②按钮 onClick={jumpToTaskChapter} 做同样两件事。前者受 prefiledTaskIdRef 去重约束（同 taskId 只处理一次）。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:122-125",
+        "src/components/SceneGuidanceWorkbench.tsx:136-141",
+        "src/components/SceneGuidanceWorkbench.tsx:410-417"
+      ],
+      "note": "本页「章节定位」能力的兑现路径。专家工单来源的 chapterId 恒为 undefined，故该按钮不渲染、effect 也不切章节。"
+    },
+    {
+      "id": "e-guidance-chapters-2-guidance-bp",
+      "from": "nd-guidance-chapters",
+      "to": "nd-guidance-bp",
+      "type": "navigate",
+      "trigger": "点击章节速达条上的任一章节按钮",
+      "logic": "handleSelectChapter(chId) → setActiveChapterId(chId) + setCenterTab('bp')。改变章节头横幅的章名与 hint，并切换 BP 正文中 `para.includes(`${id}.`)` 的琥珀高亮段落。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:112-115",
+        "src/components/SceneGuidanceWorkbench.tsx:530-533",
+        "src/components/SceneGuidanceWorkbench.tsx:601-607"
+      ],
+      "note": "高亮是字符串包含判定，activeChapterId='1' 时会误命中 '11. '/'12. ' 开头的段落。"
+    },
+    {
+      "id": "e-guidance-diag-2-guidance-bp",
+      "from": "nd-guidance-diag",
+      "to": "nd-guidance-bp",
+      "type": "navigate-with-payload",
+      "trigger": "点击「国赛评委高频死穴待补强项」卡片里的「前往补全」",
+      "logic": "onClick={() => { setActiveChapterId(it.chapterId); setCenterTab('bp'); }} —— 只做章节定位与 tab 切换，不预填问题、不滚动、不带诊断上下文。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:695-704",
+        "src/components/SceneGuidanceWorkbench.tsx:112-115"
+      ],
+      "note": "与 e-guidance-diag-2-guidance-coach 是本节点两条去向不同的出口：「前往补全」去改文档，「让 AI 执行」去问教练。"
+    },
+    {
+      "id": "e-guidance-diag-2-guidance-coach",
+      "from": "nd-guidance-diag",
+      "to": "nd-guidance-coach",
+      "type": "navigate-with-payload",
+      "trigger": "点击「专家推荐下一步最优演进路径」卡片里的「让 AI 执行」",
+      "payload": "用户消息文本 = `请协助我执行优化动作：${it.text}`",
+      "logic": "onClick={() => handleSendMessage(`请协助我执行优化动作：${it.text}`)} → 右栏追加一条 user 消息 + 置 isAiThinking，900ms 后按关键词分支产出 assistant 回复。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:723-729",
+        "src/components/SceneGuidanceWorkbench.tsx:191-256"
+      ],
+      "note": "DiagnosisItem 的 action / target 字段未被消费，因此 nextSteps 里 target:'defense' 的那条（第 3 条）也走这条通用出口，不会进入答辩模块。"
+    },
+    {
+      "id": "e-guidance-bp-2-guidance-coach",
+      "from": "nd-guidance-bp",
+      "to": "nd-guidance-coach",
+      "type": "navigate-with-payload",
+      "trigger": "点击章节头横幅的「AI 深度诊断此章」",
+      "payload": "用户消息文本 = `请帮我针对第${activeChapterId}章提出3条国赛评委视角的提分修改建议`",
+      "logic": "onClick 直接调 handleSendMessage(模板串)；因文案含「第5章」等关键词时才会命中带 diff 的分支，诊断第 5 章会产出 suggestedDiff，诊断其他章则走兜底文案。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:581-587",
+        "src/components/SceneGuidanceWorkbench.tsx:206-238"
+      ],
+      "note": "「按章诊断」的能力受 if-else 覆盖范围限制：只有第 5 章 / 第 10 章两类有专门回复。"
+    },
+    {
+      "id": "e-guidance-coach-2-guidance-bp",
+      "from": "nd-guidance-coach",
+      "to": "nd-guidance-bp",
+      "type": "writeback",
+      "trigger": "点击 AI 消息里的「一键应用至计划书对应章节」",
+      "payload": "diff.replacement（AI 生成的段落原文）",
+      "logic": "消息气泡在 msg.suggestedDiff 存在时渲染按钮 → handleApplyDiff(diff) → setBpContent(prev => prev + '\\n' + diff.replacement) + setBpMode('preview') + setCenterTab('bp') + alert。**diff.chapterId / chapterName 只用于 alert 文案，不参与插入定位。**",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:896-909",
+        "src/components/SceneGuidanceWorkbench.tsx:258-264"
+      ],
+      "note": "全库唯一一条「AI 产物写回文档」的链路，也是本页唯一成环的闭环。当前实现为追加到文末，与「应用至对应章节」的文案不符。"
+    },
+    {
+      "id": "e-guidance-coach-2-guidance-diag",
+      "from": "nd-guidance-coach",
+      "to": "nd-guidance-diag",
+      "type": "navigate",
+      "trigger": "点击右栏「意图聚焦」条上的 L1~L6 阶段徽章",
+      "logic": "onClick={() => setCenterTab('diag')} —— 与顶栏 stepper 同款实现：只切 tab，**不把所点阶段写入任何 state**（coachIntent 的 setter 从未被调用）。",
+      "status": "implemented",
+      "sources": [
+        "src/components/SceneGuidanceWorkbench.tsx:863-876",
+        "src/components/SceneGuidanceWorkbench.tsx:100"
+      ],
+      "note": "同一交互在两处（顶栏 :326 / 右栏 :866）重复实现且都无效，是「阶段」概念在本页的集中缺口。"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-workbench-pending-archive",
+      "where": "nd-workbench-folder",
+      "title": "待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记",
+      "detail": "按钮点击后仅弹 alert('已存入项目文件夹并记入文件更改记录（示例 mock）：<文件名>')，不会向 FILE_CHANGE_LOG 追加记录、也不会从 PENDING_ARCHIVE_ITEMS 移除该项。而区块文案声称「存入后自动记入文件更改记录」。",
+      "status": "intended",
+      "designRef": "区块文案 src/components/ProjectMemberWorkbench.tsx:876；按钮实现 src/components/ProjectMemberWorkbench.tsx:883-888",
+      "expected": "点击「存入项目文件夹」后：该产物从待归档区消失，并在大事记时间轴顶部新增一条 kind='archive' 的记录。",
+      "blockedBy": "FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。",
+      "severity": "medium"
+    },
+    {
+      "id": "issue-diag-questions-suggestion-hardcoded",
+      "where": "nd-workbench-diag-questions",
+      "title": "评委提问的「建议应对策略」是硬编码单条文案，不随题目变化",
+      "detail": "所有 killerQuestions 共用同一句应对策略（「由一辩准备3张附录支撑PPT…回答控制在45秒内」），而题目本身差异很大（实测：125℃热漂移、博通专利围堵、国内供应链不可控环节），一句通用策略无法覆盖。题目数据本身质量可用，问题只在策略侧。",
+      "status": "intended",
+      "designRef": "src/components/ProjectMemberWorkbench.tsx:762-764；题目数据 src/data/mockProjects.ts:96-100",
+      "expected": "每题有各自的应对要点、佐证材料指向与建议回答时长。",
+      "blockedBy": "killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。",
+      "severity": "medium"
+    },
+    {
+      "id": "issue-diag-region-no-empty-state",
+      "where": "nd-workbench-diag-gaps",
+      "title": "体检区三块均无空态处理，数据为空时只剩标题",
+      "detail": "实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。",
+      "status": "undefined",
+      "designRef": "src/data/mockProjects.ts:205（logicGaps: []）",
+      "expected": "",
+      "blockedBy": "需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。",
+      "severity": "low"
+    },
+    {
+      "id": "issue-workbench-material-registry-gap",
+      "where": "nd-workbench-folder",
+      "title": "材料注册表的来源映射键集与渲染集不闭合",
+      "detail": "FILE_SOURCE 定义了 9 个文件 id 的来源标签，但注册表只渲染 AI_GENERATED_FILES 的 2 个（f-ai-ch5、f-ai-auth），其余 7 个（三件套 4 个 + 上传件 3 个）的来源映射无 UI 消费。",
+      "status": "undefined",
+      "designRef": "src/components/workbench/workbenchMockData.ts:114-124",
+      "expected": "",
+      "blockedBy": "需要一份完整的项目材料清单（现仅存在 AI 生成文件的 mock）。",
+      "severity": "low"
+    },
+    {
+      "id": "issue-guidance-unused-modals",
+      "where": "nd-guidance-diff-modal",
+      "title": "GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）",
+      "detail": "GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。",
+      "status": "undefined",
+      "designRef": "src/components/guidance/GuidanceModals.tsx:177-481",
+      "expected": "",
+      "blockedBy": "需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。",
+      "severity": "low"
+    },
+    {
+      "id": "issue-guidance-dead-coach-state",
+      "where": "nd-guidance-coach",
+      "title": "右栏 AI 教练有 4 个 state 声明后从未被消费",
+      "detail": "chatCollapsed/setChatCollapsed（:99，无折叠按钮）、coachIntent/setCoachIntent（:100，setter 全文件仅出现在声明行，导致 AI 兜底文案「基于【L4】阶段指引」恒为 L4）、sessions/setSessions（:101，无会话列表，INITIAL_COACH_SESSIONS 导入即废弃）、activeSessionId/setActiveSessionId（:102，无消费）。四者合计对应「会话管理」「面板折叠」「阶段聚焦」三个未落地能力。",
+      "status": "intended",
+      "designRef": "src/components/SceneGuidanceWorkbench.tsx:99-102；INITIAL_COACH_SESSIONS 数据 src/components/guidance/guidanceMockData.ts:506-531",
+      "expected": "会话列表可切换（sessions 驱动）、面板可折叠（chatCollapsed 驱动）、阶段徽章可切换并影响 AI 回复口径（coachIntent 真正可写）。",
+      "blockedBy": "三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。",
+      "severity": "medium"
+    },
+    {
+      "id": "issue-guidance-snapshot-preview-no-content",
+      "where": "nd-guidance-snapshot-banner",
+      "title": "「快照只读预览」不显示快照内容，看到的仍是当前正文",
+      "detail": "进入 viewingVersionId 状态后，中栏渲染源仍是 bpContent（当前正文），只把编辑框设为 readOnly 并置灰。ProjectVersion 类型上有 content?: string 字段（guidanceTypes.ts:110），但 SAMPLE_VERSIONS 的四个版本都没填，渲染分支也从不读它。提示条文案「正在查看快照 vX（只读预览）」因此与实际行为不符。",
+      "status": "intended",
+      "designRef": "提示条文案 src/components/SceneGuidanceWorkbench.tsx:439-441；只读实现 src/components/SceneGuidanceWorkbench.tsx:559-560",
+      "expected": "选中历史快照后，中栏展示该快照的 content（或该快照对应的 BP 正文），而不是当前编辑内容。",
+      "blockedBy": "①ProjectVersion.content 无数据来源（mock 未填、无后端）；②快照保存时也未把 bpContent 写进新版本的 content（handleSaveSnapshot :152-169 未设 content 字段）。",
+      "severity": "high"
+    },
+    {
+      "id": "issue-guidance-diff-modal-hardcoded",
+      "where": "nd-guidance-diff-modal",
+      "title": "版本 diff 弹层正文为写死示例，不随所选版本变化",
+      "detail": "弹层只有「总分变化」是按所选两版实时计算的（GuidanceModals.tsx:44），正文两张变更卡（第5章补强竞争壁垒 / 第10章增设账期压力测试）是源码内写死的字面量，切换下拉不改变内容。小标题更写死为「关键章节变更摘要（2处主要修改，1处新增论据）：」。另：「与当前对比」按钮不会把该版本设为对比目标，弹层的 baseVerId/compareVerId 独立初始化（versions[1] 与 currentVersionId）。",
+      "status": "intended",
+      "designRef": "弹层标题与副标题 src/components/guidance/GuidanceModals.tsx:56-57；写死的变更卡 src/components/guidance/GuidanceModals.tsx:118-160",
+      "expected": "按所选两版的 content 生成真实的章节级/行级差异；「与当前对比」应把所在版本作为 compare 目标传入。",
+      "blockedBy": "依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。",
+      "severity": "medium"
+    },
+    {
+      "id": "issue-guidance-stage-taxonomy-mismatch",
+      "where": "page-guidance",
+      "title": "阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）",
+      "detail": "本页 stepper（INITIAL_STAGE_ITEMS）为 L1~L6（创意激发/可行性验证/材料成型/打磨优化/路演成型/赛前冲刺），page-coach 侧为 L1~L4，page-milestones（里程碑看板）为 L1~L5。三套口径都叫「Lx 阶段」，且本页 stepper 的点击还不消费 stage 值，导致「阶段」在系统内既无统一定义也无实际跳转能力。",
+      "status": "undefined",
+      "designRef": "src/components/guidance/guidanceMockData.ts:29-36（L1~L6）；page-milestones 的 L1~L5 见 structure.json 该页 description",
+      "expected": "",
+      "blockedBy": "需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。",
+      "severity": "medium"
+    }
+  ]
+}
