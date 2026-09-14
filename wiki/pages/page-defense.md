@@ -81,5 +81,5 @@ nodes:
 
 - **→ `page-coach`（AI 助手）**：会话里也能跑轻量答辩（`nd-coach-defense`），两处入口不同（推荐任务胶囊 vs 答辩页），题库与评分口径都不共享。
 - **→ `page-workbench`（项目工作台）**：工作台体检区的「评委尖锐提问攻防演练」产品口径已定「不走动态待办」，**建议去向是本页的问答对抗**（待拍板 `e-workbench-diag-questions-2-defense`）；当前代码零连接。
-- **→ `page-guidance`（全链路指导工作台）**：无代码连接；本页产出的报告不会回流到工作台的评分/版本体系。
+- **→ `page-guidance`（材料打磨工作台，原名全链路指导工作台）**：无代码连接；本页产出的报告不会回流到工作台的评分/版本体系。
 - **→ 与登录/项目上下文**：本页项目取自 `currentMemberProject`（侧栏联动），与 `page-coach` 的兜底项目名口径不一致（见 issue `issue-coach-project-context-unbound`）。

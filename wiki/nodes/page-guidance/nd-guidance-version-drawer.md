@@ -10,7 +10,7 @@ sources:
 
 ## 一句话定位
 
-全链路指导工作台右缘的版本抽屉，回答「这份 BP 有过哪些版本、谁在什么时候改了哪一版」：选中可只读预览、两版可对比 diff、可回滚、可存快照。它是项目工作台「项目文件夹」里那条版本线的**设计归宿**。
+材料打磨工作台右缘的版本抽屉，回答「这份 BP 有过哪些版本、谁在什么时候改了哪一版」：选中可只读预览、两版可对比 diff、可回滚、可存快照。它是项目工作台「项目文件夹」里那条版本线的**设计归宿**。
 
 ## 事实（每条强制可回溯）
 
@@ -66,7 +66,7 @@ sources:
   - 触发：点击项目文件夹主文档版本线下方的「完整版本历史 / diff 对比 / 回滚」提示语
   - 逻辑：当前无任何实现——该处是纯文本 <div>，没有 onClick，也不会调用任何 prop。
   - 设计依据：源码文案明确写好了目标位置：「完整版本历史 / diff 对比 / 回滚 → 全链路指导工作台顶栏『版本历史』抽屉」src/components/ProjectMemberWorkbench.tsx:950-952
-  - 期望行为：点击后跳到全链路指导工作台，并自动打开其右缘版本历史抽屉（drawerOpen=true）。
+  - 期望行为：点击后跳到材料打磨工作台（`page-guidance`），并自动打开其右缘版本历史抽屉（drawerOpen=true）。
   - **卡点**：两个障碍：①该处为静态文本，无点击处理器，需先加交互；②SceneGuidanceWorkbench 的 drawerOpen 是内部 useState(:93)，没有任何 props 可从外部控制，需先开放入参（如 initialDrawerOpen）。
 - **`e-workbench-folder-2-guidance-versionline-reuse`** ← `nd-workbench-folder`（项目文件夹）｜`reuse` · **intended（设计有·未实现）**｜severity: medium
   - 触发：（无触发，宣称数据同源）

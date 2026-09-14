@@ -1,4 +1,4 @@
-# LLM Wiki 铺开执行手册（批 1~3）
+# LLM Wiki 铺开执行手册（批 1~4）
 
 > **读者**：执行逐页下钻的 agent（DeepSeek v4.1 flash 等）。
 > **定位**：本手册只管「批次编排 + v0.4 口径硬约束 + 批次验收」；**单页下钻的操作步骤、文件模板、踩坑清单不在此重复**，一律照两份真源执行：
@@ -21,7 +21,18 @@
 | 批 3 | 治理与复用页 | page-teams → page-users → page-knowledge-base | 3 |
 
 - **批 1 开工前先做复核**（不产生新页面）：按「学生单项目绑定」「coach=AI助手」口径复核已下钻的 page-workbench / page-guidance 的节点文档，**只改口径描述，不改行号引用**。
-- **执行进度（2026-09-14）**：批 0 ✅ · 批 1 ✅（学生端 4 页）· 批 2 ✅（校管端 6 页）· 批 3 ✅（治理与复用页 3 页）→ **15/15 页全部 drilled**；node 95 · 边 98 · issues 41 · validate 0 error。**下一批＝批 4 交付总装**：《待拍板清单》全量交付（`decisions.md` 现 15 条）+ 设计方案说明书 + 结构图发布。
+- **执行进度（2026-09-14）**：批 0 ✅ · 批 1 ✅（学生端 4 页）· 批 2 ✅（校管端 6 页）· 批 3 ✅（治理与复用页 3 页）→ **15/15 页全部 drilled**；node 95 · 边 98 · issues 40 · validate 0 error。**批 4 ✅ 交付总装已完成**（见下§6）。
+
+## 1.1 批 4 交付总装（已完成 2026-09-14）
+
+| 交付物 | 位置 | 状态 |
+|---|---|---|
+| ① wiki 本体 | `wiki/`（15 pages + 95 nodes + `edges.json` + `structure.json` + `schema.md`） | ✅ |
+| ② 《待拍板清单（交付版）》 | `双创资料/文档/技术方案/0914-19-待拍板清单（交付版）.md`（机读版 `wiki/decisions.md`） | ✅ 14 条 / 4 组 |
+| ③ 《双创智能体设计方案说明书》 | `双创资料/文档/技术方案/0914-19-双创智能体设计方案说明书.md` | ✅ |
+| ④ 结构图 | `wiki/module-map.html` + 发布副本 `wiki/site/index.html` | ✅ 已生成；**发布动作需 WorkBuddy**（源目录已改为 `shuangchuang-design-main/wiki/site`） |
+
+**批 4 附带完成的排期动作**：`page-guidance` 改名「**材料打磨工作台**」（硬约束 4 的排期项）：`structure.json` + 页面/节点口径 + schema §10 v0.8；源码内旧名文案（`ProjectMemberWorkbench.tsx:936`/`:950-952`）属源码事实**保留不改**；issue `issue-product-guidance-rename-material-workbench` 已关闭移除（issues 41→40）。
 - 每页下钻的完整流程 = Skill `wiki-drilldown` 步骤 0~6，一页走完后才开下一页。
 - **行号漂移防线**：每批开工必须先跑 Skill 步骤 0（`git fetch upstream && git merge upstream/main`，代理 `$env:HTTPS_PROXY='http://127.0.0.1:7890'`），merge 有动静就先 `validate` 验既有引用，红了先修再动手。
 

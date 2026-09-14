@@ -67,23 +67,23 @@ _学生团队：从「我该改什么」到「改完交付并留痕」_
 
 - [项目工作台](pages/page-workbench.md): 学员端（team_member）的项目主界面：一个项目头部横幅 + 五个子 tab，覆盖「今天要改什么 → 找谁要的材料 → 离金奖差多少 → 团队合不合规 → 改完的版本留没留痕」这条完整的学生侧任务链。 _(importance: high · 已下钻)_
   - [项目识别头](nodes/page-workbench/nd-workbench-hero.md) `nd-workbench-hero`: 项目工作台顶部的项目身份横幅：一眼交代「这是哪个项目、谁在做、对标金奖还差多少」，并提供通往官方打分细则的唯一入口。 _(bar · medium)_
-  - [动态待办](nodes/page-workbench/nd-workbench-todo.md) `nd-workbench-todo`: 项目工作台的第一个子 tab，把「AI 评分诊断生成的待办」与「后台专家下发的建议工单」汇成**一个统一池**，每条待办右侧带「去执行」按钮，点击即携带任务上下文跳到全链路指导工作台。 _(panel · high)_
+  - [动态待办](nodes/page-workbench/nd-workbench-todo.md) `nd-workbench-todo`: 项目工作台的第一个子 tab，把「AI 评分诊断生成的待办」与「后台专家下发的建议工单」汇成**一个统一池**，每条待办右侧带「去执行」按钮，点击即携带任务上下文跳到材料打磨工作台（`page-guidance`，源码内旧名「全链路指导工作台」）。 _(panel · high)_
   - [专家辅导与督导工单](nodes/page-workbench/nd-workbench-wo.md) `nd-workbench-wo`: 项目工作台的第二个子 tab，承载「导师下发的整改要求 → 学生提交整改成果 → 导师二次复核打分」的完整闭环，是学生侧唯一能看见专家原始诊断意见与复核对分的地方。 _(panel · high)_
   - [一级指标得分卡](nodes/page-workbench/nd-workbench-diag-scores.md) `nd-workbench-diag-scores`: 「AI 对标体检」tab 的上半区，用四张卡把项目的五个一级指标得分摊开，回答「我现在几分、离满分差多少」。 _(panel · medium)_
   - [逻辑断点与硬伤](nodes/page-workbench/nd-workbench-diag-gaps.md) `nd-workbench-diag-gaps`: 「AI 对标体检」tab 下半区左侧：逐条列出项目论证链上的断裂点与硬伤，每条带位置、描述与 AI 改进建议。**它是「动态待办」的上游来源**——按产品口径，检测出断点即应自动落成一条待办。 _(panel · high)_
   - [评委尖锐提问攻防演练](nodes/page-workbench/nd-workbench-diag-questions.md) `nd-workbench-diag-questions`: 「AI 对标体检」tab 下半区右侧：预演 2026 国赛现场评委最可能抛出的尖锐问题，供团队提前备好攻防。**它的性质是「演练」，不是「待办」**——区块标题本身就是证据。 _(panel · high)_
   - [团队架构与合规审查](nodes/page-workbench/nd-workbench-team.md) `nd-workbench-team`: 项目工作台的第四个子 tab，用一张表回答「这个团队够不够格参赛」：成员学历梯度、跨学科分工、专利/IP 权属、以及校级秘书的合规审核状态与批注。 _(table · medium)_
   - [项目文件夹](nodes/page-workbench/nd-workbench-folder.md) `nd-workbench-folder`: 项目工作台的第五个子 tab，用四个区块回答「这个项目的材料到底有哪些、谁改的、形成哪一版」：待归档区（会话产物入库）、材料注册表（含来源标签）、主文档版本线、大事记（=文件更改记录）。 _(panel · high)_
-- [全链路指导工作台](pages/page-guidance.md): 沉浸式备赛主工作台：中栏用三个 tab（BP 正文 / 诊断 / 评分）打磨商业计划书，右栏挂 AI 教练，顶栏管阶段与版本；它同时是**项目工作台「动态待办」跳转的接收方**，也是全库唯一一处「诊断 → AI 改写 → 落回正文」的闭环发生地。 _(importance: high · 已下钻)_
+- [材料打磨工作台](pages/page-guidance.md): 沉浸式材料打磨工作台（**2026-09-14 批 4 改名**，原名「全链路指导工作台」）：中栏用三个 tab（BP 正文 / 诊断 / 评分）打磨商业计划书，右栏挂 AI 教练，顶栏管阶段与版本；它同时是**项目工作台「动态待办」跳转的接收方**，也是全库唯一一处「诊断 → AI 改写 → 落回正文」的闭环发生地。 _(importance: high · 已下钻)_
   - [全局引导顶栏](nodes/page-guidance/nd-guidance-topbar.md) `nd-guidance-topbar`: 工作台最上方的固定顶栏：左侧交代「这是哪个项目、走到哪一阶段」，右侧提供**版本生命周期的四个动作**（保存快照 / 标为里程碑 / 版本对比 / 版本历史）。它是本页所有版本类操作的唯一发起处。 _(bar · high)_
-  - [任务上下文条](nodes/page-guidance/nd-guidance-taskbar.md) `nd-guidance-taskbar`: 全链路指导工作台里那条琥珀色横幅——它是**从项目工作台「去执行」跳进来后唯一的落地凭证**：显示正在执行哪条待办、来自哪、能否定位到章节，并提供「跳转关联章节」与「完成并回写待办」两个动作。 _(bar · high)_
+  - [任务上下文条](nodes/page-guidance/nd-guidance-taskbar.md) `nd-guidance-taskbar`: 材料打磨工作台里那条琥珀色横幅——它是**从项目工作台「去执行」跳进来后唯一的落地凭证**：显示正在执行哪条待办、来自哪、能否定位到章节，并提供「跳转关联章节」与「完成并回写待办」两个动作。 _(bar · high)_
   - [快照只读预览提示条](nodes/page-guidance/nd-guidance-snapshot-banner.md) `nd-guidance-snapshot-banner`: 当用户在版本抽屉里点开某个历史快照时，页面顶部压出一条深色提示条：「你正在看的不是当前版本」，并提供唯一的退出口「返回当前编辑」。它是**只读预览态**的开关与标识。 _(bar · medium)_
   - [BP 章节速达条](nodes/page-guidance/nd-guidance-chapters.md) `nd-guidance-chapters`: BP tab 下沿的 12 章横向跳转条（「章节速达:」）。它是**跨页跳转能力的最终落点**——「已为你定位到第 N 章」这句话能否兑现，取决于本节点的高亮是否真的跟着 `activeChapterId` 走。 _(nav · medium)_
   - [BP 章节打磨区](nodes/page-guidance/nd-guidance-bp.md) `nd-guidance-bp`: 工作台中栏的「商业计划书（BP 12章）」tab 主体：在**排版预览**与**Markdown 源码编辑**两种形态间切换，可一键让 AI 针对当前章节提分，也是 AI 生成内容的**唯一落纸位置**。 _(panel · high)_
   - [全维诊断报告](nodes/page-guidance/nd-guidance-diag.md) `nd-guidance-diag`: 工作台中栏的「全维诊断报告」tab：先用一张卡回答「你的项目属于哪一类创新」，再用左右两张卡分别回答「评委最容易问死你的三处在哪」与「下一步最该做什么」。**这是本页把「诊断」翻译成「动作」的地方**——两张卡各自带一条去往别处的出口。 _(panel · high)_
   - [六维评分详情](nodes/page-guidance/nd-guidance-score.md) `nd-guidance-score`: 工作台中栏的「六维评分详情」tab：把当前版本的总分、六个维度的得分条、以及六条评审采分点的「当前分 / 上限 / 增量」摊开，回答「这 91 分是怎么来的、还可以从哪几条上加分」。**纯展示，无任何交互。** _(panel · medium)_
   - [右栏 AI 备赛伴学教练](nodes/page-guidance/nd-guidance-coach.md) `nd-guidance-coach`: 工作台右栏的常驻对话区：BP 章节头与诊断卡把「问题」推进来，它输出「评委视角的推演」，当推演结果是可落纸的段落时，再通过「一键应用至计划书对应章节」把结果推回中栏。**它是本页三条入边、一条回写边的交汇点。** _(panel · high)_
-  - [版本历史抽屉](nodes/page-guidance/nd-guidance-version-drawer.md) `nd-guidance-version-drawer`: 全链路指导工作台右缘的版本抽屉，回答「这份 BP 有过哪些版本、谁在什么时候改了哪一版」：选中可只读预览、两版可对比 diff、可回滚、可存快照。它是项目工作台「项目文件夹」里那条版本线的**设计归宿**。 _(drawer · high)_
+  - [版本历史抽屉](nodes/page-guidance/nd-guidance-version-drawer.md) `nd-guidance-version-drawer`: 材料打磨工作台右缘的版本抽屉，回答「这份 BP 有过哪些版本、谁在什么时候改了哪一版」：选中可只读预览、两版可对比 diff、可回滚、可存快照。它是项目工作台「项目文件夹」里那条版本线的**设计归宿**。 _(drawer · high)_
   - [版本快照差异比对弹层](nodes/page-guidance/nd-guidance-diff-modal.md) `nd-guidance-diff-modal`: 从工作台顶栏或版本抽屉弹出的全屏比对弹层，让人选两个版本看「总分变化了多少、改了什么」。**唯一动态的是总分差，正文比对是写死的示例。** _(modal · medium)_
 
 ## 智能陪练

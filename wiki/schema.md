@@ -1,7 +1,7 @@
-# LLM Wiki 结构 Schema v0.7
+# LLM Wiki 结构 Schema v0.8
 
 > 本文是 wiki 结构的**唯一约定源**。任何节点/边/页面的新增与修改以本文为准。
-> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5/v0.6/v0.7 为批 1/2/3 下钻后的版本号推进，契约未变）
+> 状态：**`冻结`**（2026-09-11 庄冉验收通过——节点粒度「够了」、section 提案「接受」；v0.4 框架合流经 2026-09-14 确认；v0.5~v0.8 为批 1/2/3 下钻与批 4 改名后的版本号推进，契约未变）
 
 ---
 
@@ -256,7 +256,7 @@ sources:
 | `wiki/schema.md` | 全量 schema（本文件） | ✅ 已落盘 |
 | `wiki/structure.json` | 8 个 section（**已确认**）+ 15 个 page + 壳层/弹层/孤儿清单 | ✅ 已落盘 |
 | `wiki/nodes/page-workbench/*.md` | 「项目工作台」**8 个节点**（完整；体检区按业务归宿拆 3 个） | ✅ 已落盘 |
-| `wiki/nodes/page-guidance/*.md` | 「全链路指导工作台」**完整 10 节点**（2026-09-13 补全） | ✅ 已落盘 |
+| `wiki/nodes/page-guidance/*.md` | 「材料打磨工作台」（原「全链路指导工作台」）**完整 10 节点**（2026-09-13 补全；2026-09-14 批 4 改名） | ✅ 已落盘 |
 | `wiki/pages/page-workbench.md` · `page-guidance.md` | v2 薄页面（页面级事实 + 节点地图） | ✅ 已落盘 |
 | `wiki/edges.json` | 11 条边（6 implemented / 4 intended / 1 undefined）+ 4 条 issues | ✅ 已落盘 |
 | `wiki/gen_wiki_tools.py` | **正式工具链**：`validate` / `sync-edges` / `index` / `map` / `gaps` 五命令（纯标准库） | ✅ 已落盘并跑通 |
@@ -289,6 +289,7 @@ sources:
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-14 | v0.8 ✅ | **批 4 交付总装（改名动作先行）**：①**`page-guidance` 改名「材料打磨工作台」**（原「全链路指导工作台」）——`structure.json` 的 title/description/frameworkRef/nodeScopeNote 按「专注可编辑文本材料的编辑打磨、L1~L6 阶段跨模块不归属本页」口径改写，页面文档 title 与「一句话定位」改写并新增「改名与定位口径」段，`nd-guidance-taskbar` / `nd-guidance-version-drawer` 两处定位按新名改写，跨页联动引用（page-coach / page-defense / page-workbench / page-assets）同步；**源码内文案仍写作「全链路指导工作台」（如 `ProjectMemberWorkbench.tsx:936` / `:950-952`）属源码事实，保留不改**；②issue `issue-product-guidance-rename-material-workbench` 已随执行**关闭并移除**（改名已完成，不再是缺口；残余的「L1~L6 唯一阶段口径」沿用 `issue-guidance-stage-taxonomy-mismatch` 跟）。③交付物：《待拍板清单（交付版）》《双创智能体设计方案说明书》+ 结构图重生成（发布动作见交付说明）。 |
 | 2026-09-14 | v0.7 ✅ | **批 3 治理与复用页下钻完成（3 页 / 16 节点）→ 全库 15 页全部 drilled**：`page-teams`（4）· `page-users`（5）· `page-knowledge-base`（7，含 admin 端平台知识库）由 `pending` → `drilled`；node 79 → **95**、边 89 → **98**（新增 9 条，其中 intended 4：账号体系应入权限系统 / 知识库应作 AI 检索底座 / 平台库应下发校端 / （见 edges）、reuse 1 条：本页与工作台共享 MOCK_PROJECT_TEAMS）、issues 33 → **41**（新增 8 条）；`structure.json`：3 页补 `nodeCount`/`nodeScopeNote`，`page-knowledge-base` 补 `mockPlatformKnowledgeBase.ts` 与 related_pages。**本批口径要点**：①团队页指标卡全为由 `teams.length + 77` 推导的假数据（issue-teams-fake-metrics）；②用户页三写死一半真且账号体系是孤岛（issue-users-accounts-isolated / issue-users-auto-email）；③知识库页指标全部真实派生（与前者相反），但上传 chunks 为随机数、预览要点写死（issue-kb-preview-hardcoded-chunks）、与 AI 助手零连接（issue-kb-not-connected-to-coach）；④第二例「一页两端」（知识库）与第二例「跨页共享数据」（MOCK_PROJECT_TEAMS）已登记为 reuse 边。**本批完成后 A3「待铺开页」警告归零，全库只剩 D4 单向跳转边 warning（7 条）。** |
 | 2026-09-14 | v0.6 ✅ | **批 2 校管端下钻完成（6 页 / 34 节点）**：`page-cockpit`（6 节点）· `page-screening`（4）· `page-mentorship`（5）· `page-supervision`（9）· `page-milestones`（4）· `page-mentors-pool`（6，含 admin 端平台导师池）由 `pending` → `drilled`；node 45 → **79**、边 59 → **89**（新增 30 条，含 intended 2：预约导师应创建工单、邀请响应应回传学校端）、issues 24 → **33**（新增 9 条，全部带 category/owner）；`structure.json`：6 页补 `nodeCount` / `nodeScopeNote`，`page-mentors-pool` 的 related_pages 补 page-supervision。**本批口径要点**：①驾驶舱「演示数字 vs 真实派生」同屏矛盾（issue-cockpit-static-metrics）；②初筛全景表固定 17 列且按下标取数，跨赛道必错位（issue-screening-fixed-columns-by-index）；③督导页是全库唯一「跨角色真实写回」闭环（与 page-workbench 共享 workOrders，已补双向边）；④导师池「一页两端」数据完全不互通（issue-mentors-pool-two-ends-not-synced）；⑤里程碑阶段筛选只影响一个数字（issue-milestones-filter-no-effect）。 |
 | 2026-09-14 | v0.5 ✅ | **批 1 学生端下钻完成（4 页 / 27 节点）**：`page-login`（4 节点）· `page-coach`（10）· `page-defense`（7）· `page-assets`（6）由 `pending` → `drilled`，各新增 `pages/<id>.md`；node 18 → **45**、边 23 → **59**（新增 36 条，其中 intended 2：附件不参与推理、4.3 深度调用应跳 page-defense）、issues 9 → **24**（新增 11 条，全部带 category/owner）；`structure.json`：page-defense 的 `relevant_files` 由 7 补到 12（实测另有 DefenseVideoWindow / RoadshowDefenseStage / RoadshowCombinedReportModal / DefenseCharts / defenseTypes），4 页补 `nodeCount` / `nodeScopeNote`（page-assets 的 title 按侧栏文案写作「项目资产管理系统（Git 模式）」）。**口径复核（硬约束 1/3）**：`page-workbench` 补「单项目绑定 → demo 项目切换仅演示、不建『项目切换』节点」、`page-guidance` 补「右栏 AI 教练 = 内嵌辅助栏、不属 1.1」两条口径描述（**未改任何行号引用**）。契约未变，版本号推进仅为标记进度。 |

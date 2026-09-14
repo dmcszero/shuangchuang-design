@@ -10,7 +10,7 @@ sources:
 
 ## 一句话定位
 
-项目工作台的第一个子 tab，把「AI 评分诊断生成的待办」与「后台专家下发的建议工单」汇成**一个统一池**，每条待办右侧带「去执行」按钮，点击即携带任务上下文跳到全链路指导工作台。
+项目工作台的第一个子 tab，把「AI 评分诊断生成的待办」与「后台专家下发的建议工单」汇成**一个统一池**，每条待办右侧带「去执行」按钮，点击即携带任务上下文跳到材料打磨工作台（`page-guidance`，源码内旧名「全链路指导工作台」）。
 
 ## 事实（每条强制可回溯）
 
@@ -109,7 +109,7 @@ sources:
   - 逻辑：动态待办 tab 的工单来源直接 flatMap 展开 projectOrders[].tasks；同一份 projectOrders 也驱动工单 tab 的列表与详情。两个节点共享同一数据源，无复制。
   - 出处：`src/components/ProjectMemberWorkbench.tsx:64`
   - 出处：`src/components/ProjectMemberWorkbench.tsx:276`
-- **`e-workbench-todo-2-guidance-contract-reuse`** → `page-guidance`（全链路指导工作台）｜`reuse` · **implemented（已实现）**
+- **`e-workbench-todo-2-guidance-contract-reuse`** → `page-guidance`（材料打磨工作台）｜`reuse` · **implemented（已实现）**
   - 触发：（无触发，类型契约共享）
   - 逻辑：两端共用 src/components/guidance/guidanceTypes.ts 的 GuidanceTaskContext 接口作为跨模块载荷契约；发送端构造、接收端消费，字段变更需双侧同步。
   - 出处：`src/components/ProjectMemberWorkbench.tsx:34`

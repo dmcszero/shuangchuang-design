@@ -142,7 +142,7 @@
       "logic": "当前无任何实现——该处是纯文本 <div>，没有 onClick，也不会调用任何 prop。",
       "status": "intended",
       "designRef": "源码文案明确写好了目标位置：「完整版本历史 / diff 对比 / 回滚 → 全链路指导工作台顶栏『版本历史』抽屉」src/components/ProjectMemberWorkbench.tsx:950-952",
-      "expected": "点击后跳到全链路指导工作台，并自动打开其右缘版本历史抽屉（drawerOpen=true）。",
+      "expected": "点击后跳到材料打磨工作台（`page-guidance`），并自动打开其右缘版本历史抽屉（drawerOpen=true）。",
       "blockedBy": "两个障碍：①该处为静态文本，无点击处理器，需先加交互；②SceneGuidanceWorkbench 的 drawerOpen 是内部 useState(:93)，没有任何 props 可从外部控制，需先开放入参（如 initialDrawerOpen）。",
       "sources": [],
       "severity": "medium",
@@ -1568,19 +1568,6 @@
       "severity": "medium",
       "category": "产品决策",
       "owner": "工程自决"
-    },
-    {
-      "id": "issue-product-guidance-rename-material-workbench",
-      "where": "page-guidance",
-      "title": "产品规则：L1~L6 跨模块非单模块负责 → page-guidance 改名「材料打磨工作台」（批 3 后执行）",
-      "detail": "用户大框架「1.3」注：全链路指导工作台后续要更改为材料打磨工作台，专门支持可编辑文本材料的编辑、打磨——因为 L1~L6 本质上涉及各个模块，而非单模块负责。由此两条后果：①page-guidance 定位收窄为「材料打磨工作台」，改 title + 节点口径（排期：批 3 完成后统一执行，同步改 schema 变更记录）；②「阶段」概念不归属单一页面，加剧三套阶段口径并存问题（见 issue-guidance-stage-taxonomy-mismatch，需上司拍板唯一口径）。",
-      "status": "intended",
-      "designRef": "用户大框架 1.3 注（RanZhuang/2026-09/prompt/0914.md #5）；《0914-15-LLM-Wiki框架合流变更方案》§四",
-      "expected": "批 3 完成后：page-guidance title 改为「材料打磨工作台」，页面/节点文档口径同步改写（只改口径描述不改行号引用）；structure.json 该页 frameworkRef 去除改名排期注记。",
-      "blockedBy": "改名动作本身已排期（批 3 后）；但 L1~L6 唯一阶段口径未拍板前，节点文档中涉及阶段的表述维持现状只登记不展开（issue-guidance-stage-taxonomy-mismatch）。",
-      "severity": "medium",
-      "category": "产品决策",
-      "owner": "上司拍板"
     },
     {
       "id": "issue-product-framework-incremental-growth",
