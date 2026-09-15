@@ -148,16 +148,26 @@ setTimeout(async () => {
   /* ---- 工具栏批注出入口（v1.0.2：导出不该藏在详情面板里） ---- */
   line('【工具栏】批注出入口');
   ev("ST.selKind = null; ST.selId = null; document.getElementById('detail').innerHTML = '<div class=\"empty\">未选中</div>';");
-  const topExp = d.getElementById('annExportTop'), topImp = d.getElementById('annImportTop'), topHow = d.getElementById('annHowTo');
-  check('未选中任何对象时工具栏仍有「导出/导入/怎么收集」', !!topExp && !!topImp && !!topHow,
-    [topExp, topImp, topHow].map(x => x && x.textContent.trim()).join(' | '));
+  const topExp = d.getElementById('annExportTop'), topImp = d.getElementById('annImportTop'), topHelp = d.getElementById('annHelp');
+  check('未选中任何对象时工具栏仍有「导出/导入/使用说明」', !!topExp && !!topImp && !!topHelp,
+    [topExp, topImp, topHelp].map(x => x && x.textContent.trim()).join(' | '));
   check('导出按钮带当前批注条数', /导出（\d+）/.test(topExp ? topExp.textContent : ''), topExp ? topExp.textContent.trim() : '');
   w.__blobSink = null;
   if (topExp) click(topExp);
   check('未选中对象也能导出（有内容）', !!w.__blobSink);
   check('导出文件名带作者与日期', /^annotations-.+-\d{8}\.json$/.test(w.__lastDownload || ''), w.__lastDownload || '（未捕获）');
-  if (topHow) click(topHow);
-  check('「怎么收集」给出闭环说明', /收集流程/.test($('toast').textContent), $('toast').textContent.slice(0, 34));
+  if (topHelp) click(topHelp);
+  const hm = d.getElementById('helpModal');
+  check('「使用说明」弹层可打开', !!hm && hm.style.display === 'flex');
+  const hb = $('helpBody').innerHTML;
+  check('说明含三块必备内容（整体操作 / 批注回收 / 打开 demo）',
+    /这个页面怎么看/.test(hb) && /怎么提意见/.test(hb) && /打开 demo/.test(hb));
+  check('说明点明「批注只在本机 + 写完必须导出」', /只存在你自己的浏览器/.test(hb) && /必须点「导出」/.test(hb));
+  if (d.getElementById('helpClose')) click(d.getElementById('helpClose'));
+  check('弹层可关闭', d.getElementById('helpModal').style.display === 'none');
+  /* 右栏两个面板高度（v1.0.3：由 300px 固定改为按视口平分） */
+  const boxBd = d.querySelector('.side .box-bd');
+  check('右侧面板不再固定 300px 上限', !!boxBd && (boxBd.style.maxHeight === '' || boxBd.style.maxHeight === 'none'));
   line('');
 
   /* ---- R4 决策批注 ---- */

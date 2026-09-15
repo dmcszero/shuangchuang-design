@@ -586,12 +586,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-radius:50%;border:2px solid #fff;display:none}
   .card.hasgap .gapdot{display:block}
 
-  .side{flex:0 0 356px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px}
-  .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .side{flex:0 0 356px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px;
+    height:calc(100vh - 34px)}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    display:flex;flex-direction:column;flex:1 1 0;min-height:170px}
   .box-hd{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:600;font-size:12.5px;
-    display:flex;justify-content:space-between;align-items:center}
+    display:flex;justify-content:space-between;align-items:center;flex:0 0 auto}
   .box-hd .cnt{font-size:11px;color:var(--ink-3);font-weight:400}
-  .box-bd{padding:12px 14px;max-height:300px;overflow:auto}
+  .box-bd{padding:12px 14px;overflow:auto;flex:1 1 auto;min-height:0}
   .empty{color:var(--ink-3);font-size:12px;text-align:center;padding:18px 0}
 
   .kv{display:grid;grid-template-columns:66px 1fr;gap:6px 10px;font-size:12px}
@@ -653,6 +655,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .tb-ann{border-left:1px dashed var(--line);padding-left:14px}
   #annExportTop{background:#eef2ff;border-color:#c7d2fe;color:#4338ca;font-weight:600}
   #annExportTop:hover{background:#e0e7ff;border-color:#a5b4fc}
+
+  /* ---------- v1.0.3：使用说明弹层 ---------- */
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:120;display:flex;
+    align-items:flex-start;justify-content:center;padding:44px 20px;overflow:auto}
+  .modal-bd{background:#fff;border-radius:14px;max-width:790px;width:100%;padding:24px 28px 26px;
+    box-shadow:0 18px 50px rgba(15,23,42,.3);position:relative;line-height:1.8}
+  .modal .mclose{position:absolute;right:16px;top:12px;font-size:20px;line-height:1;color:var(--ink-3);
+    cursor:pointer;user-select:none}
+  .modal .mclose:hover{color:var(--ink)}
+  .modal h2{font-size:17px;margin:0 0 2px}
+  .modal .msub{font-size:11.5px;color:var(--ink-3);margin-bottom:6px}
+  .modal h3{font-size:13px;margin:20px 0 6px;color:var(--accent);letter-spacing:.3px}
+  .modal ul{margin:4px 0;padding-left:20px}
+  .modal li{font-size:12.5px;margin:5px 0;color:var(--ink-2)}
+  .modal li b{color:var(--ink)}
+  .modal .kbd{font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;background:#eef2ff;
+    border:1px solid #dbe3f5;color:#4338ca;border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .modal .warnli{background:#fffbf3;border-left:3px solid var(--warn);padding:7px 11px;border-radius:0 8px 8px 0;
+    margin:9px 0;font-size:12.5px;color:#92400e}
+  .modal .mfoot{margin-top:20px;padding-top:12px;border-top:1px dashed var(--line);font-size:11.5px;
+    color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
   .col-hd.clickable{cursor:pointer;user-select:none}
   .col-hd.clickable:hover .t{color:var(--accent)}
@@ -833,6 +856,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <div class="toast" id="toast"></div>
 
+<div class="modal" id="helpModal" style="display:none">
+  <div class="modal-bd" id="helpBody"></div>
+</div>
+
 <script>
 const DATA = __DATA__;
 const $ = id => document.getElementById(id);
@@ -985,10 +1012,70 @@ function pickAnnotationFile(){
   inp.addEventListener('change', () => { if(inp.files && inp.files[0]) importAnnFile(inp.files[0]); });
   inp.click();
 }
-/* 「怎么收集」：把多人闭环一次讲清，方便直接照着转发给批注人 */
-function showAnnHowto(){
-  showToast('收集流程：① 每人打开本页写批注 → ② 点工具栏「导出」下载 JSON → ③ 把文件发回给收集人 → ④ 收集人点「导入」合并（按 id 去重，双方批注都保留）', false, 14000);
+/* ---------- 使用说明弹层（v1.0.3）----------
+   给「拿到链接的人」看的：页面怎么看 / 怎么提意见并回收 / 「打开 demo」按钮怎么回事。
+   文案集中在这里，便于以后改。 */
+const HELP_HTML = `
+  <span class="mclose" id="helpClose">✕</span>
+  <h2>结构图使用说明</h2>
+  <div class="msub">双创赛事智能体 · 设计结构图谱（页面 → 模块 → 连线 三层）</div>
+
+  <h3>一、这个页面怎么看</h3>
+  <ul>
+    <li><b>卡片 = 一个页面或模块，箭头 = 它们之间的关系</b>（跳转 / 带参跳转 / 读 / 回写 / 复用 / 内嵌）。</li>
+    <li><b>① 总览（默认）</b>：一屏看完 15 个页面之间的关系，第一次打开看这个。</li>
+    <li><b>② 全景</b>：全部模块卡片按页面分列。顶部工具栏可按<b>端</b>（学生 / 学校管理 / 辅导导师 / 超管）过滤、
+        按<b>连线类型</b>过滤（全部 · 只看缺口 · 只看跨列）、点列标题可<b>折叠整列</b>。</li>
+    <li><b>点任意卡片</b>：画布下方出现「聚焦视图」—— 左边「谁指向它」、右边「它指向谁」；
+        页签切到<b>关系链</b>还能看它间接影响到的全部模块（入向 / 出向两条可达链）。</li>
+    <li>右侧两个面板：<b>详情</b>（选中对象的完整事实：来源文件、行号引用、出入边）；
+        <b>缺口与待确认</b>（所有没接通、没定的事，点一条会定位到图上对应模块）。</li>
+    <li>页面<b>最底部</b>还有「issues」页签，是同一份问题清单的表格视图。</li>
+  </ul>
+
+  <h3>二、怎么提意见（批注）· 怎么回收</h3>
+  <ul>
+    <li><b>两个地方都能写</b>：① 点中任意卡片 / 连线 / 问题后，右侧「详情」面板拉到最底 →
+        「决策批注」；② 页面最底部「issues」表格，点行尾 <span class="kbd">批注</span> 就地展开表单。</li>
+    <li>每条批注：先选结论（<b>确认保留 / 确认删除 / 暂缓 / 需补充信息 / 自定义</b>），再写理由 / 要谁做什么。</li>
+    <li>已批注的对象会带 <span class="kbd">💬n</span> 徽标；可点「标记为已决」；工具栏「导出（N）」里的 N 是当前批注条数。</li>
+  </ul>
+  <div class="warnli"><b>关键：批注只存在你自己的浏览器里。</b>别人看不到、收集人也看不到，所以<b>写完必须点「导出」</b>。<br>
+    清缓存 / 换浏览器 / 无痕模式都会让批注消失，请写完立刻导出。</div>
+  <ul>
+    <li><b>导出（提意见的人做）</b>：顶部工具栏 →「批注」组 → <span class="kbd">导出</span>，
+        下载 <span class="kbd">annotations-你的名字-日期.json</span>，把它发回给收集人。</li>
+    <li><b>导入（收集人做）</b>：把每个人的文件依次点 <span class="kbd">导入</span>，
+        自动合并（按 id 去重、新的覆盖旧的，<b>双方批注都保留</b>），完成后提示「新增 N 条 · 更新 M 条」。</li>
+  </ul>
+
+  <h3>三、「打开 demo ↗」按钮</h3>
+  <ul>
+    <li>页面卡片和页面详情里蓝色的 <span class="kbd">打开 demo ↗</span>：跳到可交互原型的对应模块，新开一个标签页。</li>
+    <li>它<b>要求本机先把 demo 跑起来</b>（在原型项目目录执行 <span class="kbd">npm run dev</span>，端口 3000）。
+        没跑的时候按钮是<b>置灰</b>的，点了也只会跳到一个打不开的地址。</li>
+    <li>跳过去之后<b>需要先登录</b>，登录成功后会自动回到你刚点的那个模块。</li>
+    <li>弹层类模块（如「版本快照差异比对弹层」）没有独立地址，所以不挂这个按钮。</li>
+  </ul>
+
+  <h3>四、三个别误会的地方</h3>
+  <ul>
+    <li><b>虚线灰卡</b>：这个模块还没参与任何连线 —— 不是错误，是「还没接通」。</li>
+    <li><b>橙色圆点</b>：这个模块上挂着缺口或待确认问题。</li>
+    <li><b>卡片右上角的中文</b>（面板 / 弹层 / 壳层…）是模块类型，鼠标悬停可看英文原值。</li>
+  </ul>
+
+  <div class="mfoot"><span>按 Esc 或点空白处关闭</span><span>本页由 wiki/build_map.py 生成 · schema v1.0</span></div>`;
+
+function showHelp(){
+  const box = $('helpModal');
+  $('helpBody').innerHTML = HELP_HTML;
+  box.style.display = 'flex';
+  $('helpClose').onclick = hideHelp;
+  box.onclick = ev => { if(ev.target === box) hideHelp(); };      // 点遮罩关闭
 }
+function hideHelp(){ $('helpModal').style.display = 'none'; }
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape') hideHelp(); });
 function importAnnFile(file){
   const fr = new FileReader();
   fr.onload = () => {
@@ -1204,7 +1291,7 @@ function renderToolbar(){
     `<div class="tb tb-ann"><span class="tb-lb">批注</span>`
       + `<div class="btn" id="annExportTop" title="把全部批注导出为 JSON 文件（含你自己写的与已导入的）">导出（${ANN.length}）</div>`
       + `<div class="btn" id="annImportTop" title="导入别人导出的 JSON；按 id 去重合并，双方批注都保留">导入</div>`
-      + `<div class="btn ghost" id="annHowTo" title="多人收集流程说明">怎么收集</div></div>` +
+      + `<div class="btn ghost" id="annHelp" title="页面怎么用 / 怎么提意见并回收 / 「打开 demo」按钮说明">使用说明</div></div>` +
     `<div class="tb-hint" id="tbHint"></div>`;
   $('toolbar').querySelectorAll('[data-seg]').forEach(el => {
     el.addEventListener('click', ev => {
@@ -1225,7 +1312,7 @@ function renderToolbar(){
   /* 工具栏上的批注出入口：全局可见，不依赖「先选中某个块」（详情块里那一份保留，就近操作） */
   $('annExportTop').addEventListener('click', exportAnn);
   $('annImportTop').addEventListener('click', pickAnnotationFile);
-  $('annHowTo').addEventListener('click', showAnnHowto);
+  $('annHelp').addEventListener('click', showHelp);
 }
 
 /* ---------- 可见性（端过滤 / 连线过滤）---------- */
