@@ -135,7 +135,7 @@ setTimeout(async () => {
   const unId = ev("ISSUES.filter(x=>!(nodeById[x.where]||ovById[x.where]))[0].id");
   const unWhere = ev("ISSUES.filter(x=>!(nodeById[x.where]||ovById[x.where]))[0].where");
   w.locateIssue(unId);
-  check('未锚定 issue 在聚焦视图有说明', /外部引用|不在本库结构图上/.test($('focusBody').innerHTML), unId + ' → ' + unWhere);
+  check('未锚定 issue 在聚焦视图有说明', /这份梳理以外的东西/.test($('focusBody').innerHTML), unId + ' → ' + unWhere);
   const gbar = d.querySelector('.gbar');
   check('gaps 顶部有统计条', !!gbar, gbar ? gbar.textContent.replace(/\s+/g, ' ').trim().slice(0, 60) : '');
   const nAll = d.querySelectorAll('#gaps [data-kind]').length;
@@ -160,9 +160,13 @@ setTimeout(async () => {
   const hm = d.getElementById('helpModal');
   check('「使用说明」弹层可打开', !!hm && hm.style.display === 'flex');
   const hb = $('helpBody').innerHTML;
-  check('说明含三块必备内容（整体操作 / 批注回收 / 打开 demo）',
-    /这个页面怎么看/.test(hb) && /怎么提意见/.test(hb) && /打开 demo/.test(hb));
-  check('说明点明「批注只在本机 + 写完必须导出」', /只存在你自己的浏览器/.test(hb) && /必须点「导出」/.test(hb));
+  check('说明含三块必备内容（怎么看 / 怎么提意见 / 打开 demo）',
+    /先看什么/.test(hb) && /怎么提意见/.test(hb) && /「打开 demo ↗」是干什么的/.test(hb));
+  const JARGON = ['schema', '入向', '出向', '去重', '外部引用', '可达链', '本库', 'frontmatter', 'edge', 'issue'];
+  const hitJargon = JARGON.filter(t => hb.indexOf(t) >= 0);
+  check('说明里不出现技术黑话', hitJargon.length === 0, hitJargon.join(' / ') || '（无）');
+  check('说明点明「批注只在本机 + 写完必须导出」',
+    /只保存在你自己的浏览器/.test(hb) && /写完请点一下上方工具栏的「导出」/.test(hb));
   if (d.getElementById('helpClose')) click(d.getElementById('helpClose'));
   check('弹层可关闭', d.getElementById('helpModal').style.display === 'none');
   /* 右栏两个面板高度（v1.0.3：由 300px 固定改为按视口平分） */

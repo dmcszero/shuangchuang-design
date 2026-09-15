@@ -1002,7 +1002,7 @@ function exportAnn(){
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
-  showToast('已导出 ' + ANN.length + ' 条批注（annotations-' + who + '-' + stamp + '.json）→ 发回给收集人，或覆盖回 wiki/annotations.json 提交 git');
+  showToast('已导出 ' + ANN.length + ' 条批注（文件名 annotations-' + who + '-' + stamp + '.json）→ 把它发回给收集人就行');
 }
 /* 导入：动态建 file input —— 不依赖页面上是否已有隐藏 input，工具栏与详情块共用同一条通路 */
 function pickAnnotationFile(){
@@ -1017,55 +1017,52 @@ function pickAnnotationFile(){
    文案集中在这里，便于以后改。 */
 const HELP_HTML = `
   <span class="mclose" id="helpClose">✕</span>
-  <h2>结构图使用说明</h2>
-  <div class="msub">双创赛事智能体 · 设计结构图谱（页面 → 模块 → 连线 三层）</div>
+  <h2>怎么看这个页面</h2>
+  <div class="msub">这是「双创赛事智能体」设计稿的结构梳理：一张卡就是一块内容，一条箭头就是两块内容之间的走向。</div>
 
-  <h3>一、这个页面怎么看</h3>
+  <h3>一、先看什么</h3>
   <ul>
-    <li><b>卡片 = 一个页面或模块，箭头 = 它们之间的关系</b>（跳转 / 带参跳转 / 读 / 回写 / 复用 / 内嵌）。</li>
-    <li><b>① 总览（默认）</b>：一屏看完 15 个页面之间的关系，第一次打开看这个。</li>
-    <li><b>② 全景</b>：全部模块卡片按页面分列。顶部工具栏可按<b>端</b>（学生 / 学校管理 / 辅导导师 / 超管）过滤、
-        按<b>连线类型</b>过滤（全部 · 只看缺口 · 只看跨列）、点列标题可<b>折叠整列</b>。</li>
-    <li><b>点任意卡片</b>：画布下方出现「聚焦视图」—— 左边「谁指向它」、右边「它指向谁」；
-        页签切到<b>关系链</b>还能看它间接影响到的全部模块（入向 / 出向两条可达链）。</li>
-    <li>右侧两个面板：<b>详情</b>（选中对象的完整事实：来源文件、行号引用、出入边）；
-        <b>缺口与待确认</b>（所有没接通、没定的事，点一条会定位到图上对应模块）。</li>
-    <li>页面<b>最底部</b>还有「issues」页签，是同一份问题清单的表格视图。</li>
+    <li><b>① 总览（默认）</b>：一屏看完 15 个页面之间的关系，第一次打开看这层就够。</li>
+    <li><b>② 全景</b>：把每个页面里的每一块都摊开。上面那排按钮可以按<b>角色</b>筛（学生 / 学校管理 / 辅导导师 / 超级管理员），
+        也可以只看「还没定下来的地方」；点列顶上的标题能把整列收起来。</li>
+    <li><b>点任意一张卡</b>：下面会展开它跟别人的关系 —— 左边「谁会用到它」、右边「它会用到谁」。
+        想看更远的连锁影响，切到旁边的「关系链」，会一路往上、一路往下把相关的都列出来。</li>
+    <li>右侧「详情」是这张卡的底细；「缺口与待确认」是还没定下来的事，点一条会跳到图上对应的位置。</li>
   </ul>
 
-  <h3>二、怎么提意见（批注）· 怎么回收</h3>
+  <h3>二、怎么提意见</h3>
   <ul>
-    <li><b>两个地方都能写</b>：① 点中任意卡片 / 连线 / 问题后，右侧「详情」面板拉到最底 →
-        「决策批注」；② 页面最底部「issues」表格，点行尾 <span class="kbd">批注</span> 就地展开表单。</li>
-    <li>每条批注：先选结论（<b>确认保留 / 确认删除 / 暂缓 / 需补充信息 / 自定义</b>），再写理由 / 要谁做什么。</li>
-    <li>已批注的对象会带 <span class="kbd">💬n</span> 徽标；可点「标记为已决」；工具栏「导出（N）」里的 N 是当前批注条数。</li>
+    <li><b>两处都能写</b>：点中任意卡片 / 箭头 / 问题后，右侧「详情」面板最下面有批注框；
+        或者拉到页面最底部，在表格里点那一行末尾的 <span class="kbd">批注</span>。</li>
+    <li>每条先选个结论（<b>确认保留 / 确认删除 / 暂缓 / 需补充信息 / 自定义</b>），再把理由、或「要谁做什么」写清楚。</li>
+    <li>你写过的位置会留下一个 <span class="kbd">💬</span> 小标记，方便回头找。</li>
   </ul>
-  <div class="warnli"><b>关键：批注只存在你自己的浏览器里。</b>别人看不到、收集人也看不到，所以<b>写完必须点「导出」</b>。<br>
-    清缓存 / 换浏览器 / 无痕模式都会让批注消失，请写完立刻导出。</div>
+  <div class="warnli"><b>注意：你写的批注只保存在你自己的浏览器里。</b>别人看不到，收集的人也看不到 ——
+    所以<b>写完请点一下上方工具栏的「导出」</b>，把下载到的文件发回给收集人。<br>
+    换电脑、换浏览器、清缓存、用无痕模式，批注都会不见，请写完立刻导出。</div>
   <ul>
-    <li><b>导出（提意见的人做）</b>：顶部工具栏 →「批注」组 → <span class="kbd">导出</span>，
-        下载 <span class="kbd">annotations-你的名字-日期.json</span>，把它发回给收集人。</li>
-    <li><b>导入（收集人做）</b>：把每个人的文件依次点 <span class="kbd">导入</span>，
-        自动合并（按 id 去重、新的覆盖旧的，<b>双方批注都保留</b>），完成后提示「新增 N 条 · 更新 M 条」。</li>
-  </ul>
-
-  <h3>三、「打开 demo ↗」按钮</h3>
-  <ul>
-    <li>页面卡片和页面详情里蓝色的 <span class="kbd">打开 demo ↗</span>：跳到可交互原型的对应模块，新开一个标签页。</li>
-    <li>它<b>要求本机先把 demo 跑起来</b>（在原型项目目录执行 <span class="kbd">npm run dev</span>，端口 3000）。
-        没跑的时候按钮是<b>置灰</b>的，点了也只会跳到一个打不开的地址。</li>
-    <li>跳过去之后<b>需要先登录</b>，登录成功后会自动回到你刚点的那个模块。</li>
-    <li>弹层类模块（如「版本快照差异比对弹层」）没有独立地址，所以不挂这个按钮。</li>
+    <li><b>导出</b>：工具栏点 <span class="kbd">导出</span>，下载一个文件（文件名带着你的名字和日期），直接发回给收集人就行。</li>
+    <li><b>收集人</b>把每个人发来的文件依次点 <span class="kbd">导入</span>，大家的意见会自动合到一起 ——
+        各人写的都保留、不会互相盖掉，还会提示「新增了几条、更新了几条」。</li>
   </ul>
 
-  <h3>四、三个别误会的地方</h3>
+  <h3>三、「打开 demo ↗」是干什么的</h3>
   <ul>
-    <li><b>虚线灰卡</b>：这个模块还没参与任何连线 —— 不是错误，是「还没接通」。</li>
-    <li><b>橙色圆点</b>：这个模块上挂着缺口或待确认问题。</li>
-    <li><b>卡片右上角的中文</b>（面板 / 弹层 / 壳层…）是模块类型，鼠标悬停可看英文原值。</li>
+    <li>点它可以跳到<b>能真的点着玩的原型</b>，看看这一页在系统里实际长什么样。</li>
+    <li>它需要<b>先把原型在本机跑起来</b>（原型项目目录里执行一次 <span class="kbd">npm run dev</span>，跑在 3000 端口）。
+        没跑的时候按钮是灰的，点了也打不开。</li>
+    <li>跳过去之后<b>要先登录</b>，登录完会自动回到你刚点的那一块。</li>
+    <li>有些是弹窗类的内容（比如「版本快照差异比对弹层」），没有单独的页面，所以没挂这个按钮。</li>
   </ul>
 
-  <div class="mfoot"><span>按 Esc 或点空白处关闭</span><span>本页由 wiki/build_map.py 生成 · schema v1.0</span></div>`;
+  <h3>四、几个容易看错的地方</h3>
+  <ul>
+    <li><b>灰色虚线边框的卡</b>：这块还没跟任何东西连上 —— 不是出错，是「还没接起来」。</li>
+    <li><b>卡片上的橙色小圆点</b>：这块还有问题没定。</li>
+    <li><b>卡片右上角的中文</b>（面板 / 弹层 / 壳层…）说的是这块属于哪一类，鼠标放上去能看到原来的英文写法。</li>
+  </ul>
+
+  <div class="mfoot"><span>按 Esc 或点空白处关闭</span><span>这是设计稿的结构梳理，不是最终做出来的产品</span></div>`;
 
 function showHelp(){
   const box = $('helpModal');
@@ -1192,7 +1189,7 @@ function annFormHtml(kind, id, compact){
       </div>
       <textarea data-ann-comment placeholder="写下判断 / 结论 / 需要谁做什么…">${esc(d.comment || '')}</textarea>
       <div class="row"><span class="abtn" data-ann-save>保存批注</span>
-        <span class="annhint">存入本机浏览器${compact ? '（与右侧「详情」是同一份数据）' : '；用「导出」生成 annotations.json 覆盖回 wiki/ 提交'}</span></div>
+        <span class="annhint">只存在你自己电脑上${compact ? '；跟右侧「详情」里写的是同一份' : ' —— 写完记得点上方工具栏的「导出」'}</span></div>
     </div>`;
 }
 /* 详情面板底部的「批注」区块 */
@@ -1289,8 +1286,8 @@ function renderToolbar(){
       seg('edge', ST.edgeMode, [['all','全部'],['gap','只看缺口'],['cross','只看跨列']]) + `</div>` +
     `<div class="tb"><div class="btn ghost" id="foldAll">折叠全部列</div><div class="btn ghost" id="unfoldAll">展开全部列</div></div>` +
     `<div class="tb tb-ann"><span class="tb-lb">批注</span>`
-      + `<div class="btn" id="annExportTop" title="把全部批注导出为 JSON 文件（含你自己写的与已导入的）">导出（${ANN.length}）</div>`
-      + `<div class="btn" id="annImportTop" title="导入别人导出的 JSON；按 id 去重合并，双方批注都保留">导入</div>`
+      + `<div class="btn" id="annExportTop" title="把你写的批注导出成文件，发回给收集人（已导入的别人的批注也会一起导出）">导出（${ANN.length}）</div>`
+      + `<div class="btn" id="annImportTop" title="把别人发来的文件合进来；各人写的都保留，不会互相盖掉">导入</div>`
       + `<div class="btn ghost" id="annHelp" title="页面怎么用 / 怎么提意见并回收 / 「打开 demo」按钮说明">使用说明</div></div>` +
     `<div class="tb-hint" id="tbHint"></div>`;
   $('toolbar').querySelectorAll('[data-seg]').forEach(el => {
@@ -1746,13 +1743,13 @@ function renderFocusIssue(it){
     + `<span class="fk">该问题不在结构图上</span>`
     + `<span class="acts"><span class="btn ghost" id="focusClear">清除聚焦</span></span>`;
   $('focusBody').innerHTML = `<div style="grid-column:1 / -1">`
-    + `<div class="quote warn">该问题（<span class="mono">${esc(it.id)}</span>）指向 <span class="mono">${esc(it.where)}</span>，`
-    + `这是<b>外部引用</b>——不在本库结构图上，所以画布 / 全景层里没有对应模块可以定位。`
-    + (others ? ` 同类的「不在结构图上」问题还有 <b>${others}</b> 条。` : '') + `</div>`
+    + `<div class="quote warn">这条问题（<span class="mono">${esc(it.id)}</span>）说的是 <span class="mono">${esc(it.where)}</span> —— `
+    + `那是这份梳理以外的东西，所以图上没有对应的卡片可以跳过去。`
+    + (others ? ` 同类的问题还有 <b>${others}</b> 条。` : '') + `</div>`
     + block('问题', `<div class="quote">${esc(it.title)}</div>`)
     + `<div class="flegend">级别 <span style="color:${sevColor};font-weight:600">${esc(it.severity||'—')}</span>`
-    + ` · 分类 ${esc(it.category||'—')} · 归属 ${esc(it.owner||'—')}。完整内容见右侧「详情」面板；`
-    + `若要把这类对象纳入结构图，需先在 structure.json / nodes 里登记它。</div></div>`;
+    + ` · 分类 ${esc(it.category||'—')} · 归属 ${esc(it.owner||'—')}。完整内容见右侧「详情」；`
+    + `如果这类东西也该收进这份梳理，需要先把它登记进去。</div></div>`;
   $('focusClear').addEventListener('click', () => { ST.focusIssue = null; $('focus').style.display = 'none'; });
 }
 
@@ -2034,7 +2031,7 @@ function buildGapRows(){
       t:i.title,
       w:`${n ? n.label : i.where} · ${i.category||''}${i.owner ? (' · ' + i.owner) : ''}`,
       d:(p.oneLine || i.detail || ''),
-      loc: n ? '点击定位到结构图中的模块' : '不在结构图上（外部引用）——点击看说明',
+      loc: n ? '点一下会跳到图上对应的位置' : '不在图上（它指的是这份梳理以外的东西）——点一下看说明',
       noanchor: !n, anchored: !!n, annCount: ann.length,
       openCount: ann.filter(x => x.status !== 'resolved').length});
   });
@@ -2063,7 +2060,7 @@ function renderGaps(){
       <div class="t" style="color:${r.color}">${esc(r.t)}${annBadge(r.kind, r.id)}</div>
       <div class="w">${esc(r.w)}</div>
       <div class="d">${esc(r.d).slice(0,200)}${r.d && r.d.length>200?'…':''}</div>
-      <div class="loc">▸ ${esc(r.loc || '点击定位到结构图中的模块')}</div>
+      <div class="loc">▸ ${esc(r.loc || '点一下会跳到图上对应的位置')}</div>
     </div>`;
   }).join('') || '<div class="empty">无缺口</div>');
   $('gaps').onclick = ev => {
@@ -2142,7 +2139,7 @@ function renderTabBody(id){
     const openN = DATA.issues.filter(x => annOf('issue', x.id).some(a => a.status !== 'resolved')).length;
     let h = `<div class="tabstat">共 ${DATA.issues.length} 条问题 · 已批注 <b>${annN}</b> 条`
       + (openN ? ` · 未决 <b>${openN}</b> 条` : '')
-      + `<span class="annhint">点行尾「批注」就地展开表单；与右侧「详情」块是同一份数据，写完两边同步</span></div>`
+      + `<span class="annhint">点行尾「批注」直接在这里写；跟右侧「详情」里写的是同一份</span></div>`
       + `<table style="${st}"><tr>${th}位置</th>${th}问题</th>${th}级别</th>${th}分类/归属</th>${th}一句话（通俗版）</th>`
       + `<th style="padding:9px 12px;background:#f8fafc;text-align:left;width:236px">决策批注</th></tr>`;
     DATA.issues.forEach(i => {
