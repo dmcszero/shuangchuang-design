@@ -34,8 +34,8 @@ const errors = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', e => {
   const msg = (e.detail && e.detail.stack) || e.message || '';
-  // jsdom 不实现 a[download].click() 触发的文档导航，属探针环境限制，非页面缺陷
-  if (/Not implemented: navigation/.test(msg)) return;
+  // jsdom 不实现 a[download].click() 的文档导航与 window.scrollTo()，属探针环境限制，非页面缺陷
+  if (/Not implemented: (navigation|Window's scrollTo)/.test(msg)) return;
   errors.push('[jsdomError] ' + msg);
 });
 vc.on('error', (...a) => errors.push('[console.error] ' + a.map(String).join(' ')));
@@ -146,13 +146,15 @@ setTimeout(async () => {
   /* ---- R4 决策批注 ---- */
   line('【R4】决策批注端');
   ev("select('node','nd-guidance-diff-modal')");
-  check('详情面板出现批注区块', !!d.querySelector('.annbox'));
-  check('批注输入三件套齐备', !!$('annDecision') && !!$('annComment') && !!$('annAuthor') && !!$('annSave'));
+  const abox = d.querySelector('#detail .annbox');
+  check('详情面板出现批注区块', !!abox);
+  check('批注输入三件套齐备', !!(abox && abox.querySelector('[data-ann-decision]') && abox.querySelector('[data-ann-comment]')
+    && abox.querySelector('[data-ann-author]') && abox.querySelector('[data-ann-save]')));
   const before = ev('ANN.length');
-  $('annComment').value = '验收探针写入：确认该弹层保留，需补 demo 深链';
-  $('annDecision').value = '确认保留';
-  $('annAuthor').value = '验收探针';
-  click($('annSave'));
+  abox.querySelector('[data-ann-comment]').value = '验收探针写入：确认该弹层保留，需补 demo 深链';
+  abox.querySelector('[data-ann-decision]').value = '确认保留';
+  abox.querySelector('[data-ann-author]').value = '验收探针';
+  click(abox.querySelector('[data-ann-save]'));
   const after = ev('ANN.length');
   check('保存批注', after === before + 1, 'ANN ' + before + ' → ' + after);
   check('批注写入 localStorage', JSON.parse(w.localStorage.getItem('module-map-annotations-v1') || '[]').length === after);
@@ -219,6 +221,50 @@ setTimeout(async () => {
   check('demoTabs 映射 14 条', Object.keys(ev('DATA.demoTabs')).length === 14);
   ev("select('node','page-guidance')");
   check('页面详情有「打开 demo」区块', !!d.querySelector('.demobig'), (d.querySelector('.demobig') || {}).textContent);
+  line('');
+
+  /* ---- 子任务（0915）：footer「issues」表格行内批注 + 数据联通 ---- */
+  line('【子任务】footer issues 表格行内批注');
+  ev("curTab='issues'; renderTabs();");
+  const frows = Array.from(d.querySelectorAll('#tabBody tr.clickable[data-kind="issue"]'));
+  check('issues 表格每行都有批注列', frows.length === 40 && frows.every(r => r.querySelector('.anncell')), frows.length + ' 行');
+  const tgt = 'issue-guidance-unused-modals';
+  const trow = d.querySelector('#tabBody tr.clickable[data-id="' + tgt + '"]');
+  check('目标行存在', !!trow);
+  click(trow.querySelector('[data-ann-open]'));
+  const inlineSel = '#tabBody .anninline[data-ann-scope="issue::' + tgt + '"]';
+  check('点「批注」就地展开表单', !!d.querySelector(inlineSel));
+  check('展开后按钮变「收起」', (d.querySelector('#tabBody [data-ann-open="' + tgt + '"]') || {}).textContent.trim() === '收起');
+  const ta1 = d.querySelector(inlineSel + ' [data-ann-comment]');
+  ta1.value = '表格里写的草稿';
+  ta1.dispatchEvent(new w.Event('input', { bubbles: true }));
+  ev('renderTabs()');                                   // 模拟一次重渲染（切页签 / 状态刷新都会发生）
+  const ta2 = d.querySelector(inlineSel + ' [data-ann-comment]');
+  check('重渲染后草稿不丢', !!ta2 && ta2.value === '表格里写的草稿', ta2 ? JSON.stringify(ta2.value) : '无');
+  const annBefore = ev('ANN.length');
+  d.querySelector(inlineSel + ' select[data-ann-decision]').value = '需补充信息';
+  click(d.querySelector(inlineSel + ' [data-ann-save]'));
+  const annAfter = ev('ANN.length');
+  check('表格内保存批注', annAfter === annBefore + 1, 'ANN ' + annBefore + ' → ' + annAfter);
+  check('保存后表单已清空（草稿已清）', (d.querySelector(inlineSel + ' [data-ann-comment]') || {}).value === '');
+  ev("select('issue','" + tgt + "')");
+  const dhtml = $('detail').innerHTML;
+  check('【联通】表格写入 → 详情块同步显示', dhtml.indexOf('需补充信息') >= 0 && dhtml.indexOf('表格里写的草稿') >= 0);
+  const dbox = d.querySelector('#detail .annbox');
+  check('详情块批注表单可用（准备反向写入）', !!dbox, dbox ? '' : 'detail 长度 ' + dhtml.length + ' / 头部 ' + dhtml.replace(/\s+/g, ' ').slice(0, 150));
+  if (dbox) {
+    dbox.querySelector('[data-ann-comment]').value = '详情块回写的';
+    dbox.querySelector('[data-ann-decision]').value = '确认删除';
+    click(dbox.querySelector('[data-ann-save]'));
+  }
+  const cellTxt = ((d.querySelector('#tabBody tr.clickable[data-id="' + tgt + '"] .anncell') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+  check('【联通】详情块写入 → 表格批注列同步', cellTxt.indexOf('确认删除') >= 0, cellTxt.slice(0, 56));
+  const toggle1 = d.querySelector(inlineSel + ' [data-ann-toggle]');
+  if (toggle1) click(toggle1);
+  check('表格内可切换已决/未决', ev("ANN.filter(a=>a.target.id==='" + tgt + "').some(a=>a.status==='resolved')"),
+    ev("JSON.stringify(ANN.filter(a=>a.target.id==='" + tgt + "').map(a=>a.status))"));
+  ev("(function(){ ANN.filter(a=>a.target.id==='" + tgt + "').map(a=>a.id).forEach(function(x){ deleteAnnotation(x); }); })()");
+  check('清理测试批注（不影响后续断言）', ev("ANN.filter(a=>a.target.id==='" + tgt + "').length") === 0);
   line('');
 
   /* ---- 结构完整性回归 ---- */

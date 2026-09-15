@@ -753,6 +753,25 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .annbadge{display:inline-block;font-size:9.5px;background:#eef2ff;color:#4338ca;border-radius:5px;
     padding:0 4px;margin-left:5px;vertical-align:middle;font-weight:600}
 
+  /* ---------- v1.0.1：footer「issues」表格行内批注 ---------- */
+  .tabstat{font-size:11.5px;color:var(--ink-2);margin-bottom:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .tabstat b{color:var(--accent)}
+  .annhint{font-size:10.5px;color:var(--ink-3);line-height:1.45}
+  .abtn.tiny{font-size:10.5px;padding:2px 8px}
+  .anncell-td{vertical-align:top}
+  .anncell{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+  .anncell-l{display:flex;align-items:center;gap:5px;font-size:11.5px}
+  .anncell-l b{font-weight:600}
+  .anncell-l .annbadge{margin-left:0}
+  .anncell-m{font-size:10.5px;color:var(--ink-3)}
+  .anncell-c{font-size:10.5px;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line-soft);
+    border-radius:6px;padding:3px 6px;white-space:pre-wrap;word-break:break-word}
+  tr.annrow>td{padding:0;border-top:0;background:#fbfdff}
+  .anninline{border-left:3px solid var(--accent);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+  .anninline .annhist{margin-top:2px}
+  .annew.compact{gap:5px}
+  .annew.compact textarea{min-height:38px}
+
   /* ---------- v1.0：关系链视图（R5）---------- */
   .clayer{border-left:2px solid var(--line-soft);padding-left:9px;margin-bottom:8px}
   .clayer .clb{font-size:10px;color:var(--ink-3);margin-bottom:4px;letter-spacing:.3px}
@@ -982,12 +1001,15 @@ function detailHtmlFor(kind, id){
   if(kind === 'edge') return edgeDetail(id);
   return '<div class="empty">未选中</div>';
 }
-/* 批注写入后统一刷新：画布徽标 / 缺口列表 / 当前详情（保持当前选中不跳走） */
+/* 批注写入后统一刷新：画布徽标 / 缺口列表 / 当前详情 / footer 当前表格（保持当前选中不跳走） */
 function refreshAnnViews(){
   renderCanvas();
   renderGaps();
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', ST.selKind === 'node' && c.dataset.id === ST.selId));
   if(ST.selKind) $('detail').innerHTML = detailHtmlFor(ST.selKind, ST.selId);
+  const keepY = window.scrollY;      // footer 表格里就地批注时，别让视图跳回页顶
+  renderTabs();
+  window.scrollTo(0, keepY);
 }
 
 /* ---------- demo 深链（R6）----------
@@ -1029,10 +1051,21 @@ function demoBlock(id){
     + `<div class="flegend">该页在 demo 里对应 tab <span class="mono">${esc(t)}</span>；跳转后需先登录。</div>`);
 }
 
-/* 详情面板底部的「批注」区块（R4） */
-function annBlock(kind, id){
-  const list = annOf(kind, id).slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
-  const items = list.map(a => `<div class="annitem${a.status === 'resolved' ? ' resolved' : ''}">
+/* ---------- 批注渲染（R4 / 子任务）：详情块与 footer「issues」表格共用同一套 ----------
+   数据只有一份 ANN（annotations.json 内嵌 + 本机 localStorage），两处只是渲染入口不同；
+   表单一律用 data-* 属性 + 就近查找（不用 id——两处同时渲染会 id 冲突）。 */
+function annKey(kind, id){ return kind + '::' + id; }
+function annSorted(kind, id){
+  return annOf(kind, id).slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+}
+function annDraftOf(kind, id){
+  return ST.annDraft[annKey(kind, id)] || { decision: '', comment: '', author: getAuthor() };
+}
+/* 历史列表（两处共用） */
+function annListHtml(kind, id){
+  const list = annSorted(kind, id);
+  if(!list.length) return '<div class="flegend" style="margin-top:9px">本项暂无批注</div>';
+  return list.map(a => `<div class="annitem${a.status === 'resolved' ? ' resolved' : ''}">
       <div class="am"><b>${esc(a.decision)}</b><span>${esc(a.author || '—')}</span>
         <span>${esc(fmtTime(a.updatedAt))}</span>
         <span style="color:${a.status === 'resolved' ? '#16a34a' : '#d97706'}">${a.status === 'resolved' ? '已决' : '未决'}</span></div>
@@ -1040,22 +1073,52 @@ function annBlock(kind, id){
       <div class="ax"><span data-ann-toggle="${esc(a.id)}">${a.status === 'resolved' ? '标记为未决' : '标记为已决'}</span>
         <span class="del" data-ann-del="${esc(a.id)}">删除</span></div>
     </div>`).join('');
-  const lastDecision = (list[0] && list[0].decision) || '确认保留';
-  return `<div class="annbox">
-    <div class="ah"><span>决策批注（${list.length}）</span>
-      <span><span class="abtn ghost" id="annExport">导出</span> <span class="abtn ghost" id="annImportBtn">导入</span></span></div>
-    <div class="annew">
+}
+/* 输入表单（两处共用）；草稿从 ST.annDraft 回填，任何重渲染都不丢已输入的字 */
+function annFormHtml(kind, id, compact){
+  const list = annSorted(kind, id);
+  const d = annDraftOf(kind, id);
+  const decision = d.decision || (list[0] && list[0].decision) || '确认保留';
+  return `<div class="annew${compact ? ' compact' : ''}">
       <div class="row">
-        <select id="annDecision">${ANN_DECISIONS.map(d => `<option${d === lastDecision ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select>
-        <input id="annAuthor" value="${esc(getAuthor())}" placeholder="批注人">
+        <select data-ann-decision>${ANN_DECISIONS.map(x => `<option${x === decision ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>
+        <input data-ann-author value="${esc(d.author || getAuthor())}" placeholder="批注人">
       </div>
-      <textarea id="annComment" placeholder="写下判断 / 结论 / 需要谁做什么…"></textarea>
-      <div class="row"><span class="abtn" id="annSave">保存批注</span>
-        <span style="font-size:10.5px;color:#94a3b8;line-height:1.4">存入本机浏览器；用「导出」生成 annotations.json 覆盖回 wiki/ 提交</span></div>
-    </div>
-    ${items || '<div class="flegend" style="margin-top:9px">本项暂无批注</div>'}
-    <input type="file" id="annFile" accept=".json,application/json" style="display:none">
+      <textarea data-ann-comment placeholder="写下判断 / 结论 / 需要谁做什么…">${esc(d.comment || '')}</textarea>
+      <div class="row"><span class="abtn" data-ann-save>保存批注</span>
+        <span class="annhint">存入本机浏览器${compact ? '（与右侧「详情」是同一份数据）' : '；用「导出」生成 annotations.json 覆盖回 wiki/ 提交'}</span></div>
+    </div>`;
+}
+/* 详情面板底部的「批注」区块 */
+function annBlock(kind, id){
+  return `<div class="annbox" data-ann-scope="${esc(annKey(kind, id))}">
+    <div class="ah"><span>决策批注（${annOf(kind, id).length}）</span>
+      <span><span class="abtn ghost" data-ann-export>导出</span> <span class="abtn ghost" data-ann-import>导入</span></span></div>
+    ${annFormHtml(kind, id, false)}
+    <div class="annhist">${annListHtml(kind, id)}</div>
+    <input type="file" data-ann-file accept=".json,application/json" style="display:none">
   </div>`;
+}
+/* footer「issues」表格：行内展开的批注面板 */
+function annInlineHtml(kind, id){
+  return `<div class="anninline" data-ann-scope="${esc(annKey(kind, id))}">
+    ${annFormHtml(kind, id, true)}
+    <div class="annhist">${annListHtml(kind, id)}</div>
+  </div>`;
+}
+/* footer「issues」表格：批注列（徽标 + 最近决策 + 展开开关） */
+function annCellHtml(kind, id){
+  const list = annSorted(kind, id);
+  const open = !!ST.tabAnnOpen[id];
+  const btn = `<span class="abtn ghost tiny" data-ann-open="${esc(id)}">${open ? '收起' : '批注'}</span>`;
+  if(!list.length) return `<div class="anncell empty-cell">${btn}</div>`;
+  const a = list[0];
+  const openN = list.filter(x => x.status !== 'resolved').length;
+  return `<div class="anncell">
+      <div class="anncell-l"><span class="annbadge">💬${list.length}${openN ? '' : ' ✓'}</span><b>${esc(a.decision)}</b></div>
+      <div class="anncell-m">${esc(a.author || '—')} · ${esc(fmtTime(a.updatedAt))} · ${openN ? '未决 ' + openN : '已决'}</div>
+      ${a.comment ? `<div class="anncell-c">${esc(a.comment).slice(0, 60)}${a.comment.length > 60 ? '…' : ''}</div>` : ''}
+      ${btn}</div>`;
 }
 
 /* 视图状态（v0.9）：overview = 页面级总览（默认，一屏看完）；full = 节点级全景（原 16 列视图） */
@@ -1071,7 +1134,9 @@ const ST = {
   chainAll: false,
   plainMode: 'plain',
   annFilter: 'all',
-  gapAnchorOnly: false
+  gapAnchorOnly: false,
+  tabAnnOpen: {},          // footer「issues」表格里已展开批注表单的行（issueId → true）
+  annDraft: {}             // 未保存的批注草稿：'<kind>::<id>' → { decision, comment, author }
 };
 
 /* ---------- header ---------- */
@@ -1727,6 +1792,7 @@ function issueDetail(id){
       + (p.ask ? `<div class="pf">需要谁做什么</div><div class="pv">${esc(p.ask)}</div>` : '')
       + `</div>`;
     h += `<div class="flegend">通俗版是另写的解释层，原始数据一字未改（点上方「原始数据」查看）。</div>`;
+    h += annBlock('issue', id);
     return h;
   }
   if(!hasPlain) h += `<div class="fallback">该条暂无通俗版，以下为原始记录。</div>`;
@@ -1769,23 +1835,63 @@ function locateIssue(id){
   select('issue', id);                              // 右栏显示问题详情（通俗版优先）
 }
 
+/* ---------- 批注交互（详情块与 footer 表格共用同一套 handler）----------
+   两处渲染入口不同，但读写的是同一份 ANN；写入后经 refreshAnnViews() 统一刷新
+   画布徽标 / 缺口列表 / 详情 / 当前表格 —— 不会出现两处数据不同步。 */
+function handleAnnClick(ev){
+  if(ev.target.closest('[data-ann-export]')){ exportAnn(); return true; }
+  if(ev.target.closest('[data-ann-import]')){
+    const fileEl = (ev.target.closest('.annbox') || document).querySelector('[data-ann-file]');
+    if(fileEl) fileEl.click();
+    return true;
+  }
+  const scope = ev.target.closest('[data-ann-scope]');
+  if(ev.target.closest('[data-ann-save]')){
+    if(!scope) return true;
+    const parts = scope.dataset.annScope.split('::');
+    const kind = parts[0], id = parts.slice(1).join('::');
+    const dEl = scope.querySelector('[data-ann-decision]');
+    const cEl = scope.querySelector('[data-ann-comment]');
+    const aEl = scope.querySelector('[data-ann-author]');
+    const author = aEl ? aEl.value.trim() : '';
+    const comment = cEl ? cEl.value.trim() : '';
+    if(author) setAuthor(author);
+    if(!comment){ showToast('批注内容为空，请先写下判断', true); return true; }
+    clearAnnDraft(kind, id);          // 先清草稿，addAnnotation 触发的重渲染才是干净表单
+    addAnnotation(kind, id, dEl ? dEl.value : '', comment, author);
+    return true;
+  }
+  const at = ev.target.closest('[data-ann-toggle]');
+  if(at){ toggleAnnStatus(at.dataset.annToggle); return true; }
+  const ad = ev.target.closest('[data-ann-del]');
+  if(ad){ deleteAnnotation(ad.dataset.annDel); return true; }
+  const ao = ev.target.closest('[data-ann-open]');        // footer 表格行的「批注 / 收起」
+  if(ao){
+    const oid = ao.dataset.annOpen;
+    if(ST.tabAnnOpen[oid]) delete ST.tabAnnOpen[oid];
+    else ST.tabAnnOpen[oid] = true;
+    renderTabs();
+    return true;
+  }
+  return false;
+}
+/* 草稿：输入即记，重渲染后回填（切页签 / 切批注状态都不会丢已输入的字） */
+function handleAnnInput(ev){
+  const scope = ev.target.closest('[data-ann-scope]');
+  if(!scope) return;
+  const key = scope.dataset.annScope;
+  const d = ST.annDraft[key] || (ST.annDraft[key] = { decision: '', comment: '', author: getAuthor() });
+  const t = ev.target;
+  if(t.matches('[data-ann-decision]')) d.decision = t.value;
+  else if(t.matches('[data-ann-comment]')) d.comment = t.value;
+  else if(t.matches('[data-ann-author]')) d.author = t.value;
+}
+function clearAnnDraft(kind, id){ delete ST.annDraft[annKey(kind, id)]; }
+
 $('detail').addEventListener('click', ev => {
   const db = ev.target.closest('[data-demo]');
   if(db){ openDemo(db.dataset.demo); return; }
-  if(ev.target.closest('#annExport')){ exportAnn(); return; }
-  if(ev.target.closest('#annImportBtn')){ const f = $('annFile'); if(f) f.click(); return; }
-  if(ev.target.closest('#annSave')){
-    const dEl = $('annDecision'), cEl = $('annComment'), aEl = $('annAuthor');
-    if(aEl && aEl.value.trim()) setAuthor(aEl.value.trim());
-    if(!ST.selKind || !ST.selId){ showToast('请先在画布或列表里选中一个对象，再写批注', true); return; }
-    if(!cEl || !cEl.value.trim()){ showToast('批注内容为空，请先写下判断', true); return; }
-    addAnnotation(ST.selKind, ST.selId, dEl ? dEl.value : '', cEl.value.trim(), aEl ? aEl.value.trim() : '');
-    return;
-  }
-  const at = ev.target.closest('[data-ann-toggle]');
-  if(at){ toggleAnnStatus(at.dataset.annToggle); return; }
-  const ad = ev.target.closest('[data-ann-del]');
-  if(ad){ deleteAnnotation(ad.dataset.annDel); return; }
+  if(handleAnnClick(ev)) return;
   const pm = ev.target.closest('[data-pm]');
   if(pm){ ST.plainMode = pm.dataset.pm; if(ST.selKind === 'issue') $('detail').innerHTML = issueDetail(ST.selId); return; }
   const fc = ev.target.closest('[data-focus]');
@@ -1796,9 +1902,10 @@ $('detail').addEventListener('click', ev => {
     else if(it.dataset.kind === 'issue') locateIssue(it.dataset.id);
   }
 });
+$('detail').addEventListener('input', handleAnnInput);
 /* 导入批注文件走 change（不冒泡到 click） */
 $('detail').addEventListener('change', ev => {
-  if(ev.target && ev.target.id === 'annFile' && ev.target.files && ev.target.files[0]){
+  if(ev.target && ev.target.matches('[data-ann-file]') && ev.target.files && ev.target.files[0]){
     importAnnFile(ev.target.files[0]);
     ev.target.value = '';
   }
@@ -1928,7 +2035,14 @@ function renderTabBody(id){
     return h + '</table>';
   }
   if(id === 'issues'){
-    let h = `<table style="${st}"><tr><th style="padding:9px 12px;background:#f8fafc;text-align:left">位置</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">问题</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">级别</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">分类/归属</th><th style="padding:9px 12px;background:#f8fafc;text-align:left">一句话（通俗版）</th></tr>`;
+    const th = '<th style="padding:9px 12px;background:#f8fafc;text-align:left">';
+    const annN = DATA.issues.filter(x => annOf('issue', x.id).length).length;
+    const openN = DATA.issues.filter(x => annOf('issue', x.id).some(a => a.status !== 'resolved')).length;
+    let h = `<div class="tabstat">共 ${DATA.issues.length} 条问题 · 已批注 <b>${annN}</b> 条`
+      + (openN ? ` · 未决 <b>${openN}</b> 条` : '')
+      + `<span class="annhint">点行尾「批注」就地展开表单；与右侧「详情」块是同一份数据，写完两边同步</span></div>`
+      + `<table style="${st}"><tr>${th}位置</th>${th}问题</th>${th}级别</th>${th}分类/归属</th>${th}一句话（通俗版）</th>`
+      + `<th style="padding:9px 12px;background:#f8fafc;text-align:left;width:236px">决策批注</th></tr>`;
     DATA.issues.forEach(i => {
       const n = nodeById[i.where] || ovById[i.where];
       const p = i.plain || {};
@@ -1937,7 +2051,10 @@ function renderTabBody(id){
         <td style="padding:9px 12px;border-top:1px solid #eef2f7"><b>${esc(i.title)}</b></td>
         <td style="padding:9px 12px;border-top:1px solid #eef2f7">${esc(i.severity||'')}</td>
         <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(i.category||'')}<br><span style="color:#94a3b8">${esc(i.owner||'')}</span></td>
-        <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(p.oneLine || i.detail)}</td></tr>`;
+        <td style="padding:9px 12px;border-top:1px solid #eef2f7;color:#475569">${esc(p.oneLine || i.detail)}</td>
+        <td style="padding:9px 12px;border-top:1px solid #eef2f7" class="anncell-td">${annCellHtml('issue', i.id)}</td></tr>`;
+      if(ST.tabAnnOpen[i.id])                       // 行内展开：同一份 ANN，同一个 save handler
+        h += `<tr class="annrow"><td colspan="6">${annInlineHtml('issue', i.id)}</td></tr>`;
     });
     return h + '</table>';
   }
@@ -1958,11 +2075,13 @@ $('tabs').addEventListener('click', ev => {
   if(t){ curTab = t.dataset.id; renderTabs(); }
 });
 $('tabBody').addEventListener('click', ev => {
+  if(handleAnnClick(ev)) return;              // 批注交互优先，避免同时触发行跳转
   const tr = ev.target.closest('tr.clickable');
   if(!tr) return;
   if(tr.dataset.kind === 'issue') locateIssue(tr.dataset.id);
   else { select('edge', tr.dataset.id); scrollToEdge(tr.dataset.id); }
 });
+$('tabBody').addEventListener('input', handleAnnInput);
 
 /* ---------- boot ---------- */
 renderToolbar();
