@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "0.1",
+  "generatedAt": "2026-09-15",
+  "note": "决策批注真源（R4）：module-map.html 详情面板的「决策批注」区块导出后覆盖本文件，再提交 git；导入可把他人导出的文件合并进来（按 id 去重，updatedAt 新者胜）。target.kind ∈ issue | edge | node（node 涵盖页面级卡片）；target.id 用 wiki 实体 id —— 将来与 43.160.210.61:3001 功能条目对齐的映射表就建在这套 id 上。decision ∈ 确认保留 | 确认删除 | 暂缓 | 需补充信息 | 自定义；status ∈ open | resolved。gen_wiki_tools.py 的 apply-decisions 命令（留位）只读 status=resolved 的条目生成修改建议。",
+  "annotations": []
+}

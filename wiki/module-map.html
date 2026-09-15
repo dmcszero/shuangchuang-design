@@ -193,6 +193,58 @@
   .termtab td:first-child{font-family:'SFMono-Regular',Consolas,monospace;color:#7c3aed;
     white-space:nowrap}
   .termtab tr:last-child td{border-bottom:0}
+
+  /* ---------- v1.0：轻提示（把「点了没反应」变成可见说明）---------- */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;
+    background:#0f172a;color:#fff;font-size:12px;padding:8px 16px;border-radius:9px;
+    box-shadow:0 6px 20px rgba(15,23,42,.25);opacity:0;transition:opacity .18s;
+    pointer-events:none;max-width:560px;text-align:center}
+  .toast.on{opacity:.96}
+  .toast.warn{background:#92400e}
+
+  /* ---------- v1.0：决策批注（R4）---------- */
+  .gbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-3);
+    padding:2px 0 8px;border-bottom:1px solid var(--line-soft);margin-bottom:8px}
+  .gbar b{color:var(--ink)}
+  .annbox{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+  .annbox .ah{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.5px;margin-bottom:7px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .annew{display:flex;flex-direction:column;gap:6px}
+  .annew select,.annew input,.annew textarea{width:100%;font-family:inherit;font-size:11.5px;
+    border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:var(--ink);background:#fff}
+  .annew textarea{resize:vertical;min-height:44px;line-height:1.5}
+  .annew .row{display:flex;gap:6px;align-items:center}
+  .annew .row select{flex:0 0 124px}
+  .annew .row input{flex:1 1 auto}
+  .abtn{font-size:11.5px;padding:4px 11px;border:1px solid var(--accent);border-radius:7px;
+    background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+  .abtn.ghost{background:#fff;color:var(--ink-2);border-color:var(--line)}
+  .abtn.ghost:hover{border-color:#bfd4f5;background:#fafcff}
+  .annitem{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+    padding:7px 9px;margin-bottom:7px;background:#fafcff}
+  .annitem.resolved{border-left-color:var(--ok);background:#f7fdf9}
+  .annitem .am{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-3);flex-wrap:wrap}
+  .annitem .am b{color:var(--ink);font-weight:600}
+  .annitem .ac{font-size:11.5px;color:var(--ink-2);margin-top:5px;white-space:pre-wrap;word-break:break-word}
+  .annitem .ax{display:flex;gap:10px;margin-top:6px;font-size:10.5px}
+  .annitem .ax span{cursor:pointer;color:var(--accent)}
+  .annitem .ax span.del{color:#b91c1c}
+  .annbadge{display:inline-block;font-size:9.5px;background:#eef2ff;color:#4338ca;border-radius:5px;
+    padding:0 4px;margin-left:5px;vertical-align:middle;font-weight:600}
+
+  /* ---------- v1.0：关系链视图（R5）---------- */
+  .clayer{border-left:2px solid var(--line-soft);padding-left:9px;margin-bottom:8px}
+  .clayer .clb{font-size:10px;color:var(--ink-3);margin-bottom:4px;letter-spacing:.3px}
+  .clayer .chip.c2{font-size:10px}
+
+  /* ---------- v1.0：demo 深链按钮（R6）---------- */
+  .chip.c2.demobtn{border-color:#bfd4f5;color:var(--accent);font-weight:600}
+  .chip.c2.demobtn:hover{background:#eff6ff;border-color:var(--accent)}
+  .chip.c2.demobtn.off{border-style:dashed;color:var(--ink-3);font-weight:400}
+  .demobig{display:inline-block;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:8px;
+    border:1px solid #bfd4f5;color:var(--accent);background:#f5f9ff;cursor:pointer;margin-top:6px}
+  .demobig:hover{background:#eff6ff;border-color:var(--accent)}
+  .demobig.off{border-style:dashed;border-color:var(--line);color:var(--ink-3);background:#fafafa}
 </style>
 </head>
 <body>
@@ -234,6 +286,8 @@
   <div class="tabs" id="tabs"></div>
   <div id="tabBody"></div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const DATA = {
@@ -7753,6 +7807,23 @@ const DATA = {
    "kind": "常量"
   }
  ],
+ "demoTabs": {
+  "page-cockpit": "cockpit",
+  "page-milestones": "milestones",
+  "page-screening": "screening",
+  "page-mentorship": "mentorship",
+  "page-supervision": "supervision",
+  "page-mentors-pool": "mentors_pool",
+  "page-workbench": "my_project",
+  "page-guidance": "guidance_workbench",
+  "page-coach": "coach",
+  "page-defense": "defense_training",
+  "page-assets": "asset_management",
+  "page-knowledge-base": "knowledge_base",
+  "page-users": "users_management",
+  "page-teams": "teams_management"
+ },
+ "annotations": [],
  "personaMeta": {
   "p-student": "学生端",
   "p-school": "学校管理端",
@@ -7799,6 +7870,27 @@ const DATA = {
    "dash": "2 4"
   }
  },
+ "kindMeta": {
+  "nav": "导航栏",
+  "bar": "工具栏",
+  "tab": "页签",
+  "list": "列表",
+  "panel": "面板",
+  "table": "表格",
+  "form": "表单",
+  "drawer": "抽屉",
+  "modal": "弹层（模态框）",
+  "shell": "壳层（全局框架）",
+  "page": "页面",
+  "unknown": "未知"
+ },
+ "tierMeta": {
+  "page": "页面级",
+  "node": "节点级",
+  "modal": "弹层",
+  "shell": "壳层",
+  "unknown": "未登记"
+ },
  "importanceColor": {
   "high": "#2563eb",
   "medium": "#94a3b8",
@@ -7822,6 +7914,234 @@ const TERMS = (DATA.glossary || []).slice().sort((a, b) => b.term.length - a.ter
 const ISSUES = DATA.issues || [];
 const issueById = {};
 ISSUES.forEach(i => issueById[i.id] = i);
+const pageById = {};
+DATA.pages.forEach(p => pageById[p.id] = p);
+const pageTitle = {};
+DATA.pages.forEach(p => pageTitle[p.id] = p.title);
+
+/* 显示层中文映射（R1）：真源仍是英文枚举，这里只做展示翻译；
+   英文原值保留在 title 属性里供开发核对。 */
+const KIND_LABEL = k => (DATA.kindMeta && DATA.kindMeta[k]) || k || '—';
+const TIER_LABEL = t => (DATA.tierMeta && DATA.tierMeta[t]) || t || '—';
+
+/* 轻提示（R2/R3）：把原先的「静默失败」变成用户能看到的说明 */
+let toastTimer = null;
+function showToast(msg, warn){
+  const el = $('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'toast on' + (warn ? ' warn' : '');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast' + (warn ? ' warn' : ''); }, 3600);
+}
+
+/* ---------- 决策批注（R4）----------
+   定位：把本页变成「争议确认工作台」。产出物是与 wiki 同构、可被 AI 消费的决策记录。
+   数据：wiki/annotations.json（与 edges.json 并列的新真源，随 git 走）
+        + 浏览器 localStorage（即时防丢，刷新不丢）
+        + 「导出 → 覆盖回 wiki/ → 提交 git」闭环 + 「导入」合并他人导出（按 id 去重，updatedAt 新者胜）。
+   AI 消费：gen_wiki_tools.py 的 apply-decisions 命令读 status=resolved 的条目（本轮只留接口位）。 */
+const ANN_STORE_KEY = 'module-map-annotations-v1';
+const ANN_AUTHOR_KEY = 'module-map-author';
+const ANN_DECISIONS = ['确认保留', '确认删除', '暂缓', '需补充信息', '自定义'];
+const ANN_FILTER_LABEL = {
+  all: '批注：全部',
+  unannotated: '批注：只看未批注',
+  annotated: '批注：只看已批注',
+  open: '批注：只看未决'
+};
+let ANN = [];
+function loadLocalAnn(){
+  try { const v = JSON.parse(localStorage.getItem(ANN_STORE_KEY) || '[]'); return Array.isArray(v) ? v : []; }
+  catch(e){ return []; }
+}
+function saveLocalAnn(){ try { localStorage.setItem(ANN_STORE_KEY, JSON.stringify(ANN)); } catch(e){} }
+function getAuthor(){ try { return localStorage.getItem(ANN_AUTHOR_KEY) || '庄冉'; } catch(e){ return '庄冉'; } }
+function setAuthor(v){ try { localStorage.setItem(ANN_AUTHOR_KEY, String(v || '')); } catch(e){} }
+function annOf(kind, id){ return ANN.filter(a => a.target && a.target.kind === kind && a.target.id === id); }
+function annCountOf(kind, id){ return annOf(kind, id).length; }
+function annBadge(kind, id){
+  const list = annOf(kind, id);
+  if(!list.length) return '';
+  const open = list.filter(a => a.status !== 'resolved').length;
+  return `<span class="annbadge" title="${list.length} 条批注${open ? ('（' + open + ' 条未决）') : '（全部已决）'}">💬${list.length}${open ? '' : ' ✓'}</span>`;
+}
+function cycleAnnFilter(){
+  const order = ['all', 'unannotated', 'annotated', 'open'];
+  ST.annFilter = order[(order.indexOf(ST.annFilter) + 1) % order.length];
+}
+function initAnn(){
+  const merged = {};
+  (DATA.annotations || []).forEach(a => { if(a && a.id) merged[a.id] = a; });
+  loadLocalAnn().forEach(a => {
+    if(!a || !a.id) return;
+    const old = merged[a.id];
+    if(!old || String(a.updatedAt || '') >= String(old.updatedAt || '')) merged[a.id] = a;
+  });
+  ANN = Object.keys(merged).map(k => merged[k]);
+}
+function fmtTime(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return String(iso);
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function nextAnnId(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const stamp = '' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate());
+  const used = {};
+  ANN.forEach(a => { used[a.id] = true; });
+  let n = 1;
+  while(used['ann-' + stamp + '-' + n]) n++;
+  return 'ann-' + stamp + '-' + n;
+}
+function addAnnotation(kind, id, decision, comment, author){
+  if(!kind || !id) return;
+  const now = new Date().toISOString();
+  ANN.push({
+    id: nextAnnId(),
+    target: { kind: kind, id: id },
+    author: author || getAuthor(),
+    decision: decision || '自定义',
+    comment: comment || '',
+    createdAt: now, updatedAt: now,
+    status: 'open'
+  });
+  saveLocalAnn();
+  refreshAnnViews();
+  showToast('批注已存入本机浏览器。「导出」生成 annotations.json 并覆盖回 wiki/ 才进真源');
+}
+function deleteAnnotation(aid){ ANN = ANN.filter(a => a.id !== aid); saveLocalAnn(); refreshAnnViews(); }
+function toggleAnnStatus(aid){
+  const a = ANN.filter(x => x.id === aid)[0];
+  if(!a) return;
+  a.status = (a.status === 'resolved') ? 'open' : 'resolved';
+  a.updatedAt = new Date().toISOString();
+  saveLocalAnn();
+  refreshAnnViews();
+}
+function exportAnn(){
+  const payload = {
+    schemaVersion: '0.1',
+    generatedAt: new Date().toISOString(),
+    annotations: ANN.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'annotations.json';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  showToast('已导出 ' + ANN.length + ' 条批注 → 请覆盖回 wiki/annotations.json 并提交 git');
+}
+function importAnnFile(file){
+  const fr = new FileReader();
+  fr.onload = () => {
+    let obj = null;
+    try { obj = JSON.parse(String(fr.result)); }
+    catch(e){ showToast('导入失败：不是合法 JSON', true); return; }
+    const list = obj && (obj.annotations || (Array.isArray(obj) ? obj : null));
+    if(!Array.isArray(list)){ showToast('导入失败：找不到 annotations 数组', true); return; }
+    const merged = {};
+    ANN.forEach(a => { merged[a.id] = a; });
+    let add = 0, upd = 0;
+    list.forEach(a => {
+      if(!a || !a.id || !a.target) return;
+      const old = merged[a.id];
+      if(!old){ merged[a.id] = a; add++; }
+      else if(String(a.updatedAt || '') > String(old.updatedAt || '')){ merged[a.id] = a; upd++; }
+    });
+    ANN = Object.keys(merged).map(k => merged[k]);
+    saveLocalAnn();
+    refreshAnnViews();
+    showToast('导入完成：新增 ' + add + ' 条 · 更新 ' + upd + ' 条 · 现有 ' + ANN.length + ' 条');
+  };
+  fr.readAsText(file, 'utf-8');
+}
+function detailHtmlFor(kind, id){
+  if(!kind || !id) return '<div class="empty">未选中</div>';
+  if(kind === 'node') return nodeDetail(id);
+  if(kind === 'issue') return issueDetail(id);
+  if(kind === 'edge') return edgeDetail(id);
+  return '<div class="empty">未选中</div>';
+}
+/* 批注写入后统一刷新：画布徽标 / 缺口列表 / 当前详情（保持当前选中不跳走） */
+function refreshAnnViews(){
+  renderCanvas();
+  renderGaps();
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', ST.selKind === 'node' && c.dataset.id === ST.selId));
+  if(ST.selKind) $('detail').innerHTML = detailHtmlFor(ST.selKind, ST.selId);
+}
+
+/* ---------- demo 深链（R6）----------
+   demo（src/App.tsx）是单页应用 + activeTab state 路由，没有 URL 路由；
+   已给它加 ?tab= 启动参数（约 5 行），这里按 structure.json 的 demoTab 映射生成按钮。
+   弹层（modal/shell）不挂按钮——它没有独立 URL 语义，挂了会制造「点了到不了」的新困惑。 */
+const DEMO_BASE = 'http://localhost:3000/';
+let DEMO_UP = null;                                  // null=未探测 / true=在跑 / false=不可达
+function demoTabOf(id){ return (DATA.demoTabs && DATA.demoTabs[id]) || ''; }
+function demoBtn(id){
+  const t = demoTabOf(id);
+  if(!t) return '';
+  const url = DEMO_BASE + '?tab=' + encodeURIComponent(t);
+  const off = (DEMO_UP === false);
+  return `<span class="chip c2 demobtn${off ? ' off' : ''}" data-demo="${esc(url)}"`
+    + ` title="${off ? '本地 demo 未在 3000 端口运行，请先启动它（npm run dev）' : '在新标签页打开 demo 的对应模块：' + esc(t)}"`
+    + `>打开 demo ↗</span>`;
+}
+function probeDemo(){
+  if(typeof fetch !== 'function') return;
+  fetch(DEMO_BASE, { mode: 'no-cors', cache: 'no-store' })   // no-cors：只探端口是否活着，不读响应
+    .then(() => { if(DEMO_UP !== true){ DEMO_UP = true; renderCanvas(); } })
+    .catch(() => { if(DEMO_UP !== false){ DEMO_UP = false; renderCanvas(); } });
+}
+function openDemo(url){
+  const w = window.open(url, '_blank');
+  if(!w){ showToast('浏览器拦截了新窗口，请允许本站弹窗后重试', true); return; }
+  showToast('已在新标签页打开 demo。若页面空白，说明本地 demo 未启动（在 shuangchuang-design-main 下 npm run dev，端口 3000）；跳转后需先登录', DEMO_UP === false);
+}
+/* 详情面板里的「打开 demo」区块（页面级才有） */
+function demoBlock(id){
+  const t = demoTabOf(id);
+  if(!t) return '';
+  const off = (DEMO_UP === false);
+  const url = DEMO_BASE + '?tab=' + encodeURIComponent(t);
+  return block('demo 跳转', `<span class="demobig${off ? ' off' : ''}" data-demo="${esc(url)}"`
+    + ` title="${off ? '本地 demo 未在 3000 端口运行（在 shuangchuang-design-main 下 npm run dev）' : '在新标签页打开 demo 的对应模块'}">`
+    + `打开 demo · ${esc(t)} ↗</span>`
+    + `<div class="flegend">该页在 demo 里对应 tab <span class="mono">${esc(t)}</span>；跳转后需先登录。</div>`);
+}
+
+/* 详情面板底部的「批注」区块（R4） */
+function annBlock(kind, id){
+  const list = annOf(kind, id).slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  const items = list.map(a => `<div class="annitem${a.status === 'resolved' ? ' resolved' : ''}">
+      <div class="am"><b>${esc(a.decision)}</b><span>${esc(a.author || '—')}</span>
+        <span>${esc(fmtTime(a.updatedAt))}</span>
+        <span style="color:${a.status === 'resolved' ? '#16a34a' : '#d97706'}">${a.status === 'resolved' ? '已决' : '未决'}</span></div>
+      ${a.comment ? `<div class="ac">${esc(a.comment)}</div>` : ''}
+      <div class="ax"><span data-ann-toggle="${esc(a.id)}">${a.status === 'resolved' ? '标记为未决' : '标记为已决'}</span>
+        <span class="del" data-ann-del="${esc(a.id)}">删除</span></div>
+    </div>`).join('');
+  const lastDecision = (list[0] && list[0].decision) || '确认保留';
+  return `<div class="annbox">
+    <div class="ah"><span>决策批注（${list.length}）</span>
+      <span><span class="abtn ghost" id="annExport">导出</span> <span class="abtn ghost" id="annImportBtn">导入</span></span></div>
+    <div class="annew">
+      <div class="row">
+        <select id="annDecision">${ANN_DECISIONS.map(d => `<option${d === lastDecision ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select>
+        <input id="annAuthor" value="${esc(getAuthor())}" placeholder="批注人">
+      </div>
+      <textarea id="annComment" placeholder="写下判断 / 结论 / 需要谁做什么…"></textarea>
+      <div class="row"><span class="abtn" id="annSave">保存批注</span>
+        <span style="font-size:10.5px;color:#94a3b8;line-height:1.4">存入本机浏览器；用「导出」生成 annotations.json 覆盖回 wiki/ 提交</span></div>
+    </div>
+    ${items || '<div class="flegend" style="margin-top:9px">本项暂无批注</div>'}
+    <input type="file" id="annFile" accept=".json,application/json" style="display:none">
+  </div>`;
+}
 
 /* 视图状态（v0.9）：overview = 页面级总览（默认，一屏看完）；full = 节点级全景（原 16 列视图） */
 const ST = {
@@ -7831,7 +8151,12 @@ const ST = {
   collapsed: {},
   selKind: null, selId: null,
   focusId: null,
-  plainMode: 'plain'
+  focusIssue: null,
+  focusTab: 'rel',
+  chainAll: false,
+  plainMode: 'plain',
+  annFilter: 'all',
+  gapAnchorOnly: false
 };
 
 /* ---------- header ---------- */
@@ -7985,17 +8310,17 @@ function renderCanvas(){
             const pers = (n.personas||[]).map(p => `<span class="pers">${esc(DATA.personaMeta[p]||p)}</span>`).join(' ');
             return `<div class="card${gap?' hasgap':''}${n.tier!=='page'?' orphan':''}" data-id="${esc(id)}" data-kind="node">
               <span class="bar" style="background:${imp}"></span>
-              <div class="r1"><span class="nm">${esc(n.label)}</span><span class="kd">${n.tier==='page' ? (n.nodeCount + ' 模块') : esc(n.tier)}</span></div>
+              <div class="r1"><span class="nm">${esc(n.label)}</span><span class="kd" title="层级：${esc(n.tier)}">${n.tier==='page' ? (n.nodeCount + ' 模块') : esc(TIER_LABEL(n.tier))}</span></div>
               <div class="r2">${esc(n.sub)}</div>
-              <div class="r3">${pers}<span class="kpi">连线 ${n.edgeCount||0}${n.intraCount?(' · 页内 '+n.intraCount):''}${gap?(' · <b>缺口 '+gap+'</b>'):''}${n.orphanNodes?(' · 未连线 '+n.orphanNodes):''}</span></div>
+              <div class="r3">${pers}<span class="kpi">连线 ${n.edgeCount||0}${n.intraCount?(' · 页内 '+n.intraCount):''}${gap?(' · <b>缺口 '+gap+'</b>'):''}${n.orphanNodes?(' · 未连线 '+n.orphanNodes):''}</span>${annBadge('node', id)}${demoBtn(id)}</div>
               <span class="gapdot" style="background:${gap?'#d97706':'transparent'}" title="${gap} 项缺口"></span>
             </div>`;
           }
           return `<div class="card${gap?' hasgap':''}${n.orphan?' orphan':''}" data-id="${esc(id)}" data-kind="node">
             <span class="bar" style="background:${imp}"></span>
-            <div class="r1"><span class="nm">${n.orphan?'<span class="origdot" title="未参与任何连线"></span>':''}${esc(n.label)}</span><span class="kd">${esc(n.kind)}</span></div>
+            <div class="r1"><span class="nm">${n.orphan?'<span class="origdot" title="未参与任何连线"></span>':''}${esc(n.label)}</span><span class="kd" title="形态：${esc(n.kind)}">${esc(KIND_LABEL(n.kind))}</span></div>
             <div class="r2">${esc(n.sub)}</div>
-            <div class="r3">${cardMetaHtml(n)}${gap?`<span class="chip kpi"><b>缺口 ${gap}</b></span>`:''}</div>
+            <div class="r3">${cardMetaHtml(n)}${gap?`<span class="chip kpi"><b>缺口 ${gap}</b></span>`:''}${annBadge('node', id)}${demoBtn(id)}</div>
             <span class="gapdot" style="background:${gap?'#d97706':'transparent'}" title="${gap} 项缺口"></span>
           </div>`;
         }).join('') + '</div>';
@@ -8020,17 +8345,21 @@ function renderCanvas(){
     VIEW.edges = DATA.edges.filter(e => edgeVisible(e, vis) && !colFoldedOf(e.from) && !colFoldedOf(e.to)).map(e => Object.assign({}, e));
   }
 
-  canvas.addEventListener('click', ev => {
+  /* 用属性赋值而非 addEventListener：#canvas 是常驻元素，renderCanvas 会被反复调用，
+     addEventListener 会线性叠加监听器（v0.9 的隐性隐患，点击会触发 N 次）。 */
+  canvas.onclick = ev => {
+    const db = ev.target.closest('[data-demo]');
+    if(db){ ev.stopPropagation(); openDemo(db.dataset.demo); return; }
     const card = ev.target.closest('.card');
     if(card){ select('node', card.dataset.id); }
-  });
-  canvas.addEventListener('mouseover', ev => {
+  };
+  canvas.onmouseover = ev => {
     const card = ev.target.closest('.card');
     if(card) hover(card.dataset.id);
-  });
-  canvas.addEventListener('mouseout', ev => {
+  };
+  canvas.onmouseout = ev => {
     if(ev.target.closest('.card')) hover(null);
-  });
+  };
 
   drawEdges();
   const hint = $('tbHint');
@@ -8145,11 +8474,29 @@ function select(kind, id){
 /* 聚焦视图：把「选中项 + 它的全部出入关系」单独铺成一个新视图（v0.9）。
    目的：原来的悬停高亮鼠标一移开就没了，看不到「它到底连了谁、怎么连」。 */
 function focusOn(id){
+  ST.focusIssue = null;
   ST.focusId = id;
+  /* v1.0（R2）列折叠自愈：目标所在列若被折叠，卡片不在 DOM 里，
+     定位 / 滚动会静默失效。统一在此入口先展开（原逻辑只在 locateIssue 里有）。 */
+  const g = nodeById[id];
+  if(g && ST.collapsed[g.col]){ delete ST.collapsed[g.col]; renderCanvas(); }
+  renderFocus();
+}
+
+/* v1.0（R3）未锚定的 issue：聚焦视图里渲染一条常驻说明，
+   取代旧的「清空聚焦」——旧行为让用户分不清「点了没反应」和「本就不在图上」。 */
+function focusIssue(it){
+  ST.focusId = null;
+  ST.focusIssue = it.id;
   renderFocus();
 }
 function renderFocus(){
   const box = $('focus');
+  if(ST.focusIssue){
+    const it = issueById[ST.focusIssue];
+    if(it){ renderFocusIssue(it); box.style.display = ''; return; }
+    ST.focusIssue = null;
+  }
   const id = ST.focusId;
   const useOv = !!(id && ST.view === 'overview' && ovById[id]);
   const n = id ? (useOv ? ovById[id] : (nodeById[id] || ovById[id])) : null;
@@ -8186,42 +8533,134 @@ function renderFocus(){
     mid += `<div class="flegend">本页共 ${n.nodeCount || 0} 个模块${n.orphanNodes?`（其中 ${n.orphanNodes} 个未参与任何连线）`:''}<br>`
       + `连线：跨页 ${n.edgeCount || 0} 条${n.intraCount?` · 页内 ${n.intraCount} 条`:''}${(n.gapCount+n.issueCount)?` · <span style="color:#d97706">缺口 ${n.gapCount+n.issueCount} 项</span>`:''}</div>`;
   } else {
-    mid += `<div class="flegend">${esc(n.tier)} · 重要度 ${esc(n.importance||'')} · 所属页面 ${esc(pageTitle[n.page] || n.page || '—')}</div>`;
+    mid += `<div class="flegend">${esc(TIER_LABEL(n.tier))} · 重要度 ${esc(n.importance||'')} · 所属页面 ${esc(pageTitle[n.page] || n.page || '—')}</div>`;
   }
   mid += `<div class="flegend">${myPage ? '同类模块（点选继续聚焦）' : '同层模块'}</div>`
     + `<div class="chipset">${siblings.length ? siblings.map(chip).join('') : '<span class="chip">—</span>'}</div>`;
 
+  const chainTab = (ST.focusTab === 'chain');
+  const inChain = chainTab ? bfsChain(id, 'in') : null;
+  const outChain = chainTab ? bfsChain(id, 'out') : null;
   $('focusHd').innerHTML = `<span class="ft">聚焦视图</span>`
     + `<span class="fk">${esc(n.label)} · ${esc(n.id)} · 入 ${ins.length} / 出 ${outs.length}</span>`
+    + `<span class="tabs2" style="margin:0 0 0 2px">`
+    + `<span class="btn ${chainTab?'':'on'}" data-ftab="rel">直接关系</span>`
+    + `<span class="btn ${chainTab?'on':''}" data-ftab="chain">关系链</span>`
+    + `</span>`
     + `<span class="acts">`
+    + ((chainTab && (inChain.total + outChain.total) > 50 && !ST.chainAll) ? `<span class="btn" id="chainAll">展开全部层数</span>` : '')
     + `<span class="btn" id="focusLocate">在全景图中定位</span>`
     + `<span class="btn ghost" id="focusClear">清除聚焦</span></span>`;
-  $('focusBody').innerHTML =
-    `<div><div class="fcol-h">上游 · 谁指向它（${ins.length}）</div>${ins.length ? ins.map(e => edgeCard(e, 'in')).join('') : '<div class="empty">无</div>'}</div>`
-    + `<div class="fmid">${mid}</div>`
-    + `<div><div class="fcol-h">下游 · 它指向谁（${outs.length}）</div>${outs.length ? outs.map(e => edgeCard(e, 'out')).join('') : '<div class="empty">无</div>'}</div>`;
+  $('focusBody').innerHTML = chainTab
+    ? `<div><div class="fcol-h">入向可达链 · 谁会（间接）影响它（${inChain.total}）</div>${chainTreeHtml(inChain)}</div>`
+      + `<div class="fmid">${mid}</div>`
+      + `<div><div class="fcol-h">出向可达链 · 它会（间接）影响谁（${outChain.total}）</div>${chainTreeHtml(outChain)}</div>`
+    : `<div><div class="fcol-h">上游 · 谁指向它（${ins.length}）</div>${ins.length ? ins.map(e => edgeCard(e, 'in')).join('') : '<div class="empty">无</div>'}</div>`
+      + `<div class="fmid">${mid}</div>`
+      + `<div><div class="fcol-h">下游 · 它指向谁（${outs.length}）</div>${outs.length ? outs.map(e => edgeCard(e, 'out')).join('') : '<div class="empty">无</div>'}</div>`;
 
-  $('focusClear').addEventListener('click', () => { ST.focusId = null; $('focus').style.display = 'none'; });
+  /* 页签切换 / 展开全部层数（用属性赋值避免监听器累积） */
+  $('focusHd').onclick = ev => {
+    const b = ev.target.closest('[data-ftab]');
+    if(b){ ST.focusTab = b.dataset.ftab; renderFocus(); return; }
+    if(ev.target.closest('#chainAll')){ ST.chainAll = true; renderFocus(); }
+  };
+
+  $('focusClear').addEventListener('click', () => { ST.focusId = null; ST.focusIssue = null; $('focus').style.display = 'none'; });
   $('focusLocate').addEventListener('click', () => {
     if(!nodeById[id]){ ST.view = 'full'; ST.persona = 'all'; renderToolbar(); renderCanvas(); }
-    scrollToCard(id);
+    if(!scrollToCard(id)) showToast('该模块所在列当前不可见（端过滤或列折叠），下方聚焦视图仍可查看它的全部关系', true);
   });
-  $('focusBody').addEventListener('click', ev => {
+  /* 委托用 onclick 赋值而非 addEventListener：#focusBody 是常驻元素，
+     每次 renderFocus 都 addEventListener 会重复叠加监听器（v0.9 的隐性隐患）。 */
+  $('focusBody').onclick = ev => {
     const t = ev.target.closest('[data-focus]');
     if(!t) return;
-    const target = t.dataset.focus;
-    if(!nodeById[target] && ovById[target]){ ST.view = 'overview'; renderToolbar(); renderCanvas(); }
-    else if(nodeById[target] && ST.view === 'overview' && !ovById[target]){ ST.view = 'full'; renderToolbar(); renderCanvas(); }
-    const g = nodeById[target];
-    if(g && ST.collapsed[g.col]){ delete ST.collapsed[g.col]; renderCanvas(); }
-    document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === target));
-    focusOn(target);
-    scrollToCard(target);
-  });
+    jumpTo(t.dataset.focus);
+  };
 }
+
+/* ---------- 关系链视图（R5）----------
+   语义（用户确认口径）：从选中块出发，① 一直沿出边走得到的全部可达节点 =「它会（间接）影响谁」；
+   ② 一直沿入边走得到的全部可达节点 =「谁会（间接）影响它」。两棵树并列展示。
+   实现：DATA.edges 即邻接表，纯前端 BFS；visited 去重天然处理环，回边只计数不再展开。
+   只在节点级（全景 / 聚焦）做——总览层是页面聚合，会丢失方向语义。 */
+function bfsChain(start, dir){
+  const maxDepth = ST.chainAll ? 99 : 8;
+  const visited = {};
+  visited[start] = true;
+  const layers = [];
+  const backLinks = [];
+  let cur = [start], depth = 0;
+  while(cur.length && depth < maxDepth){
+    const next = [];
+    cur.forEach(id => {
+      DATA.edges.forEach(e => {
+        const a = (dir === 'in') ? e.to : e.from;
+        const b = (dir === 'in') ? e.from : e.to;
+        if(a !== id || !b) return;
+        if(!nodeById[b] && !ovById[b]) return;        // 未登记的孤立 id 不上树
+        if(visited[b]){ if(b !== id) backLinks.push({from: id, to: b}); return; }
+        visited[b] = true;
+        next.push(b);
+      });
+    });
+    if(next.length) layers.push(next);
+    cur = next;
+    depth++;
+  }
+  return {layers: layers, total: Object.keys(visited).length - 1, backLinks: backLinks};
+}
+function chainTreeHtml(chain){
+  if(!chain.total) return '<div class="empty">无</div>';
+  let h = '';
+  chain.layers.forEach((layer, i) => {
+    h += `<div class="clayer"><div class="clb">第 ${i+1} 层 · ${layer.length} 个</div><div class="chipset">`
+      + layer.map(x => {
+          const n = nodeById[x] || ovById[x] || { label: x };
+          return `<span class="chip c2" data-focus="${esc(x)}" title="${esc(x)}">${esc(n.label)}</span>`;
+        }).join('')
+      + `</div></div>`;
+  });
+  if(chain.backLinks.length)
+    h += `<div class="flegend">↺ ${chain.backLinks.length} 条回边指向链中已有节点（已去重、不再展开）——说明这段关系里存在环</div>`;
+  return h;
+}
+
+/* 聚焦视图 / 详情面板里点击任何「可跳转」元素都走这里（统一列折叠自愈 + 定位失败可见提示） */
+function jumpTo(target){
+  if(!target) return;
+  if(!nodeById[target] && ovById[target]){ ST.view = 'overview'; renderToolbar(); renderCanvas(); }
+  else if(nodeById[target] && ST.view === 'overview' && !ovById[target]){ ST.view = 'full'; renderToolbar(); renderCanvas(); }
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === target));
+  focusOn(target);
+  if(!scrollToCard(target)) showToast('该模块所在列当前不可见（端过滤或列折叠），下方聚焦视图仍可查看它的全部关系', true);
+}
+/* v1.0（R2）：返回是否真的滚动到了卡片，调用方据此给用户可见提示（旧版无 else 分支、静默返回）。 */
 function scrollToCard(id){
   const el = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
-  if(el) el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+  if(!el) return false;
+  el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+  return true;
+}
+
+/* v1.0（R3）：未锚定 issue 的聚焦视图占位说明（旧版是直接清空隐藏） */
+function renderFocusIssue(it){
+  if(!it){ $('focus').style.display = 'none'; return; }
+  const others = ISSUES.filter(x => x.id !== it.id && !(nodeById[x.where] || ovById[x.where])).length;
+  const sevColor = it.severity === 'high' ? '#dc2626' : (it.severity === 'medium' ? '#d97706' : '#64748b');
+  $('focusHd').innerHTML = `<span class="ft">聚焦视图</span>`
+    + `<span class="fk">该问题不在结构图上</span>`
+    + `<span class="acts"><span class="btn ghost" id="focusClear">清除聚焦</span></span>`;
+  $('focusBody').innerHTML = `<div style="grid-column:1 / -1">`
+    + `<div class="quote warn">该问题（<span class="mono">${esc(it.id)}</span>）指向 <span class="mono">${esc(it.where)}</span>，`
+    + `这是<b>外部引用</b>——不在本库结构图上，所以画布 / 全景层里没有对应模块可以定位。`
+    + (others ? ` 同类的「不在结构图上」问题还有 <b>${others}</b> 条。` : '') + `</div>`
+    + block('问题', `<div class="quote">${esc(it.title)}</div>`)
+    + `<div class="flegend">级别 <span style="color:${sevColor};font-weight:600">${esc(it.severity||'—')}</span>`
+    + ` · 分类 ${esc(it.category||'—')} · 归属 ${esc(it.owner||'—')}。完整内容见右侧「详情」面板；`
+    + `若要把这类对象纳入结构图，需先在 structure.json / nodes 里登记它。</div></div>`;
+  $('focusClear').addEventListener('click', () => { ST.focusIssue = null; $('focus').style.display = 'none'; });
 }
 
 /* 术语对照：扫正文里出现的术语，在详情底部列成对照表（不改原文） */
@@ -8253,6 +8692,8 @@ function nodeDetail(id){
       ? myNodes.map(x => `<span class="chip c2${x.orphan?' orph':''}" data-focus="${esc(x.id)}" title="${x.orphan?'未参与任何连线':''}">${esc(x.label)}</span>`).join('')
       : '—') + `</div>`);
     h += `<div class="flegend">提示：点下面「② 全景（节点级）」可看本页模块与连线的细节；点任意模块会打开下方聚焦视图。</div>`;
+    h += demoBlock(id);
+    h += annBlock('node', id);
     return h;
   }
   const outs = DATA.edges.filter(e => e.from===id), ins = DATA.edges.filter(e => e.to===id);
@@ -8260,9 +8701,9 @@ function nodeDetail(id){
     ['id', `<span class="mono">${esc(n.id)}</span>`],
     ['名称', esc(n.label)],
     ['所属', n.page ? `<span class="mono">${esc(n.page)}</span>` : '—'],
-    ['形态', `<span class="mono">${esc(n.kind)}</span>`],
-    ['重要度', esc(n.importance)],
-    ['层级', esc(n.tier)],
+    ['形态', `<span class="mono" title="kind: ${esc(n.kind)}">${esc(KIND_LABEL(n.kind))}</span>`],
+    ['重要度', `<span title="importance: ${esc(n.importance)}">${esc(n.importance)}</span>`],
+    ['层级', `<span title="tier: ${esc(n.tier)}">${esc(TIER_LABEL(n.tier))}</span>`],
   ]);
   if(n.file) h += block('源文件', `<div class="quote mono">${esc(n.file)}</div>`);
   if(n.note) h += block('说明', `<div class="quote">${esc(n.note)}</div>`);
@@ -8285,6 +8726,8 @@ function nodeDetail(id){
 
   if(outs.length) h += block(`出边 (${outs.length})`, list(outs, 'out'));
   if(ins.length)  h += block(`入边 (${ins.length})`, list(ins, 'in'));
+  h += demoBlock(id);
+  h += annBlock('node', id);
   return h;
 }
 
@@ -8312,6 +8755,7 @@ function edgeDetail(id){
   if(e.evidenceChain) h += block('证据链', `<div class="quote">${esc(e.evidenceChain)}</div>`);
   if(e.sources && e.sources.length) h += block('sources', `<div class="quote mono">${e.sources.map(esc).join('<br>')}</div>`);
   h += termBlock([e.trigger, e.payload, e.logic, e.note, e.designRef, e.expected, e.blockedBy, e.issue, e.evidenceChain].join(' '));
+  h += annBlock('edge', id);
   return h;
 }
 
@@ -8382,6 +8826,7 @@ function issueDetail(id){
   if(it.blockedBy) h += block('卡在哪', `<div class="quote warn">${esc(it.blockedBy)}</div>`);
   if(it.issue) h += block('待确认问题', `<div class="quote warn">${esc(it.issue)}</div>`);
   h += termBlock([it.title, it.detail, it.designRef, it.expected, it.blockedBy, it.issue].join(' '));
+  h += annBlock('issue', id);
   return h;
 }
 
@@ -8398,75 +8843,117 @@ function locateIssue(id){
       renderToolbar();
       renderCanvas();
     }
-    const g = nodeById[w];
-    if(g && ST.collapsed[g.col]){ delete ST.collapsed[g.col]; renderCanvas(); }
     document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === w));
-    focusOn(w);
-    scrollToCard(w);
+    focusOn(w);                                     // 内含列折叠自愈
+    if(!scrollToCard(w))
+      showToast('该模块所在列当前不可见（端过滤或列折叠），下方聚焦视图仍可查看它的全部关系', true);
   } else {
-    ST.focusId = null;
-    renderFocus();
+    focusIssue(it);                                 // v1.0（R3）：聚焦视图给常驻说明，不再清空
+    showToast('该问题指向外部对象「' + w + '」，不在结构图上；已在聚焦视图区给出说明', true);
   }
   select('issue', id);                              // 右栏显示问题详情（通俗版优先）
 }
 
 $('detail').addEventListener('click', ev => {
+  const db = ev.target.closest('[data-demo]');
+  if(db){ openDemo(db.dataset.demo); return; }
+  if(ev.target.closest('#annExport')){ exportAnn(); return; }
+  if(ev.target.closest('#annImportBtn')){ const f = $('annFile'); if(f) f.click(); return; }
+  if(ev.target.closest('#annSave')){
+    const dEl = $('annDecision'), cEl = $('annComment'), aEl = $('annAuthor');
+    if(aEl && aEl.value.trim()) setAuthor(aEl.value.trim());
+    if(!ST.selKind || !ST.selId){ showToast('请先在画布或列表里选中一个对象，再写批注', true); return; }
+    if(!cEl || !cEl.value.trim()){ showToast('批注内容为空，请先写下判断', true); return; }
+    addAnnotation(ST.selKind, ST.selId, dEl ? dEl.value : '', cEl.value.trim(), aEl ? aEl.value.trim() : '');
+    return;
+  }
+  const at = ev.target.closest('[data-ann-toggle]');
+  if(at){ toggleAnnStatus(at.dataset.annToggle); return; }
+  const ad = ev.target.closest('[data-ann-del]');
+  if(ad){ deleteAnnotation(ad.dataset.annDel); return; }
   const pm = ev.target.closest('[data-pm]');
   if(pm){ ST.plainMode = pm.dataset.pm; if(ST.selKind === 'issue') $('detail').innerHTML = issueDetail(ST.selId); return; }
   const fc = ev.target.closest('[data-focus]');
-  if(fc){
-    const t = fc.dataset.focus;
-    if(!nodeById[t] && ovById[t]){ ST.view = 'overview'; renderToolbar(); renderCanvas(); }
-    else if(nodeById[t] && ST.view === 'overview' && !ovById[t]){ ST.view = 'full'; renderToolbar(); renderCanvas(); }
-    const gg = nodeById[t];
-    if(gg && ST.collapsed[gg.col]){ delete ST.collapsed[gg.col]; renderCanvas(); }
-    document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.id === t));
-    focusOn(t);
-    scrollToCard(t);
-    return;
-  }
+  if(fc){ jumpTo(fc.dataset.focus); return; }
   const it = ev.target.closest('.eitem');
   if(it){
     if(it.dataset.kind === 'edge') select('edge', it.dataset.id);
     else if(it.dataset.kind === 'issue') locateIssue(it.dataset.id);
   }
 });
+/* 导入批注文件走 change（不冒泡到 click） */
+$('detail').addEventListener('change', ev => {
+  if(ev.target && ev.target.id === 'annFile' && ev.target.files && ev.target.files[0]){
+    importAnnFile(ev.target.files[0]);
+    ev.target.value = '';
+  }
+});
 
 /* ---------- gaps ---------- */
-(function renderGaps(){
+initAnn();          // 内嵌批注（annotations.json 真源）+ 本机 localStorage 合并，必须在首次渲染前完成
+function buildGapRows(){
   const rows = [];
   DATA.edges.filter(e => e.status !== 'implemented').forEach(e => {
     const a = nodeById[e.from], b = nodeById[e.to];
+    const ann = annOf('edge', e.id);
     rows.push({kind:'edge', id:e.id, sev:e.severity, color:e.status==='intended'?'#d97706':'#64748b',
       t:`${a?a.label:e.from} → ${b?b.label:e.to}`,
-      w:`${e.typeLabel} · ${e.statusLabel}`, d:e.blockedBy || e.issue || ''});
+      w:`${e.typeLabel} · ${e.statusLabel}`, d:e.blockedBy || e.issue || '',
+      anchored:true, annCount: ann.length, openCount: ann.filter(x => x.status !== 'resolved').length});
   });
   DATA.issues.forEach(i => {
     const n = nodeById[i.where] || ovById[i.where];
     const p = i.plain || {};
+    const ann = annOf('issue', i.id);
     rows.push({kind:'issue', id:i.id, sev:i.severity,
       color: i.severity==='high' ? '#dc2626' : (i.severity==='medium' ? '#c2760b' : '#64748b'),
       t:i.title,
       w:`${n ? n.label : i.where} · ${i.category||''}${i.owner ? (' · ' + i.owner) : ''}`,
       d:(p.oneLine || i.detail || ''),
-      loc: n ? '点击定位到结构图中的模块' : '不在结构图上（外部引用的元问题）',
-      noanchor: !n});
+      loc: n ? '点击定位到结构图中的模块' : '不在结构图上（外部引用）——点击看说明',
+      noanchor: !n, anchored: !!n, annCount: ann.length,
+      openCount: ann.filter(x => x.status !== 'resolved').length});
   });
   rows.sort((x,y) => ({high:0,medium:1,low:2}[x.sev] ?? 9) - ({high:0,medium:1,low:2}[y.sev] ?? 9));
-  $('gapCnt').textContent = rows.length + ' 项';
-  $('gaps').innerHTML = rows.map(r => `<div class="iitem clickable ${r.kind==='edge'?'eitem':''}${r.noanchor?' noanchor':''}" data-id="${esc(r.id)}" data-kind="${r.kind}">
-      <div class="t" style="color:${r.color}">${esc(r.t)}</div>
+  return rows;
+}
+
+function renderGaps(){
+  const all = buildGapRows();
+  const issues = all.filter(r => r.kind === 'issue');
+  const unanchored = issues.filter(r => r.noanchor).length;
+  let rows = ST.gapAnchorOnly ? all.filter(r => r.anchored) : all;
+  if(ST.annFilter === 'unannotated') rows = rows.filter(r => !r.annCount);
+  if(ST.annFilter === 'annotated') rows = rows.filter(r => r.annCount > 0);
+  if(ST.annFilter === 'open') rows = rows.filter(r => r.openCount > 0);
+
+  $('gapCnt').textContent = rows.length + ' / ' + all.length + ' 项';
+  const bar = `<div class="gbar">
+      <span>共 <b>${all.length}</b> 项（${issues.length} 条问题 · ${all.length - issues.length} 条连线）`
+      + (unanchored ? `，其中 <b style="color:#d97706">${unanchored}</b> 条不在结构图上` : '') + `</span>`
+      + `<span class="btn ${ST.gapAnchorOnly?'on':''}" id="gapAnchorToggle">${ST.gapAnchorOnly?'只看能定位的':'显示全部'}</span>`
+      + (ANN.length ? `<span class="btn ${ST.annFilter!=='all'?'on':''}" id="gapAnnToggle">${ANN_FILTER_LABEL[ST.annFilter]}</span>` : '')
+    + `</div>`;
+  $('gaps').innerHTML = bar + (rows.map(r => {
+    return `<div class="iitem clickable ${r.kind==='edge'?'eitem':''}${r.noanchor?' noanchor':''}" data-id="${esc(r.id)}" data-kind="${r.kind}">
+      <div class="t" style="color:${r.color}">${esc(r.t)}${annBadge(r.kind, r.id)}</div>
       <div class="w">${esc(r.w)}</div>
       <div class="d">${esc(r.d).slice(0,200)}${r.d && r.d.length>200?'…':''}</div>
-      <div class="loc">▸ ${esc(r.loc)}</div>
-    </div>`).join('') || '<div class="empty">无缺口</div>';
-  $('gaps').addEventListener('click', ev => {
+      <div class="loc">▸ ${esc(r.loc || '点击定位到结构图中的模块')}</div>
+    </div>`;
+  }).join('') || '<div class="empty">无缺口</div>');
+  $('gaps').onclick = ev => {
+    const tg = ev.target.closest('#gapAnchorToggle');
+    if(tg){ ST.gapAnchorOnly = !ST.gapAnchorOnly; renderGaps(); return; }
+    const ta = ev.target.closest('#gapAnnToggle');
+    if(ta){ cycleAnnFilter(); renderGaps(); return; }
     const it = ev.target.closest('[data-kind]');
     if(!it) return;
     if(it.dataset.kind === 'edge'){ select('edge', it.dataset.id); scrollToEdge(it.dataset.id); }
     else locateIssue(it.dataset.id);
-  });
-})();
+  };
+}
+renderGaps();
 
 function scrollToEdge(id){
   const e = edgeById[id];
@@ -8569,6 +9056,7 @@ window.addEventListener('load', () => { renderCanvas(); });
 window.addEventListener('resize', () => { requestAnimationFrame(drawEdges); });
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawEdges());
 setTimeout(drawEdges, 60);
+setTimeout(probeDemo, 400);      // R6：懒探测本地 demo（3000）是否在跑，结果决定按钮是否置灰
 </script>
 </body>
 </html>
