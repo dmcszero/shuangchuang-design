@@ -34,15 +34,17 @@
 | `structure.json` | **结构真源**：8 section + 15 page（`component` / `relevant_files` / `personas` / `frameworkRef` / `docStatus` / `nodeCount`）+ 4 personas + 1 placeholder + 壳层 / 弹层 / 8 个孤儿组件清单 |
 | `edges.json` | **边的真源**：23 条边 + 13 条 issues（issues 带 `category` / `owner` 分流字段） |
 | `glossary.json` | **术语真源**（v0.9）：`term` → `plain` 对照表（58 条，仅解释、不改原文）；结构图「原始数据」下方自动列「涉及术语」对照 |
+| `annotations.json` | **决策批注真源**（v1.0）：`ann-<yyyymmdd>-<seq>` → `target{kind,id}` + `decision` + `comment` + `status`；结构图详情面板「决策批注」区块导出后覆盖本文件、提交 git（导入按 id 去重、`updatedAt` 新者胜）。**它是「争议确认工作台」的产出落点**，`target.id` 就是 wiki 实体 id（未来与 3001 功能对齐的映射表建在这套 id 上）。见 `schema.md` §11.1 |
 | `drilldown-manual.md` | **《铺开执行手册》**：批 1~3 页面顺序 + v0.4 八条口径硬约束 + 每批完成定义——逐页下钻的 agent 开工前必读（配合 skill `wiki-drilldown`） |
 | `pages/<page-id>.md` | 薄页面：只留页面级事实（挂载、布局、本地 state 全景、跨页 props 契约）+ **节点地图** |
 | `nodes/<page-id>/<node-id>.md` | 节点文档，固定五节：一句话定位 / 事实（每条带 `Sources: [路径:行号]()`）/ 规则与边界 / 常见开发任务 / **出入边（第 5 节由工具生成，勿手写）** |
 | `gen_wiki_tools.py` | **工具链**：`validate` / `sync-edges` / `index` / `map` / `gaps` 五命令（纯标准库） |
 | `build_map.py` | 结构图生成器（40 KB HTML 模板单源；`gen_wiki_tools.py map` 只做入口转发，勿在两处维护模板） |
+| `check_map.cjs` | **结构图回归探针**（v1.0）：用 jsdom 加载 `module-map.html`，逐项验收「全量卡片/issue 点击零异常 · 列折叠自愈 · 批注读写与导出导入闭环 · 关系链 BFS 与环 · demo 按钮数 = 14 · 结构完整性」。**改了 `build_map.py` 就要跑它**——五命令只校验数据层，查不出运行时故障（v0.9 的 102/117 张卡片点不动就是这么漏掉的）。依赖 jsdom：`JSDOM_PATH=<jsdom 路径> node wiki/check_map.cjs wiki/module-map.html`，退出码 0 = 全通过 |
 | `llms.txt` | ⚙️ 产物：索引（page/node 两层 + 描述 + 下钻状态）——**AI 找结构的入口** |
 | `gaps.md` | ⚙️ 产物：缺口清单（intended / undefined / issues 三张表 + 逐条详情） |
 | `decisions.md` | ⚙️ 产物：**《待拍板清单》**——只收 `category=产品决策` 的条目，按 severity 排序含背景+建议+卡点；批 4 一次性交付上司 |
-| `module-map.html` | ⚙️ 产物：结构可视化（v0.9 三层视图：总览层 / 全景层 / 聚焦层；双击即开）；**默认页对非工程读者友好**——issues 先看通俗版，术语有对照表 |
+| `module-map.html` | ⚙️ 产物：结构可视化（**v1.0** 三层视图 + 决策批注 + 关系链 + demo 深链；双击即开）；**默认页对非工程读者友好**——issues 先看通俗版、术语与节点形态全中文（英文原值在 tooltip） |
 | `site/index.html` | ⚙️ 产物：**发布副本**（发布单元只含这一个文件） |
 
 ## 三、当前进度（2026-09-14，批 3 完成后 — **全库 15 页全部下钻**）
@@ -60,6 +62,16 @@
 | **① 总览（页面级，默认）** | 第一次打开 / 对齐整体 | 15 个页面 + 页面↔页面聚合关系（9 列、一屏）；卡片上直读：模块数 / 连线数 / 缺口数 / 未连线数 / 各端标签 |
 | **② 全景（节点级）** | 要看模块与具体链路 | 16 列，含全部 117 张卡片；支持端过滤 / 连线过滤（全部·只看缺口·只看跨列）/ 列折叠 |
 | **聚焦视图**（画布下方） | 鼠标点任意卡片 / 连线 / 缺口条目 | 该模块的入边与出边（上下游）、同页兄弟模块；**点选后钉住**，不再一移开就没 |
+
+**v1.0 新增（2026-09-15）**：
+
+| 能力 | 说明 |
+|---|---|
+| **决策批注** | 详情面板底部可直接写「确认保留 / 确认删除 / 暂缓 / 需补充信息 / 自定义」+ 自由文本；存 localStorage，可导出 `annotations.json` 覆盖回 `wiki/` 提交、可导入合并他人批注；被批注的卡片与问题带 `💬n` 徽标，gaps 面板可按「已批注 / 未批注 / 未决」过滤——**支持开会逐条过争议** |
+| **关系链页签** | 聚焦视图从「直接关系」扩成双页签：「关系链」= 入向可达树（谁会间接影响它）+ 出向可达树（它会间接影响谁），环去重、超 50 节点可展开全部层数 |
+| **demo 深链** | 14 个页面卡片与页面详情挂「打开 demo ↗」按钮 → `localhost:3000/?tab=<TabType>` 新开页直达对应模块（登录页无按钮；demo 未启动时按钮置灰并提示） |
+| **中文显示层** | 节点形态 / 层级全部显示中文（`面板` / `弹层（模态框）` / `壳层（全局框架）` …），英文枚举留在 tooltip |
+| **点击必有着落** | 列折叠自动展开；定位不到卡片时出 toast；未锚定 issue 在聚焦视图区给常驻说明（不再「点了没反应」） |
 ## 四、工具链（固定五条，顺序不可换）
 
 ```powershell
@@ -73,6 +85,13 @@ $PY='C:\Users\user\AppData\Local\miniforge3\envs\py310\python.exe'
 ```
 
 `sync-edges --check` 用于确认已同步（幂等）。
+
+**改了 `build_map.py` 之后，除五命令外还要跑结构图回归探针**（数据层绿 ≠ 页面能点）：
+
+```powershell
+$env:JSDOM_PATH='<jsdom 安装目录>'      # 例：C:/Users/user/.workbuddy/binaries/node/workspace/node_modules/jsdom
+node wiki/check_map.cjs wiki/module-map.html   # 42 项验收，退出码 0 = 全通过
+```
 
 ## 五、下钻一个 page（操作流程）
 

@@ -336,4 +336,60 @@ sources:
 | 2026-09-11 | v0.3 ✅ | **转冻结**（粒度与 section 验收通过）；体检区按业务归宿拆为 3 节点；新增 2 条边（逻辑断点→动态待办 `intended`、评委提问→答辩训练 `undefined`） |
 | 2026-09-11 | v0.2 ✅ | 试点校验通过（8 节点 / 10 边 / 3 issues，0 error） |
 | 2026-09-11 | v0.2 | 基线切换至 SY；新增 node/edge 两层；新增 `intended` 三问与 `gaps` 命令；第 5 节改为工具链生成 |
+| 2026-09-15 | v1.0 ✅ | **结构图工作台式扩展（可视化层 + 一条新真源，node/edge 契约未变）**：①**修运行时崩溃根因**——`renderFocus()` 引用了从未定义的 `pageTitle`，导致点任何非页面级卡片都抛 `ReferenceError`（实测 117 张卡中 **102 张点不动**、40 条 issue 中 **24 条点击后右栏空白**）；补 `pageTitle`/`pageById` 后全量点击零异常（详见 §11.4）。②**新增真源 `annotations.json`**（决策批注，§11.1）+ 详情面板批注 UI + 卡片徽标 + gaps 按批注状态过滤 + localStorage / 导出 / 导入闭环。③**显示层中文化**（§11.2）：`KIND_META` / `TIER_META`，卡片不再裸露 `panel` / `modal` 等英文枚举，原值留在 tooltip。④**聚焦视图双页签**：直接关系 + **关系链**（入向/出向可达 BFS 树，环去重、超长折叠，§11.4）。⑤**缺口点击可靠性**：未锚定 issue 在聚焦视图给常驻说明 + gaps 顶部统计「N 条不在结构图上」+「只看能定位的」过滤（§11.4）。⑥**demo 深链**（§11.3）：`src/App.tsx` 支持 `?tab=<TabType>`，结构图页面卡片与页面详情挂「打开 demo」按钮（复用 `page.view`，不新增字段），含端口懒探测置灰兜底。⑦交互隐患清理：常驻容器的事件委托改为绑定一次（旧版 `renderCanvas` 每次重渲染都叠加监听器）。校验仍为 **0 error / 8 warning**（7 条 D4 单向跳转 + 1 条 E3 外部引用，均属预期）。 |
 | 2026-09-10 | v0.1 | 两段式（structure.json + pages）；sources 行号契约；A~D 校验（design-main 基线） |
+
+---
+
+## 11. 结构图交互扩展规范（v1.0，2026-09-15）
+
+> 背景：`module-map.html` 的定位从「只读结构可视化」升级为**争议与问题的确认工作台**——人在图上逐条确认 → 决策落盘 → AI 读决策反向完善结构与设计。
+> 本节只规范**新增的数据与显示契约**；四层模型（§1）与 node / edge 契约（§3~§5）未变。
+
+### 11.1 新增真源：`annotations.json`（决策批注）
+
+与 `edges.json` 并列、同目录同生命周期，随 git 走。`build_map.py` 生成时把它内嵌进 HTML（保持「双击即开」）。
+
+```json
+{ "schemaVersion": "0.1",
+  "generatedAt": "YYYY-MM-DD",
+  "annotations": [
+    { "id": "ann-<yyyymmdd>-<seq>",
+      "target": { "kind": "issue | edge | node", "id": "<wiki 实体 id>" },
+      "author": "庄冉",
+      "decision": "确认保留 | 确认删除 | 暂缓 | 需补充信息 | 自定义",
+      "comment": "自由文本",
+      "createdAt": "ISO8601", "updatedAt": "ISO8601",
+      "status": "open | resolved" } ] }
+```
+
+约定：
+
+- `target.kind = node` **同时涵盖页面级卡片**（不做 page / node 二分，避免 id 体系分裂）；页面级对象的 id 仍是 `page-*`。
+- `target.id` **必须是 wiki 实体 id**——将来与 `43.160.210.61:3001` 功能条目对齐的映射表就建在这套 id 上（`kind` + `id` 稳定是映射的前提）。
+- 写入路径：页面内即时写 `localStorage`（key `module-map-annotations-v1`，防丢）→ 「导出」下载完整文件 → 人工覆盖回本文件并提交 git；「导入」按 `id` 去重、`updatedAt` 新者胜，用于合并他人导出。
+- 页面打开时，内嵌批注与本机 localStorage 合并，同样按 `updatedAt` 新者胜。
+- **AI 消费闭环**：`gen_wiki_tools.py` 的 `apply-decisions` 命令（**本轮只留接口位，未实现**）只读 `status=resolved` 的条目，生成对 `edges.json` / `issues` 的**修改建议草稿**，人审后落盘；**不直接改写真源**。
+
+### 11.2 显示层中文映射（不动真源）
+
+`kind` 枚举（`nav` / `bar` / `tab` / `list` / `panel` / `table` / `form` / `drawer` / `modal` / `shell` / `page` / `unknown`）与 `tier` 在结构图里**必须显示中文**，英文原值保留在 `title` tooltip 供开发核对。映射表定义在 `build_map.py` 的 `KIND_META` / `TIER_META`（纯显示层，与 `glossary.json` 的「只解释不改原文」同一原则）。**node frontmatter 的 `kind` 仍写英文枚举。**
+
+### 11.3 demo 深链契约（`?tab=`）
+
+- demo（`src/App.tsx`）是单页应用 + `activeTab` state 路由，**没有 URL 路由**；已支持启动参数 `?tab=<TabType>`，合法值白名单 = `Sidebar.tsx` 的 `TabType` 全集（写在 `App.tsx` 的 `TAB_TYPES`）。
+- 结构图侧映射**复用 `structure.json` 的 `page.view` 字段**（它本就与 `TabType` 同名），**不新增 `demoTab` 字段**——避免同一事实两处真源漂移。`build_map.py` 用 `TAB_TYPES` 白名单过滤，故 `page-login`（`view = "login"`，非 TabType）自动不出按钮。**改 `Sidebar.tsx` 的 `TabType` 时需同步 `App.tsx` 与 `build_map.py` 两处白名单。**
+- 按钮只挂 **页面级**（`page`）卡片与页面详情；`modal` / `shell` **不挂**（它们没有独立 URL 语义，挂了会制造「点了到不了」的新困惑）。
+- 目标地址 `http://localhost:3000/?tab=<TabType>`，新开标签页；跳转后需先登录（`LoginPage` 门禁），登录成功后按 URL 参数恢复目标 tab 并清掉地址栏参数。
+- 端口兜底：页面加载后用 `fetch(no-cors)` 懒探测一次 3000 端口，失败则按钮置灰 + tooltip「先 npm run dev」。
+
+### 11.4 结构图交互硬约定（v1.0 起）
+
+| 项 | 约定 |
+|---|---|
+| **事件绑定** | `#canvas` / `#focusBody` / `#gaps` / `#toolbar` 这类**常驻容器**的事件必须用属性赋值（`onclick =`）或初始化时绑定一次。`renderCanvas()` / `renderFocus()` 会被反复调用，`addEventListener` 会线性叠加监听器（v0.9 的隐性隐患） |
+| **定位失败不许静默** | 任何「点了没反应」的路径都要给可见反馈：① `focusOn()` 统一入口做**列折叠自愈**；② `scrollToCard()` 找不到卡片时返回 `false`，调用方出 toast 说明「该列当前不可见（端过滤或列折叠）」；③ 未锚定 issue 在聚焦视图区渲染**常驻说明**（不再清空隐藏） |
+| **聚焦视图双页签** | 「直接关系」= 1-hop 出入边（原行为）；「关系链」= 从选中块出发的**入向可达 BFS 树**（谁会间接影响它）+ **出向可达 BFS 树**（它会间接影响谁）。`visited` 去重天然处理环，回边只计数不展开；默认 8 层，可达节点 > 50 时给「展开全部层数」。关系链**只在节点级做**，总览层不做（页面聚合会丢方向语义） |
+| **解释层不碰真源** | `plain` / `glossary.json` / `KIND_META` / `TIER_META` 都是解释层，一律不改真源原文 |
+| **结构图回归验收** | 每次改 `build_map.py` 后，除五命令外须跑一次 DOM 探针（`wiki/check_map.cjs`），确认：全量卡片与 issue 点击零异常、批注读写闭环、关系链 BFS 正确、demo 按钮数 = 14（15 page − 登录页） |
+
