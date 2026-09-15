@@ -54,6 +54,8 @@ const dom = new JSDOM(html, {
     window.__blobSink = null;
     window.URL.createObjectURL = (b) => { window.__blobSink = b; return 'blob:stub'; };
     window.URL.revokeObjectURL = () => {};
+    window.__lastDownload = null;
+    window.HTMLAnchorElement.prototype.click = function () { window.__lastDownload = this.download; };
   }
 });
 
@@ -141,6 +143,21 @@ setTimeout(async () => {
   const nAnch = d.querySelectorAll('#gaps [data-kind]').length;
   check('「只看能定位的」过滤生效', nAnch < nAll, nAll + ' → ' + nAnch);
   click(d.getElementById('gapAnchorToggle'));
+  line('');
+
+  /* ---- 工具栏批注出入口（v1.0.2：导出不该藏在详情面板里） ---- */
+  line('【工具栏】批注出入口');
+  ev("ST.selKind = null; ST.selId = null; document.getElementById('detail').innerHTML = '<div class=\"empty\">未选中</div>';");
+  const topExp = d.getElementById('annExportTop'), topImp = d.getElementById('annImportTop'), topHow = d.getElementById('annHowTo');
+  check('未选中任何对象时工具栏仍有「导出/导入/怎么收集」', !!topExp && !!topImp && !!topHow,
+    [topExp, topImp, topHow].map(x => x && x.textContent.trim()).join(' | '));
+  check('导出按钮带当前批注条数', /导出（\d+）/.test(topExp ? topExp.textContent : ''), topExp ? topExp.textContent.trim() : '');
+  w.__blobSink = null;
+  if (topExp) click(topExp);
+  check('未选中对象也能导出（有内容）', !!w.__blobSink);
+  check('导出文件名带作者与日期', /^annotations-.+-\d{8}\.json$/.test(w.__lastDownload || ''), w.__lastDownload || '（未捕获）');
+  if (topHow) click(topHow);
+  check('「怎么收集」给出闭环说明', /收集流程/.test($('toast').textContent), $('toast').textContent.slice(0, 34));
   line('');
 
   /* ---- R4 决策批注 ---- */

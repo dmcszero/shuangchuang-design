@@ -649,6 +649,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .seg .btn:first-child{border-radius:7px 0 0 7px;margin-left:0}
   .seg .btn:last-child{border-radius:0 7px 7px 0}
   .tb-hint{font-size:11px;color:var(--ink-3);margin-left:auto}
+  /* 工具栏上的批注出入口（v1.0.2）：全局可见，不依赖「先选中某个块」 */
+  .tb-ann{border-left:1px dashed var(--line);padding-left:14px}
+  #annExportTop{background:#eef2ff;border-color:#c7d2fe;color:#4338ca;font-weight:600}
+  #annExportTop:hover{background:#e0e7ff;border-color:#a5b4fc}
 
   .col-hd.clickable{cursor:pointer;user-select:none}
   .col-hd.clickable:hover .t{color:var(--accent)}
@@ -860,13 +864,13 @@ const TIER_LABEL = t => (DATA.tierMeta && DATA.tierMeta[t]) || t || '—';
 
 /* 轻提示（R2/R3）：把原先的「静默失败」变成用户能看到的说明 */
 let toastTimer = null;
-function showToast(msg, warn){
+function showToast(msg, warn, ms){
   const el = $('toast');
   if(!el) return;
   el.textContent = msg;
   el.className = 'toast on' + (warn ? ' warn' : '');
   if(toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = 'toast' + (warn ? ' warn' : ''); }, 3600);
+  toastTimer = setTimeout(() => { el.className = 'toast' + (warn ? ' warn' : ''); }, ms || 3600);
 }
 
 /* ---------- 决策批注（R4）----------
@@ -962,13 +966,28 @@ function exportAnn(){
     annotations: ANN.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)))
   };
   const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' });
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const stamp = '' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate());
+  const who = String(getAuthor() || '匿名').replace(/[\\/:*?"<>|\s]/g, '') || '匿名';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'annotations.json';
+  a.download = 'annotations-' + who + '-' + stamp + '.json';   // 多人各自导出时，文件名带作者+日期，不至于一堆同名
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
-  showToast('已导出 ' + ANN.length + ' 条批注 → 请覆盖回 wiki/annotations.json 并提交 git');
+  showToast('已导出 ' + ANN.length + ' 条批注（annotations-' + who + '-' + stamp + '.json）→ 发回给收集人，或覆盖回 wiki/annotations.json 提交 git');
+}
+/* 导入：动态建 file input —— 不依赖页面上是否已有隐藏 input，工具栏与详情块共用同一条通路 */
+function pickAnnotationFile(){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.addEventListener('change', () => { if(inp.files && inp.files[0]) importAnnFile(inp.files[0]); });
+  inp.click();
+}
+/* 「怎么收集」：把多人闭环一次讲清，方便直接照着转发给批注人 */
+function showAnnHowto(){
+  showToast('收集流程：① 每人打开本页写批注 → ② 点工具栏「导出」下载 JSON → ③ 把文件发回给收集人 → ④ 收集人点「导入」合并（按 id 去重，双方批注都保留）', false, 14000);
 }
 function importAnnFile(file){
   const fr = new FileReader();
@@ -1096,7 +1115,6 @@ function annBlock(kind, id){
       <span><span class="abtn ghost" data-ann-export>导出</span> <span class="abtn ghost" data-ann-import>导入</span></span></div>
     ${annFormHtml(kind, id, false)}
     <div class="annhist">${annListHtml(kind, id)}</div>
-    <input type="file" data-ann-file accept=".json,application/json" style="display:none">
   </div>`;
 }
 /* footer「issues」表格：行内展开的批注面板 */
@@ -1183,6 +1201,10 @@ function renderToolbar(){
     `<div class="tb"><span class="tb-lb">连线</span>` +
       seg('edge', ST.edgeMode, [['all','全部'],['gap','只看缺口'],['cross','只看跨列']]) + `</div>` +
     `<div class="tb"><div class="btn ghost" id="foldAll">折叠全部列</div><div class="btn ghost" id="unfoldAll">展开全部列</div></div>` +
+    `<div class="tb tb-ann"><span class="tb-lb">批注</span>`
+      + `<div class="btn" id="annExportTop" title="把全部批注导出为 JSON 文件（含你自己写的与已导入的）">导出（${ANN.length}）</div>`
+      + `<div class="btn" id="annImportTop" title="导入别人导出的 JSON；按 id 去重合并，双方批注都保留">导入</div>`
+      + `<div class="btn ghost" id="annHowTo" title="多人收集流程说明">怎么收集</div></div>` +
     `<div class="tb-hint" id="tbHint"></div>`;
   $('toolbar').querySelectorAll('[data-seg]').forEach(el => {
     el.addEventListener('click', ev => {
@@ -1200,6 +1222,10 @@ function renderToolbar(){
     renderCanvas();
   });
   $('unfoldAll').addEventListener('click', () => { ST.collapsed = {}; renderCanvas(); });
+  /* 工具栏上的批注出入口：全局可见，不依赖「先选中某个块」（详情块里那一份保留，就近操作） */
+  $('annExportTop').addEventListener('click', exportAnn);
+  $('annImportTop').addEventListener('click', pickAnnotationFile);
+  $('annHowTo').addEventListener('click', showAnnHowto);
 }
 
 /* ---------- 可见性（端过滤 / 连线过滤）---------- */
@@ -1840,11 +1866,7 @@ function locateIssue(id){
    画布徽标 / 缺口列表 / 详情 / 当前表格 —— 不会出现两处数据不同步。 */
 function handleAnnClick(ev){
   if(ev.target.closest('[data-ann-export]')){ exportAnn(); return true; }
-  if(ev.target.closest('[data-ann-import]')){
-    const fileEl = (ev.target.closest('.annbox') || document).querySelector('[data-ann-file]');
-    if(fileEl) fileEl.click();
-    return true;
-  }
+  if(ev.target.closest('[data-ann-import]')){ pickAnnotationFile(); return true; }
   const scope = ev.target.closest('[data-ann-scope]');
   if(ev.target.closest('[data-ann-save]')){
     if(!scope) return true;
@@ -1903,13 +1925,6 @@ $('detail').addEventListener('click', ev => {
   }
 });
 $('detail').addEventListener('input', handleAnnInput);
-/* 导入批注文件走 change（不冒泡到 click） */
-$('detail').addEventListener('change', ev => {
-  if(ev.target && ev.target.matches('[data-ann-file]') && ev.target.files && ev.target.files[0]){
-    importAnnFile(ev.target.files[0]);
-    ev.target.value = '';
-  }
-});
 
 /* ---------- gaps ---------- */
 initAnn();          // 内嵌批注（annotations.json 真源）+ 本机 localStorage 合并，必须在首次渲染前完成
