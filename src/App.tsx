@@ -41,6 +41,29 @@ import {
 import { GuidanceTaskContext } from './components/guidance/guidanceTypes';
 import { ReviewFileItem, FileAnnotation, ReviewDecision, INITIAL_REVIEW_FILES } from './types/reviewTypes';
 
+/**
+ * R6（0915）：wiki 结构图 → demo 的深链支持。
+ * 结构图（wiki/module-map.html）的每张页面卡片上挂「打开 demo」按钮，链接形如
+ * http://localhost:3000/?tab=guidance_workbench。本应用是 activeTab state 路由，
+ * 没有 URL 路由，故在此处读取启动参数作为 activeTab 初值（只校验是合法 TabType）。
+ */
+const TAB_TYPES: string[] = [
+  'cockpit', 'screening', 'mentorship', 'supervision', 'milestones',
+  'mentors_pool', 'knowledge_base', 'users_management', 'teams_management',
+  'my_project', 'coach', 'new_chat', 'guidance_workbench',
+  'defense_training', 'asset_management',
+];
+
+function readTabParam(): TabType | null {
+  try {
+    const want = new URLSearchParams(window.location.search).get('tab');
+    if (want && TAB_TYPES.includes(want)) return want as TabType;
+  } catch (e) {
+    /* 忽略：URL 不可解析时按角色默认 */
+  }
+  return null;
+}
+
 export default function App() {
   // Authentication & Session State
   const [session, setSession] = useState<UserSession | null>(() => {
@@ -56,11 +79,27 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const deep = readTabParam();          // R6：wiki 深链 ?tab=<TabType> 优先
+    if (deep) return deep;
     if (session?.role === 'team_member') return 'coach';
     if (session?.role === 'mentor') return 'supervision';
     if (session?.role === 'system_admin') return 'mentors_pool';
     return 'cockpit';
   });
+
+  /* R6：首次加载时若还没登录（session 为空），初值算不出深链目标；
+     这里在登录成功后补一次，并把 tab 参数从地址栏清掉避免重复应用。 */
+  useEffect(() => {
+    if (!session) return;
+    const deep = readTabParam();
+    if (!deep) return;
+    setActiveTab(deep);
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch (e) {
+      /* 忽略 */
+    }
+  }, [session]);
   
   // Data State - Existing Management Platform
   const [projects, setProjects] = useState<ProjectItem[]>(mockProjects);
