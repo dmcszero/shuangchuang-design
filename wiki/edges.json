@@ -1422,6 +1422,22 @@
       "status": "intended",
       "sources": [],
       "severity": "medium"
+    },
+    {
+      "id": "e-guidance-createtodo-2-workbench-todo",
+      "from": "modal-guidance-create-todo",
+      "to": "nd-workbench-todo",
+      "type": "writeback",
+      "trigger": "在材料打磨工作台点「新建待办」入口（当前不存在，需补），弹层提交「立即下发」",
+      "payload": "GuidanceTodoItem{id:`td-${Date.now()}`, title, stage(L1~L6), completed:false, priority, assignee, chapterRef, dueDate:+3d}；第三来源 source='manual'（GuidanceTaskContext.source 枚举需从 'ai'|'workorder' 扩为 +'manual'）",
+      "logic": "动态待办统一池的第三来源「手工创建」：GuidanceCreateTodoModal 已按 guidanceTypes 契约构造 GuidanceTodoItem（GuidanceModals.tsx:341-481），但全库零引用（issue-guidance-unused-modals）。2026-09-16 用户拍板（0916 #2 D2）：工作台内建待办**在路线图上，纳入动态待办闭环**，作为统一池第三来源；需补 UI 入口（入口位置属设计自由度，由验证包指定）与来源枚举扩展。注意：V2《产品架构与功能清单》未记载手工创建来源（122 功能单元检索无命中），本条为用户附加决策，超出 V2 下限。",
+      "status": "intended",
+      "designRef": "2026-09-16 用户拍板（0916.md #2 决策 D2：内建待办纳入闭环）；弹层实现 src/components/guidance/GuidanceModals.tsx:341-481；契约 src/components/guidance/guidanceTypes.ts:197-206",
+      "expected": "材料打磨工作台提供「新建待办」入口；提交后该待办以 source='manual' 出现在项目工作台动态待办统一池，可筛选、可勾选、可点「去执行」跳回工作台（chapterRef 含「第N章」时可定位章节）；待办持久化不随刷新丢失。",
+      "blockedBy": "三处：①弹层全库零引用、无 UI 入口；②来源枚举 'ai'|'workorder' 不含 'manual'，接收端引导文案与筛选枚举需同步扩；③待办池状态层级过低（同 e-guidance-taskbar-2-workbench-todo-writeback 根因）——新闭环工程以后端持久化一并解决。",
+      "sources": [],
+      "severity": "medium",
+      "evidenceChain": "弹层已按契约实现（可行）→ 零引用无入口（不可达）→ 2026-09-16 用户拍板纳入 → 待闭环工程兑现"
     }
   ],
   "issues": [

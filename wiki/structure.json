@@ -350,7 +350,8 @@
   "modals": [
     { "id": "modal-rules-config", "title": "评审规则配置", "component": "src/components/RulesConfigModal.tsx" },
     { "id": "modal-batch-import", "title": "批量导入与自动初筛", "component": "src/components/BatchImportModal.tsx" },
-    { "id": "modal-report-export", "title": "报告导出", "component": "src/components/ReportExportModal.tsx" }
+    { "id": "modal-report-export", "title": "报告导出", "component": "src/components/ReportExportModal.tsx" },
+    { "id": "modal-guidance-create-todo", "title": "新建阶段推进待办", "component": "src/components/guidance/GuidanceModals.tsx", "note": "2026-09-16 登记：原全库零引用（issue-guidance-unused-modals）；用户拍板（0916 #2 D2）工作台内建待办纳入动态待办闭环，作为统一池第三来源 source='manual'，见边 e-guidance-createtodo-2-workbench-todo" }
   ],
   "orphanComponents": [
     { "id": "orphan-scene-screening", "component": "src/components/SceneScreening.tsx", "lines": 1171, "note": "无任何 import 引用。与 page-screening（ScreeningHub）并存，疑为旧版实现。" },

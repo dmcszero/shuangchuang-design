@@ -359,13 +359,13 @@ const DATA = {
   "pages": 15,
   "drilled": 15,
   "nodes": 95,
-  "edges": 98,
+  "edges": 99,
   "implemented": 86,
-  "intended": 11,
+  "intended": 12,
   "undefined": 1,
   "issues": 40,
   "orphans": 8,
-  "graphNodes": 117,
+  "graphNodes": 118,
   "disconnected": 32
  },
  "sections": [
@@ -2143,6 +2143,24 @@ const DATA = {
     "col": "col-external",
     "orphan": false,
     "gapCount": 0,
+    "issueCount": 0
+   },
+   {
+    "id": "modal-guidance-create-todo",
+    "label": "新建阶段推进待办",
+    "sub": "modal-guidance-create-todo",
+    "kind": "modal",
+    "importance": "medium",
+    "tier": "modal",
+    "page": "",
+    "factCount": null,
+    "ruleCount": null,
+    "file": "src/components/guidance/GuidanceModals.tsx",
+    "sources": [],
+    "note": "2026-09-16 登记：原全库零引用（issue-guidance-unused-modals）；用户拍板（0916 #2 D2）工作台内建待办纳入动态待办闭环，作为统一池第三来源 source='manual'，见边 e-guidance-createtodo-2-workbench-todo",
+    "col": "col-external",
+    "orphan": false,
+    "gapCount": 1,
     "issueCount": 0
    },
    {
@@ -4013,7 +4031,7 @@ const DATA = {
     ],
     "col": "col-page-workbench",
     "orphan": false,
-    "gapCount": 2,
+    "gapCount": 3,
     "issueCount": 0
    },
    {
@@ -4180,6 +4198,7 @@ const DATA = {
    "col-external": [
     "modal-batch-import",
     "modal-report-export",
+    "modal-guidance-create-todo",
     "modal-rules-config",
     "shell-sidebar",
     "shell-app",
@@ -6743,6 +6762,29 @@ const DATA = {
    "evidenceChain": "",
    "sources": [],
    "offset": 0.0
+  },
+  {
+   "id": "e-guidance-createtodo-2-workbench-todo",
+   "from": "modal-guidance-create-todo",
+   "to": "nd-workbench-todo",
+   "type": "writeback",
+   "typeLabel": "回写",
+   "color": "#ea580c",
+   "status": "intended",
+   "statusLabel": "设计有·未实现",
+   "dash": "7 5",
+   "trigger": "在材料打磨工作台点「新建待办」入口（当前不存在，需补），弹层提交「立即下发」",
+   "payload": "GuidanceTodoItem{id:`td-${Date.now()}`, title, stage(L1~L6), completed:false, priority, assignee, chapterRef, dueDate:+3d}；第三来源 source='manual'（GuidanceTaskContext.source 枚举需从 'ai'|'workorder' 扩为 +'manual'）",
+   "logic": "动态待办统一池的第三来源「手工创建」：GuidanceCreateTodoModal 已按 guidanceTypes 契约构造 GuidanceTodoItem（GuidanceModals.tsx:341-481），但全库零引用（issue-guidance-unused-modals）。2026-09-16 用户拍板（0916 #2 D2）：工作台内建待办**在路线图上，纳入动态待办闭环**，作为统一池第三来源；需补 UI 入口（入口位置属设计自由度，由验证包指定）与来源枚举扩展。注意：V2《产品架构与功能清单》未记载手工创建来源（122 功能单元检索无命中），本条为用户附加决策，超出 V2 下限。",
+   "note": "",
+   "designRef": "2026-09-16 用户拍板（0916.md #2 决策 D2：内建待办纳入闭环）；弹层实现 src/components/guidance/GuidanceModals.tsx:341-481；契约 src/components/guidance/guidanceTypes.ts:197-206",
+   "expected": "材料打磨工作台提供「新建待办」入口；提交后该待办以 source='manual' 出现在项目工作台动态待办统一池，可筛选、可勾选、可点「去执行」跳回工作台（chapterRef 含「第N章」时可定位章节）；待办持久化不随刷新丢失。",
+   "blockedBy": "三处：①弹层全库零引用、无 UI 入口；②来源枚举 'ai'|'workorder' 不含 'manual'，接收端引导文案与筛选枚举需同步扩；③待办池状态层级过低（同 e-guidance-taskbar-2-workbench-todo-writeback 根因）——新闭环工程以后端持久化一并解决。",
+   "issue": "",
+   "severity": "medium",
+   "evidenceChain": "弹层已按契约实现（可行）→ 零引用无入口（不可达）→ 2026-09-16 用户拍板纳入 → 待闭环工程兑现",
+   "sources": [],
+   "offset": 0.0
   }
  ],
  "overview": {
@@ -6826,6 +6868,7 @@ const DATA = {
      "modal-rules-config",
      "modal-batch-import",
      "modal-report-export",
+     "modal-guidance-create-todo",
      "shell-app",
      "shell-sidebar",
      "shell-topbar",
@@ -6977,8 +7020,8 @@ const DATA = {
     "nodeCount": 8,
     "orphanNodes": 1,
     "drilled": true,
-    "edgeCount": 8,
-    "gapCount": 5,
+    "edgeCount": 9,
+    "gapCount": 6,
     "issueCount": 5,
     "intraCount": 2,
     "description": "学员端项目主界面：动态待办、专家工单、AI 对标体检、团队架构、项目文件夹（大事记=文件更改记录）。",
@@ -7215,6 +7258,25 @@ const DATA = {
     "file": "src/components/ReportExportModal.tsx"
    },
    {
+    "id": "modal-guidance-create-todo",
+    "label": "新建阶段推进待办",
+    "sub": "modal-guidance-create-todo",
+    "tier": "modal",
+    "kind": "modal",
+    "section": "",
+    "personas": [],
+    "importance": "medium",
+    "nodeCount": null,
+    "orphanNodes": 0,
+    "drilled": true,
+    "edgeCount": 1,
+    "gapCount": 1,
+    "issueCount": 0,
+    "intraCount": 0,
+    "description": "2026-09-16 登记：原全库零引用（issue-guidance-unused-modals）；用户拍板（0916 #2 D2）工作台内建待办纳入动态待办闭环，作为统一池第三来源 source='manual'，见边 e-guidance-createtodo-2-workbench-todo",
+    "file": "src/components/guidance/GuidanceModals.tsx"
+   },
+   {
     "id": "shell-app",
     "label": "应用壳层",
     "sub": "shell-app",
@@ -7292,6 +7354,16 @@ const DATA = {
    }
   ],
   "edges": [
+   {
+    "id": "ov-modal-guidance-create-todo--page-workbench",
+    "from": "modal-guidance-create-todo",
+    "to": "page-workbench",
+    "count": 1,
+    "gap": 1,
+    "edgeIds": [
+     "e-guidance-createtodo-2-workbench-todo"
+    ]
+   },
    {
     "id": "ov-page-coach--page-defense",
     "from": "page-coach",
@@ -7873,7 +7945,21 @@ const DATA = {
   "page-users": "users_management",
   "page-teams": "teams_management"
  },
- "annotations": [],
+ "annotations": [
+  {
+   "id": "ann-20260916-01",
+   "target": {
+    "kind": "issue",
+    "id": "issue-guidance-unused-modals"
+   },
+   "decision": "自定义",
+   "comment": "2026-09-16 用户拍板（0916 #2 D2）：GuidanceCreateTodoModal「工作台内建待办」在路线图上——纳入动态待办闭环作第三来源 source='manual'，已登记 modal-guidance-create-todo 与边 e-guidance-createtodo-2-workbench-todo（V2 清单未记载此来源，属用户附加决策）。同 issue 另一半 GuidanceUploadModal「材料上传」未拍板，维持死代码登记，后续无需求则按原建议删除。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-16",
+   "updatedAt": "2026-09-16"
+  }
+ ],
  "personaMeta": {
   "p-student": "学生端",
   "p-school": "学校管理端",

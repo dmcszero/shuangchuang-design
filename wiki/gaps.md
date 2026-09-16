@@ -3,7 +3,7 @@
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
 > 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。
 >
-> 统计：边 98 条（已实现 86 · intended 11 · undefined 1）· issues 40 条。
+> 统计：边 99 条（已实现 86 · intended 12 · undefined 1）· issues 40 条。
 
 ## intended（设计有·未实现）
 
@@ -16,6 +16,7 @@
 | `e-workbench-diag-gaps-2-workbench-todo` | 逻辑断点与硬伤 → 动态待办 | `writeback` | high | 三处缺失：①LogicGapItem 无稳定 id（src/types.ts:91-97），无法建立「断点 ↔ 待办」一一映射；②定位口径不一致——location 是「BP 第24页《发展规划与财务预测》」（实测 src/data/mockProjects.ts:91），而待办的 chapterRef 是「第10章 财务预测与融资计划」，页面上已有的 chapterIdFromRef 正则（第N章）对前者不匹配，需新增「页→章」映射或统一口径；③待办池 WORKBENCH_AI_TODOS 是模块级静态常量，组件内无 append 入口（与 e-guidance-taskbar-2-workbench-todo-writeback 同一根因：状态层级过低）。 |
 | `e-coach-composer-2-stream-mention-intended` | 消息输入区与能力配置 → 会话消息流 | `writeback` | medium | mentionedFiles / localUploadedFiles 只写进 msg.mentionedFiles 用于渲染 chip 与标记，全仓无检索或注入消费方；本地文件甚至只有文件名与大小（不读内容）。 |
 | `e-coach-deep-2-defense-intended` | 深度调用管道（4.2 / 4.3） → 模拟答辩训练 | `navigate` | medium | 实际只在会话内模拟并回帖结果卡（handleStartDeepCall → 配置卡 → 执行弹窗 → 结果卡）；SceneAICoach 的 onNavigateToScene prop 由 App 注入（src/App.tsx:631）却从未被调用（该 prop 在组件里被解构后无任何使用点）。 |
+| `e-guidance-createtodo-2-workbench-todo` | 新建阶段推进待办 → 动态待办 | `writeback` | medium | 三处：①弹层全库零引用、无 UI 入口；②来源枚举 'ai'\|'workorder' 不含 'manual'，接收端引导文案与筛选枚举需同步扩；③待办池状态层级过低（同 e-guidance-taskbar-2-workbench-todo-writeback 根因）——新闭环工程以后端持久化一并解决。 |
 | `e-platform-kb-2-school-kb-intended` | 平台赛事知识库（admin 端） → 知识库列表卡与启停/删除 | `read` | medium | 两端各自自持 state（`MOCK_PLATFORM_KNOWLEDGE_BASES` vs `MOCK_KNOWLEDGE_BASES`）、均无 props、无共享数据层与订阅机制；App 仅按 `session.role === 'system_admin'` 分流渲染，两者之间没有任何数据流动。 |
 | `e-supervision-invitations-2-shell-intended` | 学校指派与导师邀请闭环 → 应用壳层 | `writeback` | medium | invitations 是页面本地 state（初值 mockSchoolInvitations），接受/婉拒只改本地并弹 Toast；本页没有对应上行 prop，App 层无邀请状态与接收方。 |
 | `e-workbench-folder-2-guidance-version-drawer` | 项目文件夹 → 版本历史抽屉 | `navigate` | medium | 两个障碍：①该处为静态文本，无点击处理器，需先加交互；②SceneGuidanceWorkbench 的 drawerOpen 是内部 useState(:93)，没有任何 props 可从外部控制，需先开放入参（如 initialDrawerOpen）。 |
@@ -129,6 +130,14 @@
 - 期望行为：应跳到 page-defense（模拟答辩训练）并带入项目与对应模式，而不是在会话里跑一遍 2 秒模拟。
 - 设计依据：用户消息文案「帮我开启全流程模拟答辩，跳转 4.3 模拟评审与多考官极限压力训练」src/components/SceneAICoach.tsx:1076；原子卡按钮「一键升级为 4.3 全流程答辩训练 →」src/components/AtomicCallCard.tsx:271
 - **卡点**：实际只在会话内模拟并回帖结果卡（handleStartDeepCall → 配置卡 → 执行弹窗 → 结果卡）；SceneAICoach 的 onNavigateToScene prop 由 App 注入（src/App.tsx:631）却从未被调用（该 prop 在组件里被解构后无任何使用点）。
+
+### `e-guidance-createtodo-2-workbench-todo`
+
+- 走向：**新建阶段推进待办**（`modal-guidance-create-todo`）→ **动态待办**（`nd-workbench-todo`）｜type `writeback`｜status **intended**｜severity medium
+- 触发：在材料打磨工作台点「新建待办」入口（当前不存在，需补），弹层提交「立即下发」
+- 期望行为：材料打磨工作台提供「新建待办」入口；提交后该待办以 source='manual' 出现在项目工作台动态待办统一池，可筛选、可勾选、可点「去执行」跳回工作台（chapterRef 含「第N章」时可定位章节）；待办持久化不随刷新丢失。
+- 设计依据：2026-09-16 用户拍板（0916.md #2 决策 D2：内建待办纳入闭环）；弹层实现 src/components/guidance/GuidanceModals.tsx:341-481；契约 src/components/guidance/guidanceTypes.ts:197-206
+- **卡点**：三处：①弹层全库零引用、无 UI 入口；②来源枚举 'ai'|'workorder' 不含 'manual'，接收端引导文案与筛选枚举需同步扩；③待办池状态层级过低（同 e-guidance-taskbar-2-workbench-todo-writeback 根因）——新闭环工程以后端持久化一并解决。
 
 ### `e-platform-kb-2-school-kb-intended`
 

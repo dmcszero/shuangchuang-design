@@ -2,5 +2,19 @@
   "schemaVersion": "0.1",
   "generatedAt": "2026-09-15",
   "note": "决策批注真源（R4）：module-map.html 详情面板的「决策批注」区块导出后覆盖本文件，再提交 git；导入可把他人导出的文件合并进来（按 id 去重，updatedAt 新者胜）。target.kind ∈ issue | edge | node（node 涵盖页面级卡片）；target.id 用 wiki 实体 id —— 将来与 43.160.210.61:3001 功能条目对齐的映射表就建在这套 id 上。decision ∈ 确认保留 | 确认删除 | 暂缓 | 需补充信息 | 自定义；status ∈ open | resolved。gen_wiki_tools.py 的 apply-decisions 命令（留位）只读 status=resolved 的条目生成修改建议。",
-  "annotations": []
+  "annotations": [
+    {
+      "id": "ann-20260916-01",
+      "target": {
+        "kind": "issue",
+        "id": "issue-guidance-unused-modals"
+      },
+      "decision": "自定义",
+      "comment": "2026-09-16 用户拍板（0916 #2 D2）：GuidanceCreateTodoModal「工作台内建待办」在路线图上——纳入动态待办闭环作第三来源 source='manual'，已登记 modal-guidance-create-todo 与边 e-guidance-createtodo-2-workbench-todo（V2 清单未记载此来源，属用户附加决策）。同 issue 另一半 GuidanceUploadModal「材料上传」未拍板，维持死代码登记，后续无需求则按原建议删除。",
+      "author": "庄冉",
+      "status": "resolved",
+      "createdAt": "2026-09-16",
+      "updatedAt": "2026-09-16"
+    }
+  ]
 }

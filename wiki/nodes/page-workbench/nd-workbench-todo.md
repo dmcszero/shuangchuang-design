@@ -69,7 +69,7 @@ sources:
 <!-- EDGES:BEGIN -->
 > 本节的**真源是 `wiki/edges.json`**，由 `python wiki/gen_wiki_tools.py sync-edges` 整段渲染，手写会被覆盖。要改边请改边表后重跑该命令。
 
-**入边 2 条**
+**入边 3 条**
 
 - **`e-guidance-taskbar-2-workbench-todo-writeback`** ← `nd-guidance-taskbar`（任务上下文条）｜`writeback` · **intended（设计有·未实现）**｜severity: high
   - 触发：点击任务上下文条「完成并回写待办」按钮
@@ -84,6 +84,13 @@ sources:
   - 设计依据：产品口径（0911 #2.2）：「短板中的逻辑断点应该跟动态待办绑定，可以认为检测出逻辑断点后就会自动地在动态待办中新增一条相应待办。后续也是通过动态待办去处理。所以应该是逻辑断点--动态待办--相应模块」
   - 期望行为：体检产出 N 条逻辑断点时，动态待办中同步出现 N 条 AI 来源待办；点其「去执行」可跳到工作台对应章节；断点消除后该待办可关闭。
   - **卡点**：三处缺失：①LogicGapItem 无稳定 id（src/types.ts:91-97），无法建立「断点 ↔ 待办」一一映射；②定位口径不一致——location 是「BP 第24页《发展规划与财务预测》」（实测 src/data/mockProjects.ts:91），而待办的 chapterRef 是「第10章 财务预测与融资计划」，页面上已有的 chapterIdFromRef 正则（第N章）对前者不匹配，需新增「页→章」映射或统一口径；③待办池 WORKBENCH_AI_TODOS 是模块级静态常量，组件内无 append 入口（与 e-guidance-taskbar-2-workbench-todo-writeback 同一根因：状态层级过低）。
+- **`e-guidance-createtodo-2-workbench-todo`** ← `modal-guidance-create-todo`（新建阶段推进待办）｜`writeback` · **intended（设计有·未实现）**｜severity: medium
+  - 触发：在材料打磨工作台点「新建待办」入口（当前不存在，需补），弹层提交「立即下发」
+  - 载荷：`GuidanceTodoItem{id:`td-${Date.now()}`, title, stage(L1~L6), completed:false, priority, assignee, chapterRef, dueDate:+3d}；第三来源 source='manual'（GuidanceTaskContext.source 枚举需从 'ai'|'workorder' 扩为 +'manual'）`
+  - 逻辑：动态待办统一池的第三来源「手工创建」：GuidanceCreateTodoModal 已按 guidanceTypes 契约构造 GuidanceTodoItem（GuidanceModals.tsx:341-481），但全库零引用（issue-guidance-unused-modals）。2026-09-16 用户拍板（0916 #2 D2）：工作台内建待办**在路线图上，纳入动态待办闭环**，作为统一池第三来源；需补 UI 入口（入口位置属设计自由度，由验证包指定）与来源枚举扩展。注意：V2《产品架构与功能清单》未记载手工创建来源（122 功能单元检索无命中），本条为用户附加决策，超出 V2 下限。
+  - 设计依据：2026-09-16 用户拍板（0916.md #2 决策 D2：内建待办纳入闭环）；弹层实现 src/components/guidance/GuidanceModals.tsx:341-481；契约 src/components/guidance/guidanceTypes.ts:197-206
+  - 期望行为：材料打磨工作台提供「新建待办」入口；提交后该待办以 source='manual' 出现在项目工作台动态待办统一池，可筛选、可勾选、可点「去执行」跳回工作台（chapterRef 含「第N章」时可定位章节）；待办持久化不随刷新丢失。
+  - **卡点**：三处：①弹层全库零引用、无 UI 入口；②来源枚举 'ai'|'workorder' 不含 'manual'，接收端引导文案与筛选枚举需同步扩；③待办池状态层级过低（同 e-guidance-taskbar-2-workbench-todo-writeback 根因）——新闭环工程以后端持久化一并解决。
 
 **出边 4 条**
 
