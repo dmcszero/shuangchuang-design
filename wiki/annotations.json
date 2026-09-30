@@ -80,6 +80,19 @@
       "status": "resolved",
       "createdAt": "2026-09-30",
       "updatedAt": "2026-09-30"
+    },
+    {
+      "id": "ann-20260930-06",
+      "target": {
+        "kind": "issue",
+        "id": "issue-diagnosis-consumers-finalized"
+      },
+      "decision": "自定义",
+      "comment": "2026-09-30 用户回应（0930 #8）：A3「因为相关部分存在更改，所以请重新考虑一遍问题」。重评依据：① 消费方由「导师匹配」明确为「导师智能调度」且归属向诗阳；② 看板由预备升为直接消费方；③ 我方已新增 /shortfalls 与 /aggregate。实测团队 master 无导师智能调度/初筛/看板的 change。结论：只定我方出口、不定对方消费方式；看板聚合接口由预留升为本期交付；不扩大接口面（诊断侧只供给事实，不做推荐/筛选）。",
+      "author": "庄冉",
+      "status": "resolved",
+      "createdAt": "2026-09-30",
+      "updatedAt": "2026-09-30"
     }
   ]
 }
