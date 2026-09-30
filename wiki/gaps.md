@@ -3,7 +3,7 @@
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
 > 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。
 >
-> 统计：边 99 条（已实现 86 · intended 12 · undefined 1）· issues 40 条。
+> 统计：边 99 条（已实现 86 · intended 12 · undefined 1）· issues 42 条。
 
 ## intended（设计有·未实现）
 
@@ -46,22 +46,24 @@
 | `issue-coach-file-mention-not-used` | 消息输入区与能力配置 | undefined | medium | @ 引用项目文件与本地文件上传均不参与推理（无消费方） | 输入框承诺「@ 引用项目文件提问」，但引用的文件和上传的附件都不参与回答。 | 需接入文件解析 + 上下文注入链路（当前 demo 无后端、无文件服务）；实现前该能力属「文案先行」。 |
 | `issue-cockpit-screening-nav-no-context` | 数据驾驶舱 | undefined | medium | 跨页跳转全都不带上下文（驾驶舱/初筛页的「查看更多 / 排期 / 批量调度」到落地页后需重新找） | 跨页跳转不带上下文：从驾驶舱点「A 级金奖池」进初筛页，落地后看到的是默认筛选结果。 | 需把 `onNavigateTab` 从「只传 tab 名」扩为「tab + 载荷」（或在 App 层维护一份跨页上下文 state），并让各落地页消费；改动面覆盖 App + 4 个页面，建议与批 3 的导航改造一并做。 |
 | `issue-diag-questions-suggestion-hardcoded` | 评委尖锐提问攻防演练 | intended | medium | 评委提问的「建议应对策略」是硬编码单条文案，不随题目变化 | 评委提问下方那句「建议应对策略」是固定文案，换题目也不变。 | killerQuestions 是 string[]（src/types.ts:124），没有承载结构化应对信息的位置；需先升级为对象数组，属 ProjectItem 契约破坏性变更。 |
+| `issue-diagnosis-consumers-finalized` | 项目工作台 | intended | medium | 诊断结果消费方清单（7 个）定稿 | 诊断结果的「使用者名单」定稿为 7 个，明确了各自拿什么、干什么。 | 各消费方接口形态待与其 spec 对齐（向诗阳侧导师/初筛/工单/看板、柏啸岳侧 AI 教练）；本轮只定清单与我方出口。 |
 | `issue-guidance-dead-coach-state` | 右栏 AI 备赛伴学教练 | intended | medium | 右栏 AI 教练有 4 个 state 声明后从未被消费 | 材料打磨工作台右栏的 AI 教练，有 4 项能力只声明了没做出来（会话列表、面板折叠、阶段聚焦等）。 | 三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。 |
 | `issue-guidance-diff-modal-hardcoded` | 版本快照差异比对弹层 | intended | medium | 版本 diff 弹层正文为写死示例，不随所选版本变化 | 版本对比弹窗里的差异内容是写死的示例，切换版本不会变。 | 依赖 ProjectVersion.content 落地（同 issue-guidance-snapshot-preview-no-content）+ 需要给弹层增加 initialCompareVersionId 入参。 |
 | `issue-guidance-stage-taxonomy-mismatch` | 材料打磨工作台 | undefined | medium | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5） | 系统里「Lx 阶段」有三套说法：本页 L1~L6、AI 助手 L1~L4、里程碑看板 L1~L5。 | 需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。 |
 | `issue-kb-preview-hardcoded-chunks` | 文件解析要点预览 | undefined | medium | 文件预览弹窗的「核心知识要点」是写死示例（任何文件都显示同样两条，含写死匹配度） | 文件预览弹窗里的「核心知识要点」是写死的示例，任何文件打开都显示同样两条。 | 需 `KnowledgeBaseFile` 增补 `chunks[]` / `excerpts[]` 字段并由解析服务填充（与 issue-kb-not-connected-to-coach 同一条链路）。 |
 | `issue-kb-two-ends-not-synced` | 知识库管理 | undefined | medium | 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见 | 知识库一个页面两种身份（平台端/校端），两端分类完全同名却互不可见。 | 属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。 |
 | `issue-login-sso-placeholder` | 登录分流 | undefined | medium | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验 | 登录页是演示用的假门：写着支持统一身份认证，实际是前端自选身份 + 免密卡 + 密码不校验。 | 需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。 |
+| `issue-mentor-readonly-no-edit` | 材料打磨工作台 | intended | medium | 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作 | 导师能看自己负责项目的全部细节，但不能改项目里的材料。 | 依赖用户模块角色定义（付启龙）与工单体系（向诗阳），二者 spec 待对齐；本轮只登记口径与 spec 约束，未改 demo 代码。 |
 | `issue-mentors-pool-two-ends-not-synced` | 导师池管理 | undefined | medium | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库） | 导师池一个页面两种身份（平台端/校端），但两边数据完全不互通。 | 属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。 |
 | `issue-mentorship-mock-fanout` | 导师智能调度 | undefined | medium | 任务下发规模 15/28/82 写死并被用作进度条分母，与真实项目数（8）不符 | 任务下发规模的 15/28/82 是写死的，还被当成了进度条的分母。 | 需要 App 层在创建时把 `projects` 的梯队统计传下来（或把创建逻辑上移到 App），并决定赛道维度是否纳入任务模型。 |
 | `issue-milestones-filter-no-effect` | L1~L5 阶段流指示卡 | undefined | medium | 里程碑看板阶段卡「点了没反应」：筛选只影响一个数字，看板列不筛选 | 里程碑看板的阶段卡点了没反应——筛选只改了一个数字，看板列不动。 | 无外部阻塞，属实现缺陷修复；需先定交互（过滤 vs 高亮）——建议高亮（保持管线全景可见）。 |
-| `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 产品规则：每个学生只绑定一个项目，学生端不该有项目切换；当前 demo 可切换仅为演示。 | 规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
+| `issue-product-single-project-binding` | 项目工作台 | intended | medium | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示） | 产品规则：每个学生只绑定一个项目，学生端不该有项目切换；当前 demo 可切换仅为演示。 | 规则已定（2026-09-14 拍板 + 2026-09-30 复核确认），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。 |
 | `issue-teams-fake-metrics` | 团队资质指标卡 | undefined | medium | 团队资质指标卡全为假数据：总数凭空 +77，三个比率写死且与真实字段可算值不符 | 团队资质指标卡全是假数据：总数凭空 +77，三个比例写死，而真实字段其实可以直接算。 | 无外部阻塞，属实现补齐（字段齐备）；需先与产品确认「全校团队总数」的口径来源（本页数据只有 5 支 mock，真实规模需接后端）。 |
 | `issue-users-fake-metrics` | 账号规模指标卡 | undefined | medium | 用户管理指标卡四张全部写死/假派生（users.length + 333、48 位、26 个学院、268 人） | 用户管理四张指标卡全部写死或假派生（总数 +333、48 位导师、26 个学院、268 人）。 | 无外部阻塞；需与产品确认「学院数」的口径（账号所在单位 vs 学校院系总数）。 |
 | `issue-workbench-pending-archive` | 项目文件夹 | intended | medium | 待归档区「存入项目文件夹」为 alert 占位，未真正写入大事记 | 「存入项目文件夹」按钮目前只弹一个提示框，并没有真的把产物存进去。 | FILE_CHANGE_LOG 与 PENDING_ARCHIVE_ITEMS 均为模块级常量（非 state），组件内无可写入口；需改为组件状态或引入真实数据层。 |
 | `issue-assets-addfile-folder-mismatch` | 新增资产归档弹窗 | undefined | low | 新增资产弹窗的目录口径不一致（初值「核心申报」不在下拉选项中） | 新增资产弹窗的默认目录名不在下拉选项里，直接提交会多出一套目录。 | 无外部阻塞，属实现补齐。 |
 | `issue-coach-shared-workspace-drawer-dead` | AI 备赛教练 | undefined | low | SharedWorkspaceDrawer 是不可达弹层（isWorkspaceOpen 只会被置 false） | 一个旧版「共享工作台」抽屉永远不会打开，没有任何入口能触达它。 | 需决定右栏（RightWorkspacePanel）与旧抽屉是否合并——两者提供的能力高度重叠（产物清单 / 待办 / 文件提及）。 |
-| `issue-coach-spaces-dead` | 会话历史与新建对话 | undefined | low | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构 | 「备赛空间」整套能力没有入口，是死结构（建空间、切空间、云同步都点不到）。 | 需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。 |
+| `issue-coach-spaces-dead` | 会话历史与新建对话 | undefined | low | 「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构 —— 已判定：按「学生 1:1 项目」口径整块移除 | 「备赛空间」整套能力没有入口，是死结构（建空间、切空间、云同步都点不到）。 | 已解除：2026-09-30 用户拍板「判定为移除」（见 annotations ann-20260930-01）。落地为工程收口，待 demo 产品化阶段执行；本轮 wiki 只登记不改代码。 |
 | `issue-defense-prep-question-count` | 赛前解构与靶向题库 | undefined | low | 赛前解构「已生成 12 题」与实际渲染 4 条不符 | 赛前解构写着「已生成 12 题」，实际只显示 4 条，且题目写死为另一个项目。 | 无外部阻塞，属实现补齐；若要真实生成则依赖 page-defense 的题库数据源重构。 |
 | `issue-diag-region-no-empty-state` | 逻辑断点与硬伤 | undefined | low | 体检区三块均无空态处理，数据为空时只剩标题 | 体检区三块内容在没数据时只剩一个标题，既没提示也没有下一步入口。 | 需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。 |
 | `issue-guidance-unused-modals` | 版本快照差异比对弹层 | undefined | low | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行） | 工作台里有两个弹层（材料上传、内建待办）从未被任何页面调用，约 298 行死代码。 | 需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。 |

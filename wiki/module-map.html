@@ -363,7 +363,7 @@ const DATA = {
   "implemented": 86,
   "intended": 12,
   "undefined": 1,
-  "issues": 40,
+  "issues": 42,
   "orphans": 8,
   "graphNodes": 118,
   "disconnected": 32
@@ -1117,11 +1117,11 @@ const DATA = {
    "id": "issue-product-single-project-binding",
    "where": "page-workbench",
    "title": "产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）",
-   "detail": "用户大框架（2026-09-14）「1. 学生角色」注：每个学生仅会绑定一个项目，demo 中展示仅因为方便查看，后续学生端只会看到自己的项目无法切换。当前 demo 登录时会 setActiveTeamProjectId 并允许切换查看不同项目（App.tsx:323-328），工作台/驾驶舱多处以 activeTeamProjectId 驱动。",
+   "detail": "用户大框架（2026-09-14）「1. 学生角色」注：每个学生仅会绑定一个项目，demo 中展示仅因为方便查看，后续学生端只会看到自己的项目无法切换。当前 demo 登录时会 setActiveTeamProjectId 并允许切换查看不同项目（App.tsx:323-328），工作台/驾驶舱多处以 activeTeamProjectId 驱动。 【2026-09-30 复核】用户再次确认该口径（并明确「学生以团队合作形式共同构建一个项目」），同时据此拍板移除「备赛空间」（issue-coach-spaces-dead）；该规则已同步写入 BP 诊断 spec 的消费方清单配套口径。",
    "status": "intended",
    "designRef": "用户大框架 1 注（RanZhuang/2026-09/prompt/0914.md #5）；登录分流 src/App.tsx:323-328",
    "expected": "学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。",
-   "blockedBy": "规则已定（用户拍板 2026-09-14），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。",
+   "blockedBy": "规则已定（2026-09-14 拍板 + 2026-09-30 复核确认），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。",
    "severity": "medium",
    "category": "产品决策",
    "owner": "工程自决",
@@ -1249,20 +1249,20 @@ const DATA = {
   {
    "id": "issue-coach-spaces-dead",
    "where": "nd-coach-sessions",
-   "title": "「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构",
+   "title": "「备赛空间（ProjectSpace）」整套能力无 UI 入口，是死结构 —— 已判定：按「学生 1:1 项目」口径整块移除",
    "detail": "App 持有 spaces / activeSpaceId 与 handleSelectSpace / handleCreateSpace / handleSyncWorkspace 全套 handler（App.tsx:73-76、348-407、485-495），并透传给 Sidebar 与 ChatComposer；但两处组件都声明了 props 却**从未在组件体内使用**（Sidebar.tsx:76-80 仅有声明；ChatComposer.tsx:36-39 连解构都没做），故 activeSpaceId 恒为 'none'、currentActiveSpace 恒为 null，建空间/切空间/云同步三条链路全部不可达（并连带 issue-coach-project-context-unbound）。",
    "status": "undefined",
    "designRef": "App 的空间 handler src/App.tsx:348-407；空间数据源 src/data/mockSpaceData.ts（initialProjectSpaces / initialMergedSessions）",
-   "expected": "要么给「备赛空间」补上入口（侧栏空间选择器 + 新建空间向导 + 云同步状态），要么按「每个学生只有一个项目」的产品口径整块移除，避免半套概念留在代码里。",
-   "blockedBy": "需产品拍板：备赛空间是多项目管理能力，与「每个学生仅绑定一个项目」（issue-product-single-project-binding）直接冲突——二者只能留一个。",
+   "expected": "【2026-09-30 已拍板】按「每个学生只能参加一个项目」的口径，「备赛空间（多项目管理）」判定为【移除】：产品化时删除 spaces / activeSpaceId 与 handleSelectSpace / handleCreateSpace / handleSyncWorkspace 全套 handler、以及 Sidebar / ChatComposer 上的死 props 与 mockSpaceData.ts，并同步清理连带缺口 issue-coach-project-context-unbound（项目上下文改用 currentMemberProject）。",
+   "blockedBy": "已解除：2026-09-30 用户拍板「判定为移除」（见 annotations ann-20260930-01）。落地为工程收口，待 demo 产品化阶段执行；本轮 wiki 只登记不改代码。",
    "severity": "low",
-   "category": "产品决策",
-   "owner": "待产品定义",
+   "category": "技术实现",
+   "owner": "工程自决",
    "plain": {
     "oneLine": "「备赛空间」整套能力没有入口，是死结构（建空间、切空间、云同步都点不到）。",
     "symptom": "界面上找不到「备赛空间」的选择器或新建入口。",
-    "impact": "半套概念留在代码里，读代码的人会误判能力已就绪；它与「每个学生只有一个项目」的口径直接冲突。",
-    "ask": "待产品定义：备赛空间是多项目管理能力，与「一人一项目」只能留一个——要么补入口，要么整块移除。"
+    "impact": "半套概念留在代码里，读代码的人会误判能力已就绪。2026-09-30 已判定移除，与「学生 1:1 项目」口径一致。",
+    "ask": "已拍板（2026-09-30）：按「一人一项目」整块移除备赛空间，不再补入口。"
    }
   },
   {
@@ -1682,6 +1682,44 @@ const DATA = {
     "impact": "预览看起来有内容，实际与文件无关，用户会据此判断文件价值。",
     "ask": "工程自决：要点应来自文件真实切片内容（需文件解析服务补数据），匹配度没有来源就移除。"
    }
+  },
+  {
+   "id": "issue-mentor-readonly-no-edit",
+   "where": "page-guidance",
+   "title": "导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作",
+   "detail": "2026-09-30 用户口径：「导师可逐团队看自己负责团队项目的所有细节，但导师不可直接参与项目制作」。当前 demo 未做角色级权限区分（page-guidance 的编辑区对所有进入者开放），属待落地约束。已同步写入 spec：bp-polish FR-9（角色权限约束）+ 非功能需求「权限」条。",
+   "status": "intended",
+   "designRef": "0930 #3 用户回应第 5 条；spec: feature-20260920-material-polish-ran.zhuang/specs/bp-polish/spec.md FR-9",
+   "expected": "材料打磨的写操作（编辑 / 发起打磨 / 提交 / 合并）仅对项目组成员开放；导师为只读消费者（可看全文、章节、诊断结论、材料历史）；角色校验在服务端强制，越权返回 403；导师进入打磨页时编辑区只读并提示「查看模式」。导师的写路径在工单侧（派单 / 复核），工单整改与提交由学生执行，故工单跳转落点为【学生端】而非导师端。",
+   "blockedBy": "依赖用户模块角色定义（付启龙）与工单体系（向诗阳），二者 spec 待对齐；本轮只登记口径与 spec 约束，未改 demo 代码。",
+   "severity": "medium",
+   "category": "产品决策",
+   "owner": "工程自决",
+   "plain": {
+    "oneLine": "导师能看自己负责项目的全部细节，但不能改项目里的材料。",
+    "symptom": "当前 demo 里任何进入材料打磨页的人都能编辑，没有按角色区分。",
+    "impact": "导师误改学生材料会破坏「导师只辅导、学生才是作者」的职责边界。",
+    "ask": "已定（工程自决）：打磨页写操作按角色拦截，导师只读；工单跳转落到学生端。"
+   }
+  },
+  {
+   "id": "issue-diagnosis-consumers-finalized",
+   "where": "page-workbench",
+   "title": "诊断结果消费方清单（7 个）定稿",
+   "detail": "2026-09-30 逐条确认诊断结果的消费方：① 材料打磨（全文/章节两级评估，作打磨前置分析）② 项目工作台（总分 + 多维度分，形成项目印象）③ AI 教练（诊断结论作会话上下文；指令笼统时先诊断——即原「意图澄清」，它不是一个独立消费方）④ 导师智能调度（短板标签 → 命中导师专长标签 → 匹配度）⑤ 智能初筛（诊断分数作评价与筛选依据）⑥ 导师工单（诊断结论，导师据此派工单给学生）⑦ 学院/赛事看板（聚合分，直接消费方）。明确不消费：导师库（档案，只记信息）、赛事方/评委（无此角色）。已同步写入 spec：diagnosis §跨模块边界与消费方。",
+   "status": "intended",
+   "designRef": "0930 #3 用户回应（A1 逐条）；spec: feature-20260920-bp-diagnosis-ran.zhuang/specs/diagnosis/spec.md §2 消费方清单",
+   "expected": "按上表 7 个消费方提供数据：其中「导师智能调度」用短板标签接口（tag 可追溯到 dimension_id + item_ids）、「学院/赛事看板」用聚合分接口（各维度平均分）；诊断能力收口——会话内浅层诊断亦走诊断模块。",
+   "blockedBy": "各消费方接口形态待与其 spec 对齐（向诗阳侧导师/初筛/工单/看板、柏啸岳侧 AI 教练）；本轮只定清单与我方出口。",
+   "severity": "medium",
+   "category": "数据口径",
+   "owner": "工程自决",
+   "plain": {
+    "oneLine": "诊断结果的「使用者名单」定稿为 7 个，明确了各自拿什么、干什么。",
+    "symptom": "此前消费方名称含糊（如把「导师库」当成消费方、把「意图澄清」当成独立消费方）。",
+    "impact": "名单不清会导致接口白做或做漏（例如把短板标签给了不消费它的导师档案模块）。",
+    "ask": "已定（工程自决）：按 7 个消费方提供数据，导师库与赛事方/评委不在名单内。"
+   }
   }
  ],
  "graph": {
@@ -1915,8 +1953,8 @@ const DATA = {
     ],
     "col": "col-page-workbench",
     "orphan": false,
-    "gapCount": 2,
-    "issueCount": 1
+    "gapCount": 3,
+    "issueCount": 2
    },
    {
     "id": "page-guidance",
@@ -1936,8 +1974,8 @@ const DATA = {
     ],
     "col": "col-page-guidance",
     "orphan": false,
-    "gapCount": 1,
-    "issueCount": 1
+    "gapCount": 2,
+    "issueCount": 2
    },
    {
     "id": "page-coach",
@@ -7022,7 +7060,7 @@ const DATA = {
     "drilled": true,
     "edgeCount": 9,
     "gapCount": 6,
-    "issueCount": 5,
+    "issueCount": 6,
     "intraCount": 2,
     "description": "学员端项目主界面：动态待办、专家工单、AI 对标体检、团队架构、项目文件夹（大事记=文件更改记录）。",
     "file": "src/components/ProjectMemberWorkbench.tsx"
@@ -7043,7 +7081,7 @@ const DATA = {
     "drilled": true,
     "edgeCount": 2,
     "gapCount": 3,
-    "issueCount": 6,
+    "issueCount": 7,
     "intraCount": 12,
     "description": "沉浸式材料打磨工作台（原名「全链路指导工作台」）：BP 章节打磨、诊断、评分 + 阶段 stepper + 版本体系 + AI 教练右栏；接收项目工作台待办上下文。定位口径（2026-09-14 批 4 改名）：专注**可编辑文本材料**的编辑与打磨；L1~L6 阶段跨模块、不归属本页。",
     "file": "src/components/SceneGuidanceWorkbench.tsx"
@@ -7958,6 +7996,45 @@ const DATA = {
    "status": "resolved",
    "createdAt": "2026-09-16",
    "updatedAt": "2026-09-16"
+  },
+  {
+   "id": "ann-20260930-01",
+   "target": {
+    "kind": "issue",
+    "id": "issue-coach-spaces-dead"
+   },
+   "decision": "确认删除",
+   "comment": "2026-09-30 用户拍板（0930 #3 第 4 条）：把 demo 遗留的「备赛空间（多项目管理）」判定为【移除】——依据「每个学生只能参加一个项目」的口径，二者只能留一个。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-30",
+   "updatedAt": "2026-09-30"
+  },
+  {
+   "id": "ann-20260930-02",
+   "target": {
+    "kind": "issue",
+    "id": "issue-mentor-readonly-no-edit"
+   },
+   "decision": "自定义",
+   "comment": "2026-09-30 用户拍板（0930 #3 第 5 条）：在 spec 里明确写「导师无材料编辑权限」——导师可看所负责项目全部细节，不可参与项目制作；与工单跳转落点（学生端）一并收口。已落 bp-polish FR-9。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-30",
+   "updatedAt": "2026-09-30"
+  },
+  {
+   "id": "ann-20260930-03",
+   "target": {
+    "kind": "issue",
+    "id": "issue-diagnosis-consumers-finalized"
+   },
+   "decision": "自定义",
+   "comment": "2026-09-30 用户拍板（0930 #3 第 1~3 条）：诊断消费方清单定稿 7 个；「导师库」改为「导师智能调度」（消费发生在调度环节）、「意图澄清」并入「AI 教练」（它只是一个用途）、学院/赛事看板列为【直接消费方】。已落 diagnosis spec §2。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-30",
+   "updatedAt": "2026-09-30"
   }
  ],
  "personaMeta": {
