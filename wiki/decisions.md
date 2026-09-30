@@ -5,7 +5,7 @@
 > 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。
 > 可读性（v0.9）：逐条详情先给**通俗版**（一句话 / 现象 / 影响 / 需要谁做什么，取自 `edges.json` 的 `plain` 字段），再附一字未改的「背景（原始记录）」供工程侧核对。
 >
-> 统计：共 15 条（上司拍板 7 · 工程自决 4 · 待产品定义 4）。
+> 统计：共 16 条（上司拍板 7 · 工程自决 5 · 待产品定义 4）。
 
 ## 汇总表
 
@@ -22,10 +22,11 @@
 | 9 | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验（`issue-login-sso-placeholder`） | 登录分流（`page-login`） | 待产品定义 | medium |
 | 10 | 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作（`issue-mentor-readonly-no-edit`） | 材料打磨工作台（`page-guidance`） | 工程自决 | medium |
 | 11 | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）（`issue-mentors-pool-two-ends-not-synced`） | 导师池管理（`page-mentors-pool`） | 上司拍板 | medium |
-| 12 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
-| 13 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
-| 14 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
-| 15 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
+| 12 | 打磨并发提交口径定稿：乐观锁 + 被覆盖必通知；导出模板留空占位（参考分/摘要缓存/MCP 运维同步定）（`issue-polish-concurrency-and-template`） | 版本历史抽屉（`nd-guidance-version-drawer`） | 工程自决 | medium |
+| 13 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
+| 14 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
+| 15 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
+| 16 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
 
 ## 逐条详情
 
@@ -155,7 +156,19 @@
 - **建议 / 期望**：明确两端关系（平台库是校端库的超集？还是分属两套池、靠「下派/调度」桥接？），并建立对应链路：若为超集则共享数据源；若靠调度桥接，则需在校端或调度页建立「调度工单接收与展示」。
 - **卡点**：属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。
 
-### 12. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
+### 12. 打磨并发提交口径定稿：乐观锁 + 被覆盖必通知；导出模板留空占位（参考分/摘要缓存/MCP 运维同步定）
+
+- 来源：`issue-polish-concurrency-and-template`（issue）｜位置：版本历史抽屉（`nd-guidance-version-drawer`）
+- owner：**工程自决**｜severity：**medium**
+- **一句话（通俗版）**：定了：结构不合规时分数只是「参考分」且要顶部警示；多人改同一份材料时后改的人必须被通知，不能静默覆盖；导出模板先留空占位、用到时明显提示。
+- **现象**：此前没定「结构没对齐还能不能给分」、没定「我改的时候别人提交了怎么办」、也没定导出模板参数从哪来。
+- **影响**：不定清楚会出现：学生拿高分却不知结构不合规；先改的人的工作被静默覆盖；导出的 Word 套了猜的字号字体。
+- **需要谁做什么**：已定（工程自决）：参考分 + 显著警示；乐观锁 + 被覆盖必通知；模板留空占位 + 降级必提示。
+- **背景（原始记录）**：2026-09-30 用户拍板（0930 #9，回应 B/C 类 + A4 占位）六条口径：① 【B2 参考分】章节未对齐标准结构时**仍给分**，但降级为**参考分**（`scoring_mode='reference'`），且**报告顶部必须显著警示** + **强制列出对齐建议清单**（不折叠）——防「学生拿到高分却不知结构不合规」。② 【B5 跳转】跳转一律**同页切换** + 顶栏任务上下文条（不新开页面）。③ 【C1 摘要】**AI 生成 + 落库缓存**（键 = `file_id + version + scope + ref`）；**不用抽取式**（BP 是论证性文本，取首句会丢论证链）；同版本只算一次，成本可摊薄。④ 【C2 部署】MCP server **由本模块实现 + 部署 + 运维**（与诊断服务同服，不暴露公网）；Harness 只调用不运维。⑤ 【C3 并发】检测粒度 = **乐观锁 + 建议级（`target_range`）**，**不用文件级锁**；提交分两层：**快照**（只存文件，不进版本树，不校验）/ **里程碑**（进版本树，必校验 `base_version`；变了再测是否冲突：不冲突正常提交、冲突则让用户指定最终覆盖版本，**不自动合并**，AI 建议后续再做）；**★ 硬要求：被覆盖方必须收到通知**（`OverrideNotice`，可离线，下次进入必看到）——**不得静默消失**。⑥ 【A4 导出模板占位】赛事格式要求文件**暂不可得** → 模板 `status='placeholder'`、**参数全部留空**（**不填猜想值**）；本期走内置默认排版 + 必须显示提示条「未套用赛事模板」，**不静默降级**；拿到文件后填 `templates/<template_id>.json` 置 `ready` 即生效（**不改代码**）。
+- **建议 / 期望**：规格侧已落地（详见 designRef）；demo 侧落地项：① 参考分与顶部警示条（现诊断报告无此区分）；② 被覆盖通知 `OverrideNotice` 的入口与角标（现无）；③ 导出模板配置文件的读取与降级提示（现无导出模板概念）；④ 摘要缓存表（现无）。均随实现阶段落地。
+- **卡点**：规格已定；demo 侧落地依赖项目文件管理（版本树 / 提交校验）与导出器实现，本轮 wiki 只登记口径，不改 demo 代码。
+
+### 13. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
 
 - 来源：`issue-product-single-project-binding`（issue）｜位置：项目工作台（`page-workbench`）
 - owner：**工程自决**｜severity：**medium**
@@ -167,7 +180,7 @@
 - **建议 / 期望**：学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。
 - **卡点**：规则已定（2026-09-14 拍板 + 2026-09-30 复核确认），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。
 
-### 13. 体检区三块均无空态处理，数据为空时只剩标题
+### 14. 体检区三块均无空态处理，数据为空时只剩标题
 
 - 来源：`issue-diag-region-no-empty-state`（issue）｜位置：逻辑断点与硬伤（`nd-workbench-diag-gaps`）
 - owner：**待产品定义**｜severity：**low**
@@ -178,7 +191,7 @@
 - **背景（原始记录）**：实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。
 - **卡点**：需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。
 
-### 14. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
+### 15. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
 
 - 来源：`issue-guidance-unused-modals`（issue）｜位置：版本快照差异比对弹层（`nd-guidance-diff-modal`）
 - owner：**待产品定义**｜severity：**low**
@@ -189,7 +202,7 @@
 - **背景（原始记录）**：GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。
 - **卡点**：需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。
 
-### 15. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
+### 16. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
 
 - 来源：`issue-product-framework-incremental-growth`（issue）｜位置：shuangchuang-ai-wiki（`shuangchuang-ai-wiki`）
 - owner：**工程自决**｜severity：**low**

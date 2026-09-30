@@ -363,7 +363,7 @@ const DATA = {
   "implemented": 86,
   "intended": 12,
   "undefined": 1,
-  "issues": 43,
+  "issues": 44,
   "orphans": 8,
   "graphNodes": 118,
   "disconnected": 32
@@ -1739,6 +1739,25 @@ const DATA = {
     "impact": "口径不清会让章节编号与引用错位；维护关系表成本高且难以保持准确。",
     "ask": "已定（工程自决）：章节=一级标题；Markdown 机械切分、非 md 才用 AI；删关系表；矛盾走 consistency_findings[]。"
    }
+  },
+  {
+   "id": "issue-polish-concurrency-and-template",
+   "where": "nd-guidance-version-drawer",
+   "title": "打磨并发提交口径定稿：乐观锁 + 被覆盖必通知；导出模板留空占位（参考分/摘要缓存/MCP 运维同步定）",
+   "detail": "2026-09-30 用户拍板（0930 #9，回应 B/C 类 + A4 占位）六条口径：① 【B2 参考分】章节未对齐标准结构时**仍给分**，但降级为**参考分**（`scoring_mode='reference'`），且**报告顶部必须显著警示** + **强制列出对齐建议清单**（不折叠）——防「学生拿到高分却不知结构不合规」。② 【B5 跳转】跳转一律**同页切换** + 顶栏任务上下文条（不新开页面）。③ 【C1 摘要】**AI 生成 + 落库缓存**（键 = `file_id + version + scope + ref`）；**不用抽取式**（BP 是论证性文本，取首句会丢论证链）；同版本只算一次，成本可摊薄。④ 【C2 部署】MCP server **由本模块实现 + 部署 + 运维**（与诊断服务同服，不暴露公网）；Harness 只调用不运维。⑤ 【C3 并发】检测粒度 = **乐观锁 + 建议级（`target_range`）**，**不用文件级锁**；提交分两层：**快照**（只存文件，不进版本树，不校验）/ **里程碑**（进版本树，必校验 `base_version`；变了再测是否冲突：不冲突正常提交、冲突则让用户指定最终覆盖版本，**不自动合并**，AI 建议后续再做）；**★ 硬要求：被覆盖方必须收到通知**（`OverrideNotice`，可离线，下次进入必看到）——**不得静默消失**。⑥ 【A4 导出模板占位】赛事格式要求文件**暂不可得** → 模板 `status='placeholder'`、**参数全部留空**（**不填猜想值**）；本期走内置默认排版 + 必须显示提示条「未套用赛事模板」，**不静默降级**；拿到文件后填 `templates/<template_id>.json` 置 `ready` 即生效（**不改代码**）。",
+   "status": "intended",
+   "designRef": "0930 #9 用户回应；spec: feature-20260920-bp-diagnosis-ran.zhuang/specs/diagnosis/spec.md FR-1 规则 5（参考分）/ FR-4 schema（scoring_mode + alignment_warning）/ FR-5 报告第 0 条 / FR-3 摘要口径 / §4 MCP 清单（运维归属）；feature-20260920-material-polish-ran.zhuang/specs/bp-polish/spec.md FR-5.1（并发提交与冲突）/ FR-7（导出模板占位）/ 数据模型 OverrideNotice；specs/material-generic/spec.md FR-3 + FR-3.1（ExportTemplate）/ 关键约束；specs/polish-copilot/spec.md 边界情况 9~11",
+   "expected": "规格侧已落地（详见 designRef）；demo 侧落地项：① 参考分与顶部警示条（现诊断报告无此区分）；② 被覆盖通知 `OverrideNotice` 的入口与角标（现无）；③ 导出模板配置文件的读取与降级提示（现无导出模板概念）；④ 摘要缓存表（现无）。均随实现阶段落地。",
+   "blockedBy": "规格已定；demo 侧落地依赖项目文件管理（版本树 / 提交校验）与导出器实现，本轮 wiki 只登记口径，不改 demo 代码。",
+   "severity": "medium",
+   "category": "产品决策",
+   "owner": "工程自决",
+   "plain": {
+    "oneLine": "定了：结构不合规时分数只是「参考分」且要顶部警示；多人改同一份材料时后改的人必须被通知，不能静默覆盖；导出模板先留空占位、用到时明显提示。",
+    "symptom": "此前没定「结构没对齐还能不能给分」、没定「我改的时候别人提交了怎么办」、也没定导出模板参数从哪来。",
+    "impact": "不定清楚会出现：学生拿高分却不知结构不合规；先改的人的工作被静默覆盖；导出的 Word 套了猜的字号字体。",
+    "ask": "已定（工程自决）：参考分 + 显著警示；乐观锁 + 被覆盖必通知；模板留空占位 + 降级必提示。"
+   }
   }
  ],
  "graph": {
@@ -3042,8 +3061,8 @@ const DATA = {
     ],
     "col": "col-page-guidance",
     "orphan": false,
-    "gapCount": 2,
-    "issueCount": 0
+    "gapCount": 3,
+    "issueCount": 1
    },
    {
     "id": "nd-kb-create",
@@ -7100,7 +7119,7 @@ const DATA = {
     "drilled": true,
     "edgeCount": 2,
     "gapCount": 3,
-    "issueCount": 8,
+    "issueCount": 9,
     "intraCount": 12,
     "description": "沉浸式材料打磨工作台（原名「全链路指导工作台」）：BP 章节打磨、诊断、评分 + 阶段 stepper + 版本体系 + AI 教练右栏；接收项目工作台待办上下文。定位口径（2026-09-14 批 4 改名）：专注**可编辑文本材料**的编辑与打磨；L1~L6 阶段跨模块、不归属本页。",
     "file": "src/components/SceneGuidanceWorkbench.tsx"
@@ -8063,6 +8082,19 @@ const DATA = {
    },
    "decision": "自定义",
    "comment": "2026-09-30 用户拍板（0930 #6 回应 A2 + #7 五条回复）：A2（章节间隐含逻辑关联怎么识别）的解法＝**不维护关联表**，改为「诊断默认给全文 → AI 现场识别矛盾 → 矛盾自动成任务/工单 → 任务反过来作 AI 的参考」；配套：章节只认一级标题、Markdown 机械切分/非 md 用 AI、删 get_cross_chapter_refs、新增 consistency_findings[]（含 task_hint）、上下文默认全文（诊断+打磨，关闭对比实验）。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-30",
+   "updatedAt": "2026-09-30"
+  },
+  {
+   "id": "ann-20260930-05",
+   "target": {
+    "kind": "issue",
+    "id": "issue-polish-concurrency-and-template"
+   },
+   "decision": "自定义",
+   "comment": "2026-09-30 用户拍板（0930 #9）：B 类 5 条按推荐（B2 改为「参考分 + 报告顶部显著警示 + 强制列出对齐建议」）、C 类 3 条按推荐并细化（C3 追加硬要求：被覆盖方必须被提醒，不得静默消失；并澄清快照不进版本树 / 里程碑进版本树 + 校验 base_version）；A4 无赛事格式要求文件 → 模板结构定稿、参数留空占位、降级必提示。B5（跳转同页/新页）用户询问场景 → 已说明：① 诊断扣分项 → 对应章节 ② 诊断建议 → 材料打磨 ③ 章节诊断 ↔ 全量诊断 ④ 材料历史查看/回滚，均同页切换。",
    "author": "庄冉",
    "status": "resolved",
    "createdAt": "2026-09-30",
