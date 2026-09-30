@@ -5,7 +5,7 @@
 > 交付节奏（2026-09-14 用户拍板）：批 1~3 全部铺开后**一次性全量交付**上司对齐，不逐批打扰。owner=工程自决 的条目为已定规则登记，列此供知悉，无需上司决策。
 > 可读性（v0.9）：逐条详情先给**通俗版**（一句话 / 现象 / 影响 / 需要谁做什么，取自 `edges.json` 的 `plain` 字段），再附一字未改的「背景（原始记录）」供工程侧核对。
 >
-> 统计：共 14 条（上司拍板 7 · 工程自决 3 · 待产品定义 4）。
+> 统计：共 15 条（上司拍板 7 · 工程自决 4 · 待产品定义 4）。
 
 ## 汇总表
 
@@ -15,16 +15,17 @@
 | 2 | 两套会话实现是否统一：page-coach 完整版 vs guidance 右栏内嵌简版（保留哪套）（`issue-product-coach-session-unification`） | 右栏 AI 备赛伴学教练（`nd-guidance-coach`） | 上司拍板 | high |
 | 3 | 用户账号体系是孤岛：新增账号无法登录、停用不影响任何权限，且与登录页预置账号互不相通（`issue-users-accounts-isolated`） | 用户管理（`page-users`） | 待产品定义 | high |
 | 4 | 「产物 / 资产」两套体系未统一：AI 产出无归档路径，路演幻灯片两处各 mock（`issue-assets-vs-coach-deliverables`） | 素材与资产管理（`page-assets`） | 上司拍板 | medium |
-| 5 | 右栏 AI 教练有 4 个 state 声明后从未被消费（`issue-guidance-dead-coach-state`） | 右栏 AI 备赛伴学教练（`nd-guidance-coach`） | 上司拍板 | medium |
-| 6 | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）（`issue-guidance-stage-taxonomy-mismatch`） | 材料打磨工作台（`page-guidance`） | 上司拍板 | medium |
-| 7 | 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见（`issue-kb-two-ends-not-synced`） | 知识库管理（`page-knowledge-base`） | 上司拍板 | medium |
-| 8 | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验（`issue-login-sso-placeholder`） | 登录分流（`page-login`） | 待产品定义 | medium |
-| 9 | 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作（`issue-mentor-readonly-no-edit`） | 材料打磨工作台（`page-guidance`） | 工程自决 | medium |
-| 10 | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）（`issue-mentors-pool-two-ends-not-synced`） | 导师池管理（`page-mentors-pool`） | 上司拍板 | medium |
-| 11 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
-| 12 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
-| 13 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
-| 14 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
+| 5 | 章节口径定稿：只认一级标题；矛盾检测不建关系表，走 consistency_findings 通道（`issue-chapter-definition-and-consistency`） | BP 章节速达条（`nd-guidance-chapters`） | 工程自决 | medium |
+| 6 | 右栏 AI 教练有 4 个 state 声明后从未被消费（`issue-guidance-dead-coach-state`） | 右栏 AI 备赛伴学教练（`nd-guidance-coach`） | 上司拍板 | medium |
+| 7 | 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）（`issue-guidance-stage-taxonomy-mismatch`） | 材料打磨工作台（`page-guidance`） | 上司拍板 | medium |
+| 8 | 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见（`issue-kb-two-ends-not-synced`） | 知识库管理（`page-knowledge-base`） | 上司拍板 | medium |
+| 9 | 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验（`issue-login-sso-placeholder`） | 登录分流（`page-login`） | 待产品定义 | medium |
+| 10 | 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作（`issue-mentor-readonly-no-edit`） | 材料打磨工作台（`page-guidance`） | 工程自决 | medium |
+| 11 | 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）（`issue-mentors-pool-two-ends-not-synced`） | 导师池管理（`page-mentors-pool`） | 上司拍板 | medium |
+| 12 | 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）（`issue-product-single-project-binding`） | 项目工作台（`page-workbench`） | 工程自决 | medium |
+| 13 | 体检区三块均无空态处理，数据为空时只剩标题（`issue-diag-region-no-empty-state`） | 逻辑断点与硬伤（`nd-workbench-diag-gaps`） | 待产品定义 | low |
+| 14 | GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）（`issue-guidance-unused-modals`） | 版本快照差异比对弹层（`nd-guidance-diff-modal`） | 待产品定义 | low |
+| 15 | 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展（`issue-product-framework-incremental-growth`） | shuangchuang-ai-wiki（`shuangchuang-ai-wiki`） | 工程自决 | low |
 
 ## 逐条详情
 
@@ -71,7 +72,19 @@
 - **建议 / 期望**：一个项目只有一套「资产/产物」真源：AI 产物、答辩材料、BP 版本都归档进同一处并按版本管理；各页只做展示投影。
 - **卡点**：属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。
 
-### 5. 右栏 AI 教练有 4 个 state 声明后从未被消费
+### 5. 章节口径定稿：只认一级标题；矛盾检测不建关系表，走 consistency_findings 通道
+
+- 来源：`issue-chapter-definition-and-consistency`（issue）｜位置：BP 章节速达条（`nd-guidance-chapters`）
+- owner：**工程自决**｜severity：**medium**
+- **一句话（通俗版）**：定了几条：章节只认一级标题；跨章矛盾交给 AI 读全文现场找，不建关系表；矛盾单独一条通道，不参与打分。
+- **现象**：此前章节口径含糊（`#`/`##`/`###` 都算章节），且设计里要求维护一份「哪两章有关系」的数据。
+- **影响**：口径不清会让章节编号与引用错位；维护关系表成本高且难以保持准确。
+- **需要谁做什么**：已定（工程自决）：章节=一级标题；Markdown 机械切分、非 md 才用 AI；删关系表；矛盾走 consistency_findings[]。
+- **背景（原始记录）**：2026-09-30 用户拍板（0930 #6/#7，回应 A2）四条口径：① 【章节定义】章节 = **只认一级标题 `#`**；`##`/`###` 为章节内部小节，不占章节编号（归 L3）。demo 侧 `STANDARD_12_CHAPTERS` 的 12 章口径与本条一致。② 【切分路径】**Markdown 原文走机械切分**（heading_chunker，纯文本处理不调 LLM）；**非 Markdown 来源**（Word/PDF 转来的文本，预留）**才用 AI 推断结构**。③ 【跨章关联】原 MCP 工具 `get_cross_chapter_refs`（取跨章关联提示）**删除**——它隐含一份需长期维护的关系数据，与「全文交给 AI 判定」的口径冲突；跨章矛盾改由 `consistency_check` skill 读 **L1 全文现场判定**。④ 【逻辑矛盾通道】新增 `consistency_findings[]`（FR-4 schema 的平行出口）：现有 `DiagnosisItem` 绑死在官方条目上（item_id 必填），而「第2章说市场 10 亿、第5章说 5 亿」这类矛盾不对应任何官方条目。kind 三类：contradiction（矛盾，修法 unify）/ broken_reference（断链，修法 supplement）/ term_inconsistent（术语不一致，修法 rename）；**不参与打分**（独立提示通道）；含 `task_hint` 供下游建任务。⑤ 【上下文默认全文】用户明确「成本不是问题，全 BP 上下文没多少，之后的诊断都是把全文放进去」**且同样适用于打磨** → 由此**关闭**原「是否要塞全文」对比实验；四层粒度的差异不再在「给多少上下文」，而在「可改动范围」。
+- **建议 / 期望**：规格侧已落地（详见 designRef）；demo 侧落地项：① 章节切分改为只认 `#`（当前 demo 用 `STANDARD_12_CHAPTERS` 硬编码 12 章，需改为按正文 `#` 切分）；② 逻辑矛盾提示位（现无此 UI）；③ 矛盾 → 任务/工单的生成链路（走向诗阳侧工单体系）。
+- **卡点**：规格已定；demo 侧落地依赖项目文件管理（章节切分）与工单体系（任务生成），本轮 wiki 只登记口径，不改 demo 代码。
+
+### 6. 右栏 AI 教练有 4 个 state 声明后从未被消费
 
 - 来源：`issue-guidance-dead-coach-state`（issue）｜位置：右栏 AI 备赛伴学教练（`nd-guidance-coach`）
 - owner：**上司拍板**｜severity：**medium**
@@ -83,7 +96,7 @@
 - **建议 / 期望**：会话列表可切换（sessions 驱动）、面板可折叠（chatCollapsed 驱动）、阶段徽章可切换并影响 AI 回复口径（coachIntent 真正可写）。
 - **卡点**：三处均为 UI 未实现（不是数据缺失）：mock 数据已备好但无渲染分支；需先决定本页右栏与 page-coach 的分工，再决定是补齐还是删除。
 
-### 6. 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）
+### 7. 阶段口径三套并存（本页 L1~L6 / 教练 L1~L4 / 看板 L1~L5）
 
 - 来源：`issue-guidance-stage-taxonomy-mismatch`（issue）｜位置：材料打磨工作台（`page-guidance`）
 - owner：**上司拍板**｜severity：**medium**
@@ -94,7 +107,7 @@
 - **背景（原始记录）**：本页 stepper（INITIAL_STAGE_ITEMS）为 L1~L6（创意激发/可行性验证/材料成型/打磨优化/路演成型/赛前冲刺），page-coach 侧为 L1~L4，page-milestones（里程碑看板）为 L1~L5。三套口径都叫「Lx 阶段」，且本页 stepper 的点击还不消费 stage 值，导致「阶段」在系统内既无统一定义也无实际跳转能力。
 - **卡点**：需产品拍板唯一的阶段口径与阶段数（L4/L5/L6 之争），再统一三处数据源与 stepper 行为；本轮只登记，不展开。
 
-### 7. 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见
+### 8. 知识库「一页两端」数据完全隔离：平台标准库无法下发给校端，两端分类同名却互不可见
 
 - 来源：`issue-kb-two-ends-not-synced`（issue）｜位置：知识库管理（`page-knowledge-base`）
 - owner：**上司拍板**｜severity：**medium**
@@ -106,7 +119,7 @@
 - **建议 / 期望**：明确两端关系并建链路：平台库对校端可见（订阅/引用/只读下发），校端检索可同时命中平台标准与本校私有库；或明确两者独立运营、把「供给全平台」的表述改掉。
 - **卡点**：属产品级数据架构决策（平台库是全校共享的超集？还是靠「发布/订阅」桥接？多校部署形态也相关），需上司拍板后由工程统一数据层——与 issue-mentors-pool-two-ends-not-synced 是同一类问题，可一并决策。
 
-### 8. 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验
+### 9. 登录页是演示态假门：文案称支持统一身份认证，实为前端自选身份 + 免密预置卡 + 密码不校验
 
 - 来源：`issue-login-sso-placeholder`（issue）｜位置：登录分流（`page-login`）
 - owner：**待产品定义**｜severity：**medium**
@@ -118,7 +131,7 @@
 - **建议 / 期望**：产品化需明确：接哪套统一身份认证（校内 CAS / OAuth2.0 / 学工号）、四端身份是否由认证结果而非用户自选决定、预置免密卡在非演示环境是否保留。
 - **卡点**：需产品侧给认证口径（依赖各校 IT 环境），工程侧才能落地；demo 阶段保持现状。
 
-### 9. 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作
+### 10. 导师无材料编辑权限：可看所负责项目全部细节，不可参与项目制作
 
 - 来源：`issue-mentor-readonly-no-edit`（issue）｜位置：材料打磨工作台（`page-guidance`）
 - owner：**工程自决**｜severity：**medium**
@@ -130,7 +143,7 @@
 - **建议 / 期望**：材料打磨的写操作（编辑 / 发起打磨 / 提交 / 合并）仅对项目组成员开放；导师为只读消费者（可看全文、章节、诊断结论、材料历史）；角色校验在服务端强制，越权返回 403；导师进入打磨页时编辑区只读并提示「查看模式」。导师的写路径在工单侧（派单 / 复核），工单整改与提交由学生执行，故工单跳转落点为【学生端】而非导师端。
 - **卡点**：依赖用户模块角色定义（付启龙）与工单体系（向诗阳），二者 spec 待对齐；本轮只登记口径与 spec 约束，未改 demo 代码。
 
-### 10. 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）
+### 11. 导师池「一页两端」但数据完全不互通（平台专家无法下派、校端看不到平台库）
 
 - 来源：`issue-mentors-pool-two-ends-not-synced`（issue）｜位置：导师池管理（`page-mentors-pool`）
 - owner：**上司拍板**｜severity：**medium**
@@ -142,7 +155,7 @@
 - **建议 / 期望**：明确两端关系（平台库是校端库的超集？还是分属两套池、靠「下派/调度」桥接？），并建立对应链路：若为超集则共享数据源；若靠调度桥接，则需在校端或调度页建立「调度工单接收与展示」。
 - **卡点**：属产品级数据架构决策（多校/单校部署形态、平台与学校的导师库关系），需上司拍板后由工程统一数据层。
 
-### 11. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
+### 12. 产品规则：每个学生仅绑定一个项目，学生端不可切换项目（demo 可切换仅为演示）
 
 - 来源：`issue-product-single-project-binding`（issue）｜位置：项目工作台（`page-workbench`）
 - owner：**工程自决**｜severity：**medium**
@@ -154,7 +167,7 @@
 - **建议 / 期望**：学生端账号与唯一项目绑定：登录后无项目切换入口，所有学生端页面只呈现该项目数据；demo 的多项目切换能力在学生端入口关闭（管理端不受影响）。
 - **卡点**：规则已定（2026-09-14 拍板 + 2026-09-30 复核确认），无需上司再议；落地为工程收口——待 demo 产品化阶段执行，本轮 wiki 只登记不改代码。
 
-### 12. 体检区三块均无空态处理，数据为空时只剩标题
+### 13. 体检区三块均无空态处理，数据为空时只剩标题
 
 - 来源：`issue-diag-region-no-empty-state`（issue）｜位置：逻辑断点与硬伤（`nd-workbench-diag-gaps`）
 - owner：**待产品定义**｜severity：**low**
@@ -165,7 +178,7 @@
 - **背景（原始记录）**：实测 proj-002 的 logicGaps 为空数组，该区块仅渲染标题「逻辑断点与硬伤分析 (0)」，下方空白；killerQuestions 与 tier1Scores 同理。三个区块均无「暂无数据 / 尚未体检」提示，也无「发起体检」入口。
 - **卡点**：需产品确认空态文案，以及空态下是否提供「发起 AI 体检」的动作入口。
 
-### 13. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
+### 14. GuidanceModals.tsx 内另两个弹层组件全库零引用（死代码约 298 行）
 
 - 来源：`issue-guidance-unused-modals`（issue）｜位置：版本快照差异比对弹层（`nd-guidance-diff-modal`）
 - owner：**待产品定义**｜severity：**low**
@@ -176,7 +189,7 @@
 - **背景（原始记录）**：GuidanceModals.tsx 导出三个组件，但全 src/ 只有 SceneGuidanceWorkbench 引用了 GuidanceVersionDiffModal（import 与使用各 1 处）。GuidanceUploadModal（:184-332，148 行）与 GuidanceCreateTodoModal（:341-481，140 行）无任何引用。后者构造的 GuidanceTodoItem 与 guidanceTypes 契约一致，疑似「工作台内建待办」旧方案遗留。
 - **卡点**：需产品确认「工作台内建待办 / 材料上传」是否仍在路线图上：若在，应补入口与边；若否，应删除以消除误读（读代码者会以为该能力已就绪）。
 
-### 14. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
+### 15. 产品规则：功能模块树会持续生长，structure.json 需允许增量扩展
 
 - 来源：`issue-product-framework-incremental-growth`（issue）｜位置：shuangchuang-ai-wiki（`shuangchuang-ai-wiki`）
 - owner：**工程自决**｜severity：**low**

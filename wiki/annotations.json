@@ -54,6 +54,19 @@
       "status": "resolved",
       "createdAt": "2026-09-30",
       "updatedAt": "2026-09-30"
+    },
+    {
+      "id": "ann-20260930-04",
+      "target": {
+        "kind": "issue",
+        "id": "issue-chapter-definition-and-consistency"
+      },
+      "decision": "自定义",
+      "comment": "2026-09-30 用户拍板（0930 #6 回应 A2 + #7 五条回复）：A2（章节间隐含逻辑关联怎么识别）的解法＝**不维护关联表**，改为「诊断默认给全文 → AI 现场识别矛盾 → 矛盾自动成任务/工单 → 任务反过来作 AI 的参考」；配套：章节只认一级标题、Markdown 机械切分/非 md 用 AI、删 get_cross_chapter_refs、新增 consistency_findings[]（含 task_hint）、上下文默认全文（诊断+打磨，关闭对比实验）。",
+      "author": "庄冉",
+      "status": "resolved",
+      "createdAt": "2026-09-30",
+      "updatedAt": "2026-09-30"
     }
   ]
 }

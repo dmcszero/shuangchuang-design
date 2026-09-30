@@ -3,7 +3,7 @@
 > 由 `python wiki/gen_wiki_tools.py gaps` 从 `wiki/edges.json` 生成，**勿手改**。
 > 口径：只收 `status != implemented` 的边，外加 `edges.json` 的 `issues`。`intended` = 设计说要做、代码没做；`undefined` = 设计本身也没定，需产品拍板。其中 `category = 产品决策` 的条目另由本命令分流生成 `wiki/decisions.md`《待拍板清单》。
 >
-> 统计：边 99 条（已实现 86 · intended 12 · undefined 1）· issues 42 条。
+> 统计：边 99 条（已实现 86 · intended 12 · undefined 1）· issues 43 条。
 
 ## intended（设计有·未实现）
 
@@ -41,6 +41,7 @@
 | `issue-screening-fixed-columns-by-index` | 二级指标全景表 | undefined | high | 二级指标全景表列数固定 17 且按数组下标取数，各赛道指标结构不同必然错位 | 初筛的二级指标全景表列数固定 17 列、按下标取值，赛道不同必然错位。 | 需要一份「赛道 → 一级/二级指标定义」的数据源（`rules2026.ts` 是候选真源，需核对是否含二级项与分值），以及把 `tier2Scores` 从纯数组改为带 id 的结构（或建指标 id ↔ 下标的映射表）。 |
 | `issue-users-accounts-isolated` | 用户管理 | undefined | high | 用户账号体系是孤岛：新增账号无法登录、停用不影响任何权限，且与登录页预置账号互不相通 | 用户账号体系是孤岛：这里新增的账号登不进系统，停用也不影响任何权限。 | 涉及整体鉴权方案（与 issue-login-sso-placeholder 同源），需产品先定「demo 用假鉴权还是接统一认证」；工程侧还需在 App 层建立用户状态与登录流程的联动。 |
 | `issue-assets-vs-coach-deliverables` | 素材与资产管理 | undefined | medium | 「产物 / 资产」两套体系未统一：AI 产出无归档路径，路演幻灯片两处各 mock | 项目「产物/资产」有两套体系：AI 助手右栏的产物清单与资产管理系统的文件库互不相通。 | 属产品架构级决策（资产库是独立模块还是各模块内嵌），需上司拍板后由工程统一数据层。 |
+| `issue-chapter-definition-and-consistency` | BP 章节速达条 | intended | medium | 章节口径定稿：只认一级标题；矛盾检测不建关系表，走 consistency_findings 通道 | 定了几条：章节只认一级标题；跨章矛盾交给 AI 读全文现场找，不建关系表；矛盾单独一条通道，不参与打分。 | 规格已定；demo 侧落地依赖项目文件管理（章节切分）与工单体系（任务生成），本轮 wiki 只登记口径，不改 demo 代码。 |
 | `issue-coach-atomic-card-key-mismatch` | 浅度原子能力调用卡 | undefined | medium | 4.2 浅度原子卡正文永远不渲染（读取的数据键全仓无生产者） | 4.2 阶段的两张速诊卡正文永远空白，只剩标题和按钮。 | 二选一：①按卡片的键名结构补全生产端数据（推荐——卡片侧字段更完整，是设计意图形态）；②简化卡片为 flaws/advice 结构（会丢字段）。需先确认哪个是设计真源。 |
 | `issue-coach-campus-university-out-of-sync` | AI 备赛教练 | undefined | medium | 登录选定的高校不流向 AI 助手校内智库（coach 自持一套选校，且引用文号硬编码厦大） | 登录时选的学校不会传到 AI 助手的校内智库，引用文号还写死为厦门大学。 | 口径与实现都要动：①确定「校内智库以谁为准」（登录校 vs 手动切换）；②把 selectedUniversity 的初值接到 session；③mock 里的机构名与文号需要按校改写。 |
 | `issue-coach-file-mention-not-used` | 消息输入区与能力配置 | undefined | medium | @ 引用项目文件与本地文件上传均不参与推理（无消费方） | 输入框承诺「@ 引用项目文件提问」，但引用的文件和上传的附件都不参与回答。 | 需接入文件解析 + 上下文注入链路（当前 demo 无后端、无文件服务）；实现前该能力属「文案先行」。 |

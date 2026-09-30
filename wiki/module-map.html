@@ -363,7 +363,7 @@ const DATA = {
   "implemented": 86,
   "intended": 12,
   "undefined": 1,
-  "issues": 42,
+  "issues": 43,
   "orphans": 8,
   "graphNodes": 118,
   "disconnected": 32
@@ -1720,6 +1720,25 @@ const DATA = {
     "impact": "名单不清会导致接口白做或做漏（例如把短板标签给了不消费它的导师档案模块）。",
     "ask": "已定（工程自决）：按 7 个消费方提供数据，导师库与赛事方/评委不在名单内。"
    }
+  },
+  {
+   "id": "issue-chapter-definition-and-consistency",
+   "where": "nd-guidance-chapters",
+   "title": "章节口径定稿：只认一级标题；矛盾检测不建关系表，走 consistency_findings 通道",
+   "detail": "2026-09-30 用户拍板（0930 #6/#7，回应 A2）四条口径：① 【章节定义】章节 = **只认一级标题 `#`**；`##`/`###` 为章节内部小节，不占章节编号（归 L3）。demo 侧 `STANDARD_12_CHAPTERS` 的 12 章口径与本条一致。② 【切分路径】**Markdown 原文走机械切分**（heading_chunker，纯文本处理不调 LLM）；**非 Markdown 来源**（Word/PDF 转来的文本，预留）**才用 AI 推断结构**。③ 【跨章关联】原 MCP 工具 `get_cross_chapter_refs`（取跨章关联提示）**删除**——它隐含一份需长期维护的关系数据，与「全文交给 AI 判定」的口径冲突；跨章矛盾改由 `consistency_check` skill 读 **L1 全文现场判定**。④ 【逻辑矛盾通道】新增 `consistency_findings[]`（FR-4 schema 的平行出口）：现有 `DiagnosisItem` 绑死在官方条目上（item_id 必填），而「第2章说市场 10 亿、第5章说 5 亿」这类矛盾不对应任何官方条目。kind 三类：contradiction（矛盾，修法 unify）/ broken_reference（断链，修法 supplement）/ term_inconsistent（术语不一致，修法 rename）；**不参与打分**（独立提示通道）；含 `task_hint` 供下游建任务。⑤ 【上下文默认全文】用户明确「成本不是问题，全 BP 上下文没多少，之后的诊断都是把全文放进去」**且同样适用于打磨** → 由此**关闭**原「是否要塞全文」对比实验；四层粒度的差异不再在「给多少上下文」，而在「可改动范围」。",
+   "status": "intended",
+   "designRef": "0930 #6/#7 用户回应；spec: feature-20260920-bp-diagnosis-ran.zhuang/specs/diagnosis/spec.md FR-1 / FR-4 §consistency_findings / §3 skill 清单 / §4 MCP 清单；feature-20260920-material-polish-ran.zhuang/specs/bp-polish/spec.md FR-3",
+   "expected": "规格侧已落地（详见 designRef）；demo 侧落地项：① 章节切分改为只认 `#`（当前 demo 用 `STANDARD_12_CHAPTERS` 硬编码 12 章，需改为按正文 `#` 切分）；② 逻辑矛盾提示位（现无此 UI）；③ 矛盾 → 任务/工单的生成链路（走向诗阳侧工单体系）。",
+   "blockedBy": "规格已定；demo 侧落地依赖项目文件管理（章节切分）与工单体系（任务生成），本轮 wiki 只登记口径，不改 demo 代码。",
+   "severity": "medium",
+   "category": "产品决策",
+   "owner": "工程自决",
+   "plain": {
+    "oneLine": "定了几条：章节只认一级标题；跨章矛盾交给 AI 读全文现场找，不建关系表；矛盾单独一条通道，不参与打分。",
+    "symptom": "此前章节口径含糊（`#`/`##`/`###` 都算章节），且设计里要求维护一份「哪两章有关系」的数据。",
+    "impact": "口径不清会让章节编号与引用错位；维护关系表成本高且难以保持准确。",
+    "ask": "已定（工程自决）：章节=一级标题；Markdown 机械切分、非 md 才用 AI；删关系表；矛盾走 consistency_findings[]。"
+   }
   }
  ],
  "graph": {
@@ -2871,8 +2890,8 @@ const DATA = {
     ],
     "col": "col-page-guidance",
     "orphan": false,
-    "gapCount": 0,
-    "issueCount": 0
+    "gapCount": 1,
+    "issueCount": 1
    },
    {
     "id": "nd-guidance-coach",
@@ -7081,7 +7100,7 @@ const DATA = {
     "drilled": true,
     "edgeCount": 2,
     "gapCount": 3,
-    "issueCount": 7,
+    "issueCount": 8,
     "intraCount": 12,
     "description": "沉浸式材料打磨工作台（原名「全链路指导工作台」）：BP 章节打磨、诊断、评分 + 阶段 stepper + 版本体系 + AI 教练右栏；接收项目工作台待办上下文。定位口径（2026-09-14 批 4 改名）：专注**可编辑文本材料**的编辑与打磨；L1~L6 阶段跨模块、不归属本页。",
     "file": "src/components/SceneGuidanceWorkbench.tsx"
@@ -8031,6 +8050,19 @@ const DATA = {
    },
    "decision": "自定义",
    "comment": "2026-09-30 用户拍板（0930 #3 第 1~3 条）：诊断消费方清单定稿 7 个；「导师库」改为「导师智能调度」（消费发生在调度环节）、「意图澄清」并入「AI 教练」（它只是一个用途）、学院/赛事看板列为【直接消费方】。已落 diagnosis spec §2。",
+   "author": "庄冉",
+   "status": "resolved",
+   "createdAt": "2026-09-30",
+   "updatedAt": "2026-09-30"
+  },
+  {
+   "id": "ann-20260930-04",
+   "target": {
+    "kind": "issue",
+    "id": "issue-chapter-definition-and-consistency"
+   },
+   "decision": "自定义",
+   "comment": "2026-09-30 用户拍板（0930 #6 回应 A2 + #7 五条回复）：A2（章节间隐含逻辑关联怎么识别）的解法＝**不维护关联表**，改为「诊断默认给全文 → AI 现场识别矛盾 → 矛盾自动成任务/工单 → 任务反过来作 AI 的参考」；配套：章节只认一级标题、Markdown 机械切分/非 md 用 AI、删 get_cross_chapter_refs、新增 consistency_findings[]（含 task_hint）、上下文默认全文（诊断+打磨，关闭对比实验）。",
    "author": "庄冉",
    "status": "resolved",
    "createdAt": "2026-09-30",
