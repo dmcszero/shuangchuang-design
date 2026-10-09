@@ -1,6 +1,6 @@
 {
   "schemaVersion": "0.1",
-  "generatedAt": "2026-09-30",
+  "generatedAt": "2026-10-09",
   "note": "决策批注真源（R4）：module-map.html 详情面板的「决策批注」区块导出后覆盖本文件，再提交 git；导入可把他人导出的文件合并进来（按 id 去重，updatedAt 新者胜）。target.kind ∈ issue | edge | node（node 涵盖页面级卡片）；target.id 用 wiki 实体 id —— 将来与 43.160.210.61:3001 功能条目对齐的映射表就建在这套 id 上。decision ∈ 确认保留 | 确认删除 | 暂缓 | 需补充信息 | 自定义；status ∈ open | resolved。gen_wiki_tools.py 的 apply-decisions 命令（留位）只读 status=resolved 的条目生成修改建议。",
   "annotations": [
     {
@@ -93,6 +93,19 @@
       "status": "resolved",
       "createdAt": "2026-09-30",
       "updatedAt": "2026-09-30"
+    },
+    {
+      "id": "ann-20261009-01",
+      "target": {
+        "kind": "issue",
+        "id": "issue-polish-concurrency-and-template"
+      },
+      "decision": "自定义",
+      "comment": "2026-10-09 用户回应（1009 #2.1）：**「（以我说法为准）刚刚询问了，它的意思是在同一时刻只能单源对文件读写。多人同时编辑的实现还是拉副本-编辑-合并分支」** → 更正 09-30 落的「乐观锁 + 建议级、不用文件级锁」；同时指示「冲突2 请你改正 / 冲突3 请你改正」→ 版本基准改项目提交 commit_uuid、导出转换执行归通用文件管理。",
+      "author": "庄冉",
+      "status": "resolved",
+      "createdAt": "2026-10-09",
+      "updatedAt": "2026-10-09"
     }
   ]
 }
