@@ -30,9 +30,9 @@
 
 | 文件 | 角色 |
 |---|---|
-| `schema.md` | **契约真源**（v0.4）：四层模型 + persona/placeholder 维度 / 命名 / node 五节结构 / 粒度三问 / 校验规则 A~E / 变更记录。改结构规范先动它 |
-| `structure.json` | **结构真源**：8 section + 15 page（`component` / `relevant_files` / `personas` / `frameworkRef` / `docStatus` / `nodeCount`）+ 4 personas + 1 placeholder + 壳层 / 弹层 / 8 个孤儿组件清单 |
-| `edges.json` | **边的真源**：23 条边 + 13 条 issues（issues 带 `category` / `owner` 分流字段） |
+| `schema.md` | **契约真源**（主体 v0.9 + §11 结构图交互扩展 v1.0.x）：四层模型 + persona/placeholder 维度 / 命名 / node 五节结构 / 粒度三问 / 校验规则 A~E / 变更记录。改结构规范先动它 |
+| `structure.json` | **结构真源**：8 section + 15 page（`component` / `relevant_files` / `personas` / `frameworkRef` / `docStatus` / `nodeCount`）+ 4 personas + 1 placeholder + 壳层 4 / 弹层 4 / 8 个孤儿组件清单 |
+| `edges.json` | **边的真源**：99 条边 + 44 条 issues（issues 带 `category` / `owner` 分流字段） |
 | `glossary.json` | **术语真源**（v0.9）：`term` → `plain` 对照表（58 条，仅解释、不改原文）；结构图「原始数据」下方自动列「涉及术语」对照 |
 | `annotations.json` | **决策批注真源**（v1.0）：`ann-<yyyymmdd>-<seq>` → `target{kind,id}` + `decision` + `comment` + `status`；结构图详情面板「决策批注」区块导出后覆盖本文件、提交 git（导入按 id 去重、`updatedAt` 新者胜）。**它是「争议确认工作台」的产出落点**，`target.id` 就是 wiki 实体 id（未来与 3001 功能对齐的映射表建在这套 id 上）。见 `schema.md` §11.1 |
 | `drilldown-manual.md` | **《铺开执行手册》**：批 1~3 页面顺序 + v0.4 八条口径硬约束 + 每批完成定义——逐页下钻的 agent 开工前必读（配合 skill `wiki-drilldown`） |
@@ -40,27 +40,27 @@
 | `nodes/<page-id>/<node-id>.md` | 节点文档，固定五节：一句话定位 / 事实（每条带 `Sources: [路径:行号]()`）/ 规则与边界 / 常见开发任务 / **出入边（第 5 节由工具生成，勿手写）** |
 | `gen_wiki_tools.py` | **工具链**：`validate` / `sync-edges` / `index` / `map` / `gaps` 五命令（纯标准库） |
 | `build_map.py` | 结构图生成器（40 KB HTML 模板单源；`gen_wiki_tools.py map` 只做入口转发，勿在两处维护模板） |
-| `check_map.cjs` | **结构图回归探针**（v1.0）：用 jsdom 加载 `module-map.html`，逐项验收「全量卡片/issue 点击零异常 · 列折叠自愈 · 批注读写与导出导入闭环 · 关系链 BFS 与环 · demo 按钮数 = 14 · 结构完整性」。**改了 `build_map.py` 就要跑它**——五命令只校验数据层，查不出运行时故障（v0.9 的 102/117 张卡片点不动就是这么漏掉的）。依赖 jsdom：`JSDOM_PATH=<jsdom 路径> node wiki/check_map.cjs wiki/module-map.html`，退出码 0 = 全通过 |
+| `check_map.cjs` | **结构图回归探针**（64 项）：用 jsdom 加载 `module-map.html`，逐项验收「全量卡片/issue 点击零异常 · 列折叠自愈 · 批注读写与导出导入闭环（含表格行内双入口联通）· 关系链 BFS 与环 · demo 按钮数 = 14 · 使用说明弹层可开且无技术黑话 · 结构完整性（118 图模块 / 99 边 / 44 issue / 运行时零异常）」。**改了 `build_map.py` 就要跑它**——五命令只校验数据层，查不出运行时故障（v0.9 的 102/117 张卡片点不动就是这么漏掉的）。依赖 jsdom：`JSDOM_PATH=<jsdom 路径> node wiki/check_map.cjs wiki/module-map.html`，退出码 0 = 全通过 |
 | `llms.txt` | ⚙️ 产物：索引（page/node 两层 + 描述 + 下钻状态）——**AI 找结构的入口** |
 | `gaps.md` | ⚙️ 产物：缺口清单（intended / undefined / issues 三张表 + 逐条详情） |
-| `decisions.md` | ⚙️ 产物：**《待拍板清单》**——只收 `category=产品决策` 的条目，按 severity 排序含背景+建议+卡点；批 4 一次性交付上司 |
+| `decisions.md` | ⚙️ 产物：**《待拍板清单》**——只收 `category=产品决策` 的条目，按 severity 排序含背景+建议+卡点；批 4（09-14）已全量交付，此后随每轮拍板落库同步更新 |
 | `module-map.html` | ⚙️ 产物：结构可视化（**v1.0** 三层视图 + 决策批注 + 关系链 + demo 深链；双击即开）；**默认页对非工程读者友好**——issues 先看通俗版、术语与节点形态全中文（英文原值在 tooltip） |
 | `site/index.html` | ⚙️ 产物：**发布副本**（发布单元只含这一个文件） |
 
-## 三、当前进度（2026-09-14，批 3 完成后 — **全库 15 页全部下钻**）
+## 三、当前进度（更新 2026-10-19；数据截至 2026-10-09 最新一轮落库）
 
-**section 8 · page 15（已下钻 15 / 待铺开 0）· node 95 · 图上模块 117（含未连线 32）· 边 98（86 implemented · 11 intended · 1 undefined）· issues 40（全部带通俗版）· `validate` 0 error / 8 warning**（warning = 7 条 D4 单向跳转边 + 1 条 E3 外部引用，均属预期）
+**section 8 · page 15（已下钻 15 / 待铺开 0）· node 95 · 图上模块 118（含未连线 32）· 边 99（86 implemented · 12 intended · 1 undefined）· issues 44（技术实现 19 · 产品决策 15 · 数据口径 10；全部带通俗版）· 正文可验证引用 971 处 · `validate` 0 error / 8 warning**（warning = 7 条 D4 单向跳转边 + 1 条 E3 外部引用，均属预期，与 v0.9 时持平）
 
 - 已下钻（15/15）：`page-workbench`(8) · `page-guidance`(10) · `page-login`(4) · `page-coach`(10) · `page-defense`(7) · `page-assets`(6) · `page-cockpit`(6) · `page-screening`(4) · `page-mentorship`(5) · `page-supervision`(9) · `page-milestones`(4) · `page-mentors-pool`(6) · `page-teams`(4) · `page-users`(5) · `page-knowledge-base`(7)
-- 批次：批 0 框架合流 ✅ → 批 1 学生端 4 页 ✅ → 批 2 校管端 6 页 ✅ → **批 3 治理与复用页 3 页 ✅**
-- **下一步＝批 4 交付总装**：《待拍板清单》全量交付 + 设计方案说明书 + 结构图发布（见《铺开执行手册》§1）
-- **《待拍板清单》现 14 条**（`decisions.md`，由 `gaps` 自动生成）：上司拍板 7 · 待产品定义 5 · 工程自决 2；另 27 条技术/数据口径缺口在 `gaps.md`（issues 共 40 条，均已带通俗版）。
+- 批次：批 0 框架合流 ✅ → 批 1 学生端 4 页 ✅ → 批 2 校管端 6 页 ✅ → 批 3 治理与复用页 3 页 ✅ → 批 4 交付总装 ✅（09-14：《待拍板清单（交付版）》+ 设计方案说明书 + 结构图发布）
+- **当前阶段 =「决策批注工作台」运转期**：多轮拍板持续落库 —— 09-16（D2：内建待办纳入动态待办闭环，登记 `modal-guidance-create-todo` + intended 边）→ 09-30 四轮（消费方清单定稿 / A2 章节口径 / A3 重评 / B·C 类与 A4 占位）→ 10-09 两轮（打磨并发口径更正为单源读写 / 打磨页入口·工作单元·任务态 4 点）。每轮动作 = 更新 `annotations.json` + `edges.json` → 跑五命令重生成 `decisions.md` / `gaps.md` / `module-map.html` / `site/index.html` → 提交
+- **《待拍板清单》现 16 条**（`decisions.md`，由 `gaps` 自动生成）：上司拍板 7 · 工程自决 5 · 待产品定义 4；另 29 条技术/数据口径缺口在 `gaps.md`（issues 44 − 产品决策 15）。`annotations.json` 已落库 9 条决策批注（09-16 ×1 / 09-30 ×6 / 10-09 ×2，全部 resolved）
 ### 结构图三层视图（v0.9，给非工程读者看的动线）
 
 | 层 | 何时用 | 看什么 |
 |---|---|---|
 | **① 总览（页面级，默认）** | 第一次打开 / 对齐整体 | 15 个页面 + 页面↔页面聚合关系（9 列、一屏）；卡片上直读：模块数 / 连线数 / 缺口数 / 未连线数 / 各端标签 |
-| **② 全景（节点级）** | 要看模块与具体链路 | 16 列，含全部 117 张卡片；支持端过滤 / 连线过滤（全部·只看缺口·只看跨列）/ 列折叠 |
+| **② 全景（节点级）** | 要看模块与具体链路 | 16 列，含全部 118 张卡片；支持端过滤 / 连线过滤（全部·只看缺口·只看跨列）/ 列折叠 |
 | **聚焦视图**（画布下方） | 鼠标点任意卡片 / 连线 / 缺口条目 | 该模块的入边与出边（上下游）、同页兄弟模块；**点选后钉住**，不再一移开就没 |
 
 **v1.0 新增（2026-09-15）**：
@@ -68,6 +68,7 @@
 | 能力 | 说明 |
 |---|---|
 | **决策批注** | **两个入口、一份数据**：① 详情面板底部；② footer「issues」表格行尾「批注」按钮**就地展开表单**（行内直读 `💬n` 徽标 + 最近决策 + 作者时间 + 未决数）。**导出/导入固定放在顶部工具栏**（「批注」组：`导出（N）` / `导入` / `使用说明`），不依赖是否选中对象。可写「确认保留 / 确认删除 / 暂缓 / 需补充信息 / 自定义」+ 自由文本；存 localStorage（含草稿缓存，重渲染不丢字），可导出 `annotations.json`（文件名带作者+日期）覆盖回 `wiki/` 提交、可导入合并他人批注；被批注的卡片与问题带 `💬n` 徽标，gaps 面板可按「已批注 / 未批注 / 未决」过滤——**支持开会逐条过争议** |
+| **内嵌使用说明**（v1.0.3） | 顶部工具栏「使用说明」→ 四节自助说明（页面怎么看 / 怎么批注与回收 / demo 按钮说明 / 三个易误会点），面向外部读者、**不出现技术黑话**（探针断言）；右侧「详情」「缺口」两卡按视口高度平分 |
 | **关系链页签** | 聚焦视图从「直接关系」扩成双页签：「关系链」= 入向可达树（谁会间接影响它）+ 出向可达树（它会间接影响谁），环去重、超 50 节点可展开全部层数 |
 | **demo 深链** | 14 个页面卡片与页面详情挂「打开 demo ↗」按钮 → `localhost:3000/?tab=<TabType>` 新开页直达对应模块（登录页无按钮；demo 未启动时按钮置灰并提示） |
 | **中文显示层** | 节点形态 / 层级全部显示中文（`面板` / `弹层（模态框）` / `壳层（全局框架）` …），英文枚举留在 tooltip |
@@ -90,7 +91,7 @@ $PY='C:\Users\user\AppData\Local\miniforge3\envs\py310\python.exe'
 
 ```powershell
 $env:JSDOM_PATH='<jsdom 安装目录>'      # 例：C:/Users/user/.workbuddy/binaries/node/workspace/node_modules/jsdom
-node wiki/check_map.cjs wiki/module-map.html   # 63 项验收，退出码 0 = 全通过
+node wiki/check_map.cjs wiki/module-map.html   # 64 项验收，退出码 0 = 全通过
 ```
 
 ## 五、下钻一个 page（操作流程）
@@ -118,4 +119,4 @@ node wiki/check_map.cjs wiki/module-map.html   # 63 项验收，退出码 0 = �
 
 - 新发现的缺口**必须进 `edges.json` 的 `issues[]`**（不要只在对话里提，否则会丢）
 - 完成一批下钻后：跑五命令 → 提交本仓 → （如需对外）重新发布 `site/`
-- `wiki-v1/`（20 页 taxonomy）是旧结构，**只作对照、不再更新**；`baseline` 已在 2026-09-14 改回本仓 `main`
+- `wiki-v1/`（旧 v1 结构）已于 **2026-09-18 删除**（`a8309b8`；git 历史可回溯）——别处若见对它的引用即已失效；`baseline` 自 2026-09-14 为本仓 `main`
