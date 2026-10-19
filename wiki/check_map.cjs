@@ -14,8 +14,9 @@
  *
  * 覆盖：R1 形态中文化 / R2 全量卡片点击与列折叠自愈 / R3 缺口点击与未锚定说明 /
  *      R4 批注读写与导出导入闭环 / R5 关系链 BFS 与环处理 / R6 demo 深链按钮 /
- *      结构完整性回归（节点 118 · 边 99 · issue 40 · 运行时零异常）。
+ *      结构完整性回归（节点 118 · 边 99 · issue 44 · 运行时零异常）。
  *      （2026-09-16 基线更新：登记 modal-guidance-create-todo + 边 e-guidance-createtodo-2-workbench-todo，见 annotations ann-20260916-01）
+ *      （2026-10-19 基线更新：issue 40 → 44——随 0930 / 1009 拍板落库轮次同步，其余计数未变）
  * 退出码：0 = 全通过，1 = 有失败项。
  */
 const fs = require('fs');
@@ -259,7 +260,7 @@ setTimeout(async () => {
   line('【子任务】footer issues 表格行内批注');
   ev("curTab='issues'; renderTabs();");
   const frows = Array.from(d.querySelectorAll('#tabBody tr.clickable[data-kind="issue"]'));
-  check('issues 表格每行都有批注列', frows.length === 40 && frows.every(r => r.querySelector('.anncell')), frows.length + ' 行');
+  check('issues 表格每行都有批注列', frows.length === 44 && frows.every(r => r.querySelector('.anncell')), frows.length + ' 行');
   const tgt = 'issue-guidance-unused-modals';
   const trow = d.querySelector('#tabBody tr.clickable[data-id="' + tgt + '"]');
   check('目标行存在', !!trow);
@@ -302,8 +303,8 @@ setTimeout(async () => {
   /* ---- 结构完整性回归 ---- */
   line('【回归】结构完整性');
   check('图节点全集未退化', ev('DATA.graph.nodes.length') === 118, ev('DATA.graph.nodes.length') + ' 个');
-  check('边 / issue 数未变', ev('DATA.edges.length') === 99 && ev('DATA.issues.length') === 40);
-  check('issue 全部带通俗版', ev("DATA.issues.filter(i=>i.plain&&i.plain.oneLine).length") === 40);
+  check('边 / issue 数未变', ev('DATA.edges.length') === 99 && ev('DATA.issues.length') === 44);
+  check('issue 全部带通俗版', ev("DATA.issues.filter(i=>i.plain&&i.plain.oneLine).length") === 44);
   check('运行时零异常', errors.length === 0, errors.length ? errors.slice(0, 3).join(' | ') : '');
   line('');
   line('==== 通过 ' + pass + ' 项 / 失败 ' + fail + ' 项 ====');
